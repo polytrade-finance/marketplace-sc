@@ -5,8 +5,9 @@ const { invoice1 } = require("./data");
 describe("Invoice", function () {
   let invoiceContract;
   let deployer;
+  let user1;
   beforeEach(async () => {
-    [deployer] = await ethers.getSigners();
+    [deployer, user1] = await ethers.getSigners();
 
     const InvoiceFatory = await ethers.getContractFactory("Invoice");
     invoiceContract = await InvoiceFatory.deploy(
@@ -40,8 +41,22 @@ describe("Invoice", function () {
     ).to.revertedWith("Invoice: Already minted");
   });
 
+  it("Revert on Creating invoice by invalid caller", async function () {
+    await expect(
+      invoiceContract
+        .connect(user1)
+        .createInvoice(deployer.address, 1, invoice1)
+    ).to.revertedWith("Invoice: Caller is not a minter");
+  });
+
   it("Set new base uri", async function () {
     await expect(invoiceContract.setBaseURI("https://ipfs2.io/ipfs")).to.not.be
       .reverted;
+  });
+
+  it("Revert Set new base uri by invalid caller", async function () {
+    await expect(
+      invoiceContract.connect(user1).setBaseURI("https://ipfs2.io/ipfs")
+    ).to.be.revertedWith("Invoice: Caller is not an Admin");
   });
 });

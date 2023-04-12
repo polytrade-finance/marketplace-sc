@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "dual-layer-token/contracts/DLT/DLT.sol";
 import "./interface/IInvoice.sol";
 
-contract Invoice is IInvoice, DLT {
+contract Invoice is IInvoice, DLT, AccessControl {
+    // Create a new role identifier for the minter role
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+
     string private _invoiceBaseURI = "https://ipfs.io/ipfs";
 
     /**
@@ -19,6 +23,10 @@ contract Invoice is IInvoice, DLT {
         string memory baseURI_
     ) DLT(name, symbol) {
         _setBaseURI(baseURI_);
+
+        // Grant the minter role to a specified account
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(MINTER_ROLE, msg.sender);
     }
 
     function createInvoice(
@@ -26,6 +34,12 @@ contract Invoice is IInvoice, DLT {
         uint256 mainId,
         InitialMetadata calldata initialMetadata
     ) external {
+        // Check that the calling account has the minter role
+        require(
+            hasRole(MINTER_ROLE, msg.sender),
+            "Invoice: Caller is not a minter"
+        );
+
         require(mainTotalSupply(mainId) == 0, "Invoice: Already minted");
         _metadata[mainId] = initialMetadata;
 
@@ -39,6 +53,12 @@ contract Invoice is IInvoice, DLT {
      * @param newBaseURI, String of the asset base URI
      */
     function setBaseURI(string calldata newBaseURI) external {
+        // Check that the calling account has the minter role
+        require(
+            hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
+            "Invoice: Caller is not an Admin"
+        );
+
         _setBaseURI(newBaseURI);
     }
 
