@@ -19,36 +19,29 @@ describe("Invoice", function () {
   });
 
   it("Create Invoice successfully", async function () {
-    expect(
-      await invoiceContract.createInvoice(
-        deployer.address,
-        1,
-        "blablaURI",
-        invoice1
-      )
-    )
+    expect(await invoiceContract.createInvoice(deployer.address, 1, invoice1))
       .to.emit(invoiceContract, "InvoiceCreated")
       .withArgs(deployer.address, deployer.address, 1);
 
     expect(await invoiceContract.mainBalanceOf(deployer.address, 1)).to.eq(
       ethers.utils.parseEther("10000")
     );
+
+    expect(await invoiceContract.tokenURI(1)).to.eq(`https://ipfs.io/ipfs${1}`);
   });
 
   it("Revert on Creating minted invoice", async function () {
-    expect(
-      await invoiceContract.createInvoice(
-        deployer.address,
-        1,
-        "blablaURI",
-        invoice1
-      )
-    )
+    expect(await invoiceContract.createInvoice(deployer.address, 1, invoice1))
       .to.emit(invoiceContract, "InvoiceCreated")
       .withArgs(deployer.address, deployer.address, 1);
 
     await expect(
-      invoiceContract.createInvoice(deployer.address, 1, "blablaURI", invoice1)
+      invoiceContract.createInvoice(deployer.address, 1, invoice1)
     ).to.revertedWith("Invoice: Already minted");
+  });
+
+  it("Set new base uri", async function () {
+    await expect(invoiceContract.setBaseURI("https://ipfs2.io/ipfs")).to.not.be
+      .reverted;
   });
 });
