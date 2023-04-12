@@ -33,13 +33,7 @@ contract Invoice is IInvoice, DLT, AccessControl {
         address owner,
         uint256 mainId,
         InitialMetadata calldata initialMetadata
-    ) external {
-        // Check that the calling account has the minter role
-        require(
-            hasRole(MINTER_ROLE, msg.sender),
-            "Invoice: Caller is not a minter"
-        );
-
+    ) external onlyRole(MINTER_ROLE) {
         require(mainTotalSupply(mainId) == 0, "Invoice: Already minted");
         _metadata[mainId] = initialMetadata;
 
@@ -52,13 +46,9 @@ contract Invoice is IInvoice, DLT, AccessControl {
      * @dev Implementation of a setter for the asset base URI
      * @param newBaseURI, String of the asset base URI
      */
-    function setBaseURI(string calldata newBaseURI) external {
-        // Check that the calling account has the minter role
-        require(
-            hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
-            "Invoice: Caller is not an Admin"
-        );
-
+    function setBaseURI(
+        string calldata newBaseURI
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _setBaseURI(newBaseURI);
     }
 
