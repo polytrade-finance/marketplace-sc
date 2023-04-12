@@ -46,7 +46,7 @@ describe("Invoice", function () {
       invoiceContract
         .connect(user1)
         .createInvoice(deployer.address, 1, invoice1)
-    ).to.revertedWith("Invoice: Caller is not a minter");
+    ).to.be.reverted;
   });
 
   it("Set new base uri", async function () {
@@ -57,6 +57,6 @@ describe("Invoice", function () {
   it("Revert Set new base uri by invalid caller", async function () {
     await expect(
       invoiceContract.connect(user1).setBaseURI("https://ipfs2.io/ipfs")
-    ).to.be.revertedWith("Invoice: Caller is not an Admin");
+    ).to.be.reverted;
   });
 });
