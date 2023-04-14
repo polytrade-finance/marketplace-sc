@@ -26,6 +26,33 @@ contract Marketplace is AccessControl, IMarketplace {
     }
 
     /**
+     * @dev Implementation of the function used to buy Invoice amount
+     * @param invoiceMainId, Uint unique number of the Invoice amount
+     */
+    function buy(
+        address owner,
+        uint invoiceMainId,
+        uint subId,
+        uint amount
+    ) external {
+        uint stableCointAmount = _invoiceCollection.calculateAdvanceAmount(
+            invoiceMainId,
+            amount
+        );
+
+        _invoiceCollection.safeTransferFrom(
+            owner,
+            msg.sender,
+            invoiceMainId,
+            subId,
+            amount,
+            ""
+        );
+
+        _stableToken.transferFrom(msg.sender, owner, stableCointAmount);
+    }
+
+    /**
      * @dev Implementation of a setter for Invoice Collection contract
      * @param newInvoiceCollectionAddress, Address of the Invoice Collection contract
      */

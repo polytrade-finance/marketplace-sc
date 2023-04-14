@@ -6,7 +6,7 @@ const invoice1 = {
   lateFeePercentage: 10,
   bankChargesFeeAmount: 10,
   additionalFeeAmount: 10,
-  advanceFeeAmount: 10,
+  advanceFeePercentage: 1000, // %10
   gracePeriod: 10,
   dueDate: Number(new Date("2022-11-12").getTime() / 1000),
   invoiceDate: Number(new Date("2022-10-10").getTime() / 1000),

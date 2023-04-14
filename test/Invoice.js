@@ -3,17 +3,24 @@ const { ethers } = require("hardhat");
 const { invoice1 } = require("./data");
 
 describe("Invoice", function () {
+  let formulasContract;
   let invoiceContract;
   let deployer;
   let user1;
   beforeEach(async () => {
     [deployer, user1] = await ethers.getSigners();
 
+    const FormulasFactory = await ethers.getContractFactory("Formulas");
+    formulasContract = await FormulasFactory.deploy();
+
+    await formulasContract.deployed();
+
     const InvoiceFactory = await ethers.getContractFactory("Invoice");
     invoiceContract = await InvoiceFactory.deploy(
       "Polytrade Invoice Collection",
       "PIC",
-      "https://ipfs.io/ipfs"
+      "https://ipfs.io/ipfs",
+      formulasContract.address
     );
 
     await invoiceContract.deployed();

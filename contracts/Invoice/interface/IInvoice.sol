@@ -12,7 +12,7 @@ interface IInvoice is IDLT {
      * @param lateFeePercentage, is a uint24 will have 2 decimals
      * @param bankChargesFeeAmount, is a uint24 will have 2 decimals
      * @param additionalFeeAmount, is a uint24 will have 2 decimals
-     * @param advanceFeeAmount, is a uint16 will have 2 decimals
+     * @param advanceFeePercentage, is a uint16 will have 2 decimals
      * @param gracePeriod, is a uint16 will have 2 decimals
      * @param dueDate, is a uint48 will have 2 decimals
      * @param invoiceDate, is a uint48 will have 2 decimals
@@ -20,13 +20,13 @@ interface IInvoice is IDLT {
      * @param invoiceAmount, is a uint will have 2 decimals
      */
     struct InitialMetadata {
-        uint24 factoringFeePercentage;
-        uint24 discountFeePercentage;
-        uint24 lateFeePercentage;
-        uint24 bankChargesFeeAmount;
-        uint24 additionalFeeAmount;
-        uint16 advanceFeeAmount;
-        uint16 gracePeriod;
+        uint24 factoringFeePercentage; // %
+        uint24 discountFeePercentage; // %
+        uint24 lateFeePercentage; // %
+        uint24 bankChargesFeeAmount; // it's an amount
+        uint24 additionalFeeAmount; // it's an amount
+        uint16 advanceFeePercentage; // %
+        uint16 gracePeriod; // days
         uint48 dueDate;
         uint48 invoiceDate;
         uint48 fundsAdvancedDate;
@@ -51,4 +51,14 @@ interface IInvoice is IDLT {
         address indexed owner,
         uint indexed mainId
     );
+
+    /**
+     * @dev Calculate the advanced amount
+     * @return uint Advanced Amount
+     * @param mainId, Unique uint Invoice Number
+     */
+    function calculateAdvanceAmount(
+        uint mainId,
+        uint amount
+    ) external view returns (uint);
 }
