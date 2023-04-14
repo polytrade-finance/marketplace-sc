@@ -48,4 +48,20 @@ contract Marketplace is AccessControl, IMarketplace {
 
         emit StableTokenSet(stableTokenAddress);
     }
+
+    /**
+     * @dev Implementation of a getter for the Invocie Collection contract
+     * @return address Address of the Invocie Collection contract
+     */
+    function getInvoiceCollection() external view returns (address) {
+        return address(_invoiceCollection);
+    }
+
+    /**
+     * @dev Implementation of a getter for the stable coin contract
+     * @return address Address of the stable coin contract
+     */
+    function getStableCoin() external view returns (address) {
+        return address(_stableToken);
+    }
 }

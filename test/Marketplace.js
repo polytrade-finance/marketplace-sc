@@ -4,7 +4,7 @@ const { invoice1 } = require("./data");
 
 describe("Invoice", function () {
   let invoiceContract;
-  let tokenContract;
+  let stableCoinContract;
   let marketplaceContract;
   let deployer;
   before(async () => {
@@ -19,14 +19,24 @@ describe("Invoice", function () {
 
     await invoiceContract.deployed();
 
-    tokenContract = await (
+    stableCoinContract = await (
       await ethers.getContractFactory("Token")
     ).deploy("USD Dollar", "USDC", deployer.address, 10000);
 
     marketplaceContract = await (
       await ethers.getContractFactory("Marketplace")
-    ).deploy(invoiceContract.address, tokenContract.address);
+    ).deploy(invoiceContract.address, stableCoinContract.address);
   });
 
-  it("Applying Before test", async function () {});
+  it("Test Marketplace's Invoice collection Getter", async function () {
+    expect(await marketplaceContract.getInvoiceCollection()).to.eq(
+      invoiceContract.address
+    );
+  });
+
+  it("Test Marketplace's Token Getter", async function () {
+    expect(await marketplaceContract.getStableCoin()).to.eq(
+      stableCoinContract.address
+    );
+  });
 });
