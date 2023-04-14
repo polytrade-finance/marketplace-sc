@@ -9,8 +9,8 @@ describe("Invoice", function () {
   beforeEach(async () => {
     [deployer, user1] = await ethers.getSigners();
 
-    const InvoiceFatory = await ethers.getContractFactory("Invoice");
-    invoiceContract = await InvoiceFatory.deploy(
+    const InvoiceFactory = await ethers.getContractFactory("Invoice");
+    invoiceContract = await InvoiceFactory.deploy(
       "Polytrade Invoice Collection",
       "PIC",
       "https://ipfs.io/ipfs"
