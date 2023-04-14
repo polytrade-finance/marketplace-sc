@@ -7,11 +7,10 @@ describe("Invoice", function () {
   let invoiceContract;
   let stableCoinContract;
   let marketplaceContract;
-  let deployer;
   let user1;
   let buyer;
   beforeEach(async () => {
-    [deployer, user1, buyer] = await ethers.getSigners();
+    [, user1, buyer] = await ethers.getSigners();
 
     const FormulasFactory = await ethers.getContractFactory("Formulas");
     formulasContract = await FormulasFactory.deploy();

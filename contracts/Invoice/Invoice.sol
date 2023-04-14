@@ -59,6 +59,24 @@ contract Invoice is IInvoice, DLT, AccessControl {
     }
 
     /**
+     * @dev Calculate the advanced amount
+     * @return uint Advance Amount
+     * @param mainId, Unique uint Invoice Number
+     */
+    function calculateAdvanceAmount(
+        uint mainId,
+        uint amount
+    ) external view returns (uint) {
+        InitialMetadata memory metadata = _metadata[mainId];
+
+        return
+            _formulas.advanceAmountCalculation(
+                amount,
+                metadata.advanceFeePercentage
+            );
+    }
+
+    /**
      * @dev Implementation of a getter for mainId URI
      * @return string URI for the invoice
      * @param mainId, Unique uint Invoice Number
@@ -77,23 +95,5 @@ contract Invoice is IInvoice, DLT, AccessControl {
         string memory oldBaseURI = _invoiceBaseURI;
         _invoiceBaseURI = newBaseURI;
         emit InvoiceBaseURISet(oldBaseURI, newBaseURI);
-    }
-
-    /**
-     * @dev Calculate the advanced amount
-     * @return uint Advance Amount
-     * @param mainId, Unique uint Invoice Number
-     */
-    function calculateAdvanceAmount(
-        uint mainId,
-        uint amount
-    ) external view returns (uint) {
-        InitialMetadata memory metadata = _metadata[mainId];
-
-        return
-            _formulas.advanceAmountCalculation(
-                amount,
-                metadata.advanceFeePercentage
-            );
     }
 }
