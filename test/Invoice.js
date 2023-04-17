@@ -27,7 +27,14 @@ describe("Invoice", function () {
   });
 
   it("Create Invoice successfully", async function () {
-    expect(await invoiceContract.createInvoice(deployer.address, 1, invoice1))
+    expect(
+      await invoiceContract.createInvoice(
+        deployer.address,
+        1,
+        invoice1.initialMainMetadata,
+        invoice1.initialSubMetadata
+      )
+    )
       .to.emit(invoiceContract, "InvoiceCreated")
       .withArgs(deployer.address, deployer.address, 1);
 
@@ -39,12 +46,24 @@ describe("Invoice", function () {
   });
 
   it("Revert on Creating minted invoice", async function () {
-    expect(await invoiceContract.createInvoice(deployer.address, 1, invoice1))
+    expect(
+      await invoiceContract.createInvoice(
+        deployer.address,
+        1,
+        invoice1.initialMainMetadata,
+        invoice1.initialSubMetadata
+      )
+    )
       .to.emit(invoiceContract, "InvoiceCreated")
       .withArgs(deployer.address, deployer.address, 1);
 
     await expect(
-      invoiceContract.createInvoice(deployer.address, 1, invoice1)
+      invoiceContract.createInvoice(
+        deployer.address,
+        1,
+        invoice1.initialMainMetadata,
+        invoice1.initialSubMetadata
+      )
     ).to.revertedWith("Invoice: Already minted");
   });
 
@@ -52,7 +71,12 @@ describe("Invoice", function () {
     await expect(
       invoiceContract
         .connect(user1)
-        .createInvoice(deployer.address, 1, invoice1)
+        .createInvoice(
+          deployer.address,
+          1,
+          invoice1.initialMainMetadata,
+          invoice1.initialSubMetadata
+        )
     ).to.be.reverted;
   });
 

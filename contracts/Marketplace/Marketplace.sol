@@ -27,7 +27,10 @@ contract Marketplace is AccessControl, IMarketplace {
 
     /**
      * @dev Implementation of the function used to buy Invoice amount
+     * @param owner, address of the Invoice owner's
      * @param invoiceMainId, Uint unique number of the Invoice amount
+     * @param subId, Uint number of the subId
+     * @param amount, Uint number of the amount to be traded
      */
     function buy(
         address owner,
@@ -37,6 +40,7 @@ contract Marketplace is AccessControl, IMarketplace {
     ) external {
         uint stableCointAmount = _invoiceCollection.calculateAdvanceAmount(
             invoiceMainId,
+            subId,
             amount
         );
 

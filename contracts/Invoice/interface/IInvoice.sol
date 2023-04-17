@@ -7,30 +7,37 @@ interface IInvoice is IDLT {
     /**
      * @title A new struct to define the metadata structure
      * @dev Defining a new type of struct called Metadata to store the asset metadata
-     * @param factoringFeePercentage, is a uint24 will have 2 decimals
-     * @param discountFeePercentage, is a uint24 will have 2 decimals
      * @param lateFeePercentage, is a uint24 will have 2 decimals
-     * @param bankChargesFeeAmount, is a uint24 will have 2 decimals
-     * @param additionalFeeAmount, is a uint24 will have 2 decimals
-     * @param advanceFeePercentage, is a uint16 will have 2 decimals
      * @param gracePeriod, is a uint16 will have 2 decimals
      * @param dueDate, is a uint48 will have 2 decimals
      * @param invoiceDate, is a uint48 will have 2 decimals
      * @param fundsAdvancedDate, is a uint48 will have 2 decimals
      * @param invoiceAmount, is a uint will have 2 decimals
      */
-    struct InitialMetadata {
-        uint24 factoringFeePercentage; // %
-        uint24 discountFeePercentage; // %
+    struct InitialMainMetadata {
         uint24 lateFeePercentage; // %
-        uint24 bankChargesFeeAmount; // it's an amount
-        uint24 additionalFeeAmount; // it's an amount
-        uint16 advanceFeePercentage; // %
         uint16 gracePeriod; // days
         uint48 dueDate;
         uint48 invoiceDate;
         uint48 fundsAdvancedDate;
         uint256 invoiceAmount;
+    }
+
+    /**
+     * @title A new struct to define the sub metadata structure
+     * @dev Defining a new type of struct called Metadata to store the asset metadata
+     * @param factoringFeePercentage, is a uint24 will have 2 decimals
+     * @param discountFeePercentage, is a uint24 will have 2 decimals
+     * @param bankChargesFeeAmount, is a uint24 will have 2 decimals
+     * @param additionalFeeAmount, is a uint24 will have 2 decimals
+     * @param advanceFeePercentage, is a uint16 will have 2 decimals
+     */
+    struct InitialSubMetadata {
+        uint24 discountFeePercentage; // %
+        uint24 factoringFeePercentage; // %
+        uint24 additionalFeeAmount; // it's an amount
+        uint24 bankChargesFeeAmount; // it's an amount
+        uint16 advanceFeePercentage; // % advance ratio
     }
 
     /**
@@ -56,9 +63,11 @@ interface IInvoice is IDLT {
      * @dev Calculate the advanced amount
      * @return uint Advanced Amount
      * @param mainId, Unique uint Invoice Number
+     * @param subId, Unique subId
      */
     function calculateAdvanceAmount(
         uint mainId,
+        uint subId,
         uint amount
     ) external view returns (uint);
 }

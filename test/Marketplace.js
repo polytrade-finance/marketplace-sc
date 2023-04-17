@@ -49,7 +49,12 @@ describe("Invoice", function () {
   });
 
   it("Creating invoice and selling it to buyer through Marketplace", async function () {
-    await invoiceContract.createInvoice(user1.address, 1, invoice1);
+    await invoiceContract.createInvoice(
+      user1.address,
+      1,
+      invoice1.initialMainMetadata,
+      invoice1.initialSubMetadata
+    );
     const amountToBuy = ethers.utils.parseEther("5000");
 
     await invoiceContract
@@ -62,6 +67,7 @@ describe("Invoice", function () {
       );
 
     const stableCoinAmount = await invoiceContract.calculateAdvanceAmount(
+      1,
       1,
       amountToBuy
     );
