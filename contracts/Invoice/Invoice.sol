@@ -5,24 +5,35 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "dual-layer-token/contracts/DLT/DLT.sol";
 import "./interface/IInvoice.sol";
+import "../Formulas/interface/IFormulas.sol";
 
 contract Invoice is IInvoice, DLT, AccessControl {
     // Create a new role identifier for the minter role
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
+    IFormulas private _formulas;
     string private _invoiceBaseURI = "https://ipfs.io/ipfs";
 
     /**
-     * @dev Mapping will be indexing the InitialMetadata for each Invoice category by its mainId
+     * @dev Mapping will be indexing the InitialMainMetadata for each Invoice category by its mainId
      */
-    mapping(uint => InitialMetadata) private _metadata;
+    mapping(uint => InitialMainMetadata) private _mainMetadata;
+
+    /**
+     * @dev Mapping will be indexing the InitialSubMetadata for each Invoice category by its mainId and subId
+     */
+    mapping(uint => mapping(uint => InitialSubMetadata)) private _subMetadata;
 
     constructor(
         string memory name,
         string memory symbol,
-        string memory baseURI_
+        string memory baseURI_,
+        address formulas_
     ) DLT(name, symbol) {
         _setBaseURI(baseURI_);
+
+        // TODO: create setter
+        _formulas = IFormulas(formulas_);
 
         // Grant the minter role to a specified account
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -32,12 +43,14 @@ contract Invoice is IInvoice, DLT, AccessControl {
     function createInvoice(
         address owner,
         uint256 mainId,
-        InitialMetadata calldata initialMetadata
+        InitialMainMetadata calldata initialMainMetadata,
+        InitialSubMetadata calldata initialSubMetadata
     ) external onlyRole(MINTER_ROLE) {
         require(mainTotalSupply(mainId) == 0, "Invoice: Already minted");
-        _metadata[mainId] = initialMetadata;
+        _mainMetadata[mainId] = initialMainMetadata;
+        _subMetadata[mainId][1] = initialSubMetadata;
 
-        _mint(owner, mainId, 1, initialMetadata.invoiceAmount);
+        _mint(owner, mainId, 1, initialMainMetadata.invoiceAmount);
 
         emit InvoiceCreated(msg.sender, owner, mainId);
     }
@@ -50,6 +63,27 @@ contract Invoice is IInvoice, DLT, AccessControl {
         string calldata newBaseURI
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _setBaseURI(newBaseURI);
+    }
+
+    /**
+     * @dev Calculate the advanced amount
+     * @return uint Advance Amount
+     * @param mainId, Unique uint Invoice Number
+     */
+    function calculateAdvanceAmount(
+        uint mainId,
+        uint subId,
+        uint amount
+    ) external view returns (uint) {
+        InitialSubMetadata memory initialSubMetadata = _subMetadata[mainId][
+            subId
+        ];
+
+        return
+            _formulas.advanceAmountCalculation(
+                amount,
+                initialSubMetadata.advanceFeePercentage
+            );
     }
 
     /**

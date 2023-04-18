@@ -3,24 +3,38 @@ const { ethers } = require("hardhat");
 const { invoice1 } = require("./data");
 
 describe("Invoice", function () {
+  let formulasContract;
   let invoiceContract;
   let deployer;
   let user1;
   beforeEach(async () => {
     [deployer, user1] = await ethers.getSigners();
 
-    const InvoiceFatory = await ethers.getContractFactory("Invoice");
-    invoiceContract = await InvoiceFatory.deploy(
+    const FormulasFactory = await ethers.getContractFactory("Formulas");
+    formulasContract = await FormulasFactory.deploy();
+
+    await formulasContract.deployed();
+
+    const InvoiceFactory = await ethers.getContractFactory("Invoice");
+    invoiceContract = await InvoiceFactory.deploy(
       "Polytrade Invoice Collection",
       "PIC",
-      "https://ipfs.io/ipfs"
+      "https://ipfs.io/ipfs",
+      formulasContract.address
     );
 
     await invoiceContract.deployed();
   });
 
   it("Create Invoice successfully", async function () {
-    expect(await invoiceContract.createInvoice(deployer.address, 1, invoice1))
+    expect(
+      await invoiceContract.createInvoice(
+        deployer.address,
+        1,
+        invoice1.initialMainMetadata,
+        invoice1.initialSubMetadata
+      )
+    )
       .to.emit(invoiceContract, "InvoiceCreated")
       .withArgs(deployer.address, deployer.address, 1);
 
@@ -32,12 +46,24 @@ describe("Invoice", function () {
   });
 
   it("Revert on Creating minted invoice", async function () {
-    expect(await invoiceContract.createInvoice(deployer.address, 1, invoice1))
+    expect(
+      await invoiceContract.createInvoice(
+        deployer.address,
+        1,
+        invoice1.initialMainMetadata,
+        invoice1.initialSubMetadata
+      )
+    )
       .to.emit(invoiceContract, "InvoiceCreated")
       .withArgs(deployer.address, deployer.address, 1);
 
     await expect(
-      invoiceContract.createInvoice(deployer.address, 1, invoice1)
+      invoiceContract.createInvoice(
+        deployer.address,
+        1,
+        invoice1.initialMainMetadata,
+        invoice1.initialSubMetadata
+      )
     ).to.revertedWith("Invoice: Already minted");
   });
 
@@ -45,7 +71,12 @@ describe("Invoice", function () {
     await expect(
       invoiceContract
         .connect(user1)
-        .createInvoice(deployer.address, 1, invoice1)
+        .createInvoice(
+          deployer.address,
+          1,
+          invoice1.initialMainMetadata,
+          invoice1.initialSubMetadata
+        )
     ).to.be.reverted;
   });
 
