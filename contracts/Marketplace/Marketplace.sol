@@ -38,22 +38,41 @@ contract Marketplace is AccessControl, IMarketplace {
         uint subId,
         uint amount
     ) external {
-        uint stableCointAmount = _invoiceCollection.calculateAdvanceAmount(
-            invoiceMainId,
-            subId,
-            amount
+        _buy(owner, invoiceMainId, subId, amount);
+    }
+
+    /**
+     * @dev Implementation of the function used to buy Invoices
+     * @param owners, addresses of the Invoice owner
+     * @param invoiceMainIds, Uint unique numbers of the Invoices
+     * @param subIds, Uint number of the subIds
+     * @param amounts, Uint number of the amounts to be traded
+     */
+    function batchBuy(
+        address[] calldata owners,
+        uint[] calldata invoiceMainIds,
+        uint[] calldata subIds,
+        uint[] calldata amounts
+    ) external {
+        require(
+            owners.length == invoiceMainIds.length &&
+                owners.length == subIds.length &&
+                owners.length == amounts.length,
+            "Marketplace: No array parity"
         );
 
-        _invoiceCollection.safeTransferFrom(
-            owner,
-            msg.sender,
-            invoiceMainId,
-            subId,
-            amount,
-            ""
-        );
+        for (uint counter = 0; counter < invoiceMainIds.length; ) {
+            _buy(
+                owners[counter],
+                invoiceMainIds[counter],
+                subIds[counter],
+                amounts[counter]
+            );
 
-        _stableToken.transferFrom(msg.sender, owner, stableCointAmount);
+            unchecked {
+                ++counter;
+            }
+        }
     }
 
     /**
@@ -94,5 +113,36 @@ contract Marketplace is AccessControl, IMarketplace {
         _stableToken = Token(stableTokenAddress);
 
         emit StableTokenSet(stableTokenAddress);
+    }
+
+    /**
+     * @dev Implementation of the function used to buy Invoice amount
+     * @param owner, address of the Invoice owner's
+     * @param invoiceMainId, Uint unique number of the Invoice amount
+     * @param subId, Uint number of the subId
+     * @param amount, Uint number of the amount to be traded
+     */
+    function _buy(
+        address owner,
+        uint invoiceMainId,
+        uint subId,
+        uint amount
+    ) private {
+        uint stableCointAmount = _invoiceCollection.calculateAdvanceAmount(
+            invoiceMainId,
+            subId,
+            amount
+        );
+
+        _invoiceCollection.safeTransferFrom(
+            owner,
+            msg.sender,
+            invoiceMainId,
+            subId,
+            amount,
+            ""
+        );
+
+        _stableToken.transferFrom(msg.sender, owner, stableCointAmount);
     }
 }
