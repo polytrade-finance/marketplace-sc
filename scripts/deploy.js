@@ -15,7 +15,6 @@ const {
 
 async function main() {
   // We get the contract to deploy
-
   const FormulasFactory = await hre.ethers.getContractFactory("Formulas");
   const formulasContract = await FormulasFactory.deploy();
   await formulasContract.deployed();
@@ -55,7 +54,7 @@ async function main() {
   });
 
   await hre.run("verify:verify", {
-    address: formulasContract.address,
+    address: invoiceContract.address,
     constructorArguments: [
       "Polytrade Invoice Collection",
       INVOICE_COLLECTION_SYMBOL,
@@ -65,12 +64,13 @@ async function main() {
   });
 
   await hre.run("verify:verify", {
-    address: formulasContract.address,
+    address: stableCoinContract.address,
+    contract: "contracts/Token/Token.sol:Token",
     constructorArguments: [TOKEN_NAME, TOKEN_SYMBOL, BUYER_PUBLIC_KEY, 200000],
   });
 
   await hre.run("verify:verify", {
-    address: formulasContract.address,
+    address: marketplaceContract.address,
     constructorArguments: [invoiceContract.address, stableCoinContract.address],
   });
 }
