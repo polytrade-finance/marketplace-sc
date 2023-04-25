@@ -20,6 +20,7 @@
   "author": "Polytrade",
   "license": "MIT",
   "devDependencies": {
+    "@nomiclabs/hardhat-etherscan": "^3.1.7",
     "eslint": "^8.32.0",
     "eslint-config-prettier": "^8.6.0",
     "eslint-config-standard": "^17.0.0",
