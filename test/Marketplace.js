@@ -19,19 +19,20 @@ describe("Invoice", function () {
 
     await formulasContract.deployed();
 
+    stableCoinContract = await (
+      await ethers.getContractFactory("Token")
+    ).deploy("USD Dollar", "USDC", buyer.address, 200000);
+
     const InvoiceFactory = await ethers.getContractFactory("Invoice");
     invoiceContract = await InvoiceFactory.deploy(
       "Polytrade Invoice Collection",
       "PIC",
       "https://ipfs.io/ipfs",
-      formulasContract.address
+      formulasContract.address,
+      stableCoinContract.address
     );
 
     await invoiceContract.deployed();
-
-    stableCoinContract = await (
-      await ethers.getContractFactory("Token")
-    ).deploy("USD Dollar", "USDC", buyer.address, 200000);
 
     marketplaceContract = await (
       await ethers.getContractFactory("Marketplace")

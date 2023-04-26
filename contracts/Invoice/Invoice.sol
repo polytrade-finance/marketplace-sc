@@ -6,12 +6,15 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "dual-layer-token/contracts/DLT/DLT.sol";
 import "./interface/IInvoice.sol";
 import "../Formulas/interface/IFormulas.sol";
+import "../Token/Token.sol";
 
 contract Invoice is IInvoice, DLT, AccessControl {
     // Create a new role identifier for the minter role
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     IFormulas private _formulas;
+    Token private _stableToken;
+
     string private _invoiceBaseURI = "https://ipfs.io/ipfs";
 
     /**
@@ -28,12 +31,14 @@ contract Invoice is IInvoice, DLT, AccessControl {
         string memory name,
         string memory symbol,
         string memory baseURI_,
-        address formulas_
+        address formulas_,
+        address stableTokenAddress
     ) DLT(name, symbol) {
         _setBaseURI(baseURI_);
 
-        // TODO: create setter
+        // TODO: create setters
         _formulas = IFormulas(formulas_);
+        _stableToken = Token(stableTokenAddress);
 
         // Grant the minter role to a specified account
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -57,16 +62,14 @@ contract Invoice is IInvoice, DLT, AccessControl {
 
     function setAssetSettledMetadata(
         uint mainId,
-        uint reservePaidToSupplier,
-        uint reservePaymentTransactionId,
         uint paymentReceiptDate,
+        uint reservePaidToSupplier,
         uint amountSentToLenders
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _setAssetSettledMetadata(
             mainId,
-            reservePaidToSupplier,
-            reservePaymentTransactionId,
             paymentReceiptDate,
+            reservePaidToSupplier,
             amountSentToLenders
         );
     }
@@ -128,36 +131,30 @@ contract Invoice is IInvoice, DLT, AccessControl {
      * reserved payment date & amount sent to supplier & the payment transaction ID & amount sent to lender
      * @param mainId, Unique uint MainId of the Invoice
      * @param reservePaidToSupplier, Uint value of the reserved amount sent to supplier
-     * @param reservePaymentTransactionId, Uint value of the payment transaction ID
      * @param paymentReceiptDate, Uint value of the reserve payment date
-     * @param amountSentToLenders, Uint value of the amount sent to the lender
+     * @param amountSentToLender, Uint value of the amount sent to the lender
      */
     function _setAssetSettledMetadata(
         uint mainId,
-        uint reservePaidToSupplier,
-        uint reservePaymentTransactionId,
         uint paymentReceiptDate,
-        uint amountSentToLenders
+        uint reservePaidToSupplier,
+        uint amountSentToLender
     ) private {
         require(
             _mainMetadata[mainId].reservePaidToSupplier == 0 &&
-                _mainMetadata[mainId].reservePaymentTransactionId == 0 &&
                 _mainMetadata[mainId].paymentReceiptDate == 0 &&
-                _mainMetadata[mainId].amountSentToLenders == 0,
+                _mainMetadata[mainId].amountSentToLender == 0,
             "Asset is already settled"
         );
 
         _mainMetadata[mainId].paymentReceiptDate = uint48(paymentReceiptDate);
         _mainMetadata[mainId].reservePaidToSupplier = reservePaidToSupplier;
-        _mainMetadata[mainId]
-            .reservePaymentTransactionId = reservePaymentTransactionId;
 
         emit SettledMainMetadata(
             mainId,
             reservePaidToSupplier,
-            reservePaymentTransactionId,
             paymentReceiptDate,
-            amountSentToLenders
+            amountSentToLender
         );
     }
 }

@@ -24,7 +24,15 @@ const invoice1 = {
   },
 };
 
+const settleInvoice1 = {
+  mainId: 1,
+  paymentReceiptDate: Number(new Date("2022-11-15").getTime() / 1000), // in seconds,
+  reservePaidToSupplier: ethers.utils.parseUnits("300", DECIMALS.SIX),
+  amountSentToLender: ethers.utils.parseUnits("9500", DECIMALS.SIX),
+};
+
 module.exports = {
   invoice1,
+  settleInvoice1,
   DECIMALS,
 };
