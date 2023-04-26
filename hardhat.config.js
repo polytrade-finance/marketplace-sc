@@ -2,6 +2,9 @@ require("@nomicfoundation/hardhat-toolbox");
 require("hardhat-contract-sizer");
 require("dotenv").config();
 
+require("@nomiclabs/hardhat-ethers");
+require("@nomiclabs/hardhat-etherscan");
+
 const { PRIVATE_KEY, ARCHIVAL_RPC } = process.env;
 
 /** @type import('hardhat/config').HardhatUserConfig */
