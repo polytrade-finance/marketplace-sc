@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { invoice1 } = require("./data");
+const { invoice1, DECIMALS } = require("./data");
 const { BigNumber } = require("ethers");
 
 describe("Invoice", function () {
@@ -57,7 +57,7 @@ describe("Invoice", function () {
       invoice1.initialMainMetadata,
       invoice1.initialSubMetadata
     );
-    const amountToBuy = ethers.utils.parseEther("5000");
+    const amountToBuy = ethers.utils.parseUnits("5000", DECIMALS.SIX);
 
     await invoiceContract
       .connect(user1)
@@ -65,7 +65,7 @@ describe("Invoice", function () {
         marketplaceContract.address,
         1,
         1,
-        ethers.utils.parseEther("10000")
+        ethers.utils.parseUnits("10000", DECIMALS.SIX)
       );
 
     const stableCoinAmount = await invoiceContract.calculateAdvanceAmount(
@@ -108,8 +108,8 @@ describe("Invoice", function () {
       invoice1.initialSubMetadata
     );
 
-    const amountToBuy1 = ethers.utils.parseEther("5000");
-    const amountToBuy2 = ethers.utils.parseEther("6000");
+    const amountToBuy1 = ethers.utils.parseUnits("5000", DECIMALS.SIX);
+    const amountToBuy2 = ethers.utils.parseUnits("6000", DECIMALS.SIX);
 
     // user1 approves the amount he wants to sell
     await invoiceContract
@@ -171,7 +171,7 @@ describe("Invoice", function () {
       invoice1.initialSubMetadata
     );
 
-    const amountToBuy1 = ethers.utils.parseEther("5000");
+    const amountToBuy1 = ethers.utils.parseUnits("5000", DECIMALS.SIX);
 
     // user1 approves the amount he wants to sell
     await invoiceContract

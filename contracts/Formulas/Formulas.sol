@@ -21,6 +21,6 @@ contract Formulas is IFormulas {
         uint amount,
         uint _advanceFeePercentage
     ) external pure returns (uint) {
-        return amount - ((amount * _advanceFeePercentage) / _PRECISION);
+        return ((amount * _advanceFeePercentage) / _PRECISION);
     }
 }

@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { invoice1 } = require("./data");
+const { invoice1, DECIMALS } = require("./data");
 
 describe("Invoice", function () {
   let formulasContract;
@@ -39,7 +39,7 @@ describe("Invoice", function () {
       .withArgs(deployer.address, deployer.address, 1);
 
     expect(await invoiceContract.mainBalanceOf(deployer.address, 1)).to.eq(
-      ethers.utils.parseEther("10000")
+      ethers.utils.parseUnits("10000", DECIMALS.SIX)
     );
 
     expect(await invoiceContract.tokenURI(1)).to.eq(`https://ipfs.io/ipfs${1}`);
