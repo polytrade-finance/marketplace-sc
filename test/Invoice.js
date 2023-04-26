@@ -72,7 +72,26 @@ describe("Invoice", function () {
         invoice1.initialMainMetadata,
         invoice1.initialSubMetadata
       )
-    ).to.revertedWith("Invoice: Already minted");
+    ).to.be.revertedWith("Invoice: Already minted");
+  });
+
+  it("Revert on Batch Creating minted invoice", async function () {
+    await expect(
+      invoiceContract.batchCreateInvoice(
+        [user1.address, user1.address, user1.address],
+        [1, 1, 3], // create two mainIds of 1
+        [
+          invoice1.initialMainMetadata,
+          invoice1.initialMainMetadata,
+          invoice1.initialMainMetadata,
+        ],
+        [
+          invoice1.initialSubMetadata,
+          invoice1.initialSubMetadata,
+          invoice1.initialSubMetadata,
+        ]
+      )
+    ).to.be.revertedWith("Invoice: Already minted");
   });
 
   it("Revert on Creating invoice by invalid caller", async function () {
@@ -96,6 +115,92 @@ describe("Invoice", function () {
   it("Revert Set new base uri by invalid caller", async function () {
     await expect(
       invoiceContract.connect(user1).setBaseURI("https://ipfs2.io/ipfs")
+    ).to.be.reverted;
+  });
+
+  it("Batch create invoices", async function () {
+    await invoiceContract.batchCreateInvoice(
+      [user1.address, user1.address, user1.address],
+      [1, 2, 3],
+      [
+        invoice1.initialMainMetadata,
+        invoice1.initialMainMetadata,
+        invoice1.initialMainMetadata,
+      ],
+      [
+        invoice1.initialSubMetadata,
+        invoice1.initialSubMetadata,
+        invoice1.initialSubMetadata,
+      ]
+    );
+
+    expect(await invoiceContract.mainBalanceOf(user1.address, 1)).to.eq(
+      ethers.utils.parseUnits("10000", DECIMALS.SIX)
+    );
+
+    expect(await invoiceContract.mainBalanceOf(user1.address, 2)).to.eq(
+      ethers.utils.parseUnits("10000", DECIMALS.SIX)
+    );
+
+    expect(await invoiceContract.mainBalanceOf(user1.address, 3)).to.eq(
+      ethers.utils.parseUnits("10000", DECIMALS.SIX)
+    );
+  });
+
+  it("Revert Batch create invoices on wrong array parity", async function () {
+    await expect(
+      invoiceContract.batchCreateInvoice(
+        [user1.address, user1.address, user1.address],
+        [1, 2], // wrong array parity
+        [
+          invoice1.initialMainMetadata,
+          invoice1.initialMainMetadata,
+          invoice1.initialMainMetadata,
+        ],
+        [
+          invoice1.initialSubMetadata,
+          invoice1.initialSubMetadata,
+          // invoice1.initialSubMetadata,  wrong array parity
+        ]
+      )
+    ).to.be.revertedWith("Invoice: No array parity");
+
+    await expect(
+      invoiceContract.batchCreateInvoice(
+        [user1.address, user1.address], // user1.address  wrong array parity
+        [1, 2, 3],
+        [
+          invoice1.initialMainMetadata,
+          invoice1.initialMainMetadata,
+          // invoice1.initialMainMetadata,  wrong array parity
+        ],
+        [
+          invoice1.initialSubMetadata,
+          invoice1.initialSubMetadata,
+          invoice1.initialSubMetadata,
+        ]
+      )
+    ).to.be.revertedWith("Invoice: No array parity");
+  });
+
+  it("Revert on Batch Creating invoices by invalid caller", async function () {
+    await expect(
+      invoiceContract
+        .connect(user1)
+        .batchCreateInvoice(
+          [user1.address, user1.address, user1.address],
+          [1, 2, 3],
+          [
+            invoice1.initialMainMetadata,
+            invoice1.initialMainMetadata,
+            invoice1.initialMainMetadata,
+          ],
+          [
+            invoice1.initialSubMetadata,
+            invoice1.initialSubMetadata,
+            invoice1.initialSubMetadata,
+          ]
+        )
     ).to.be.reverted;
   });
 

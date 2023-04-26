@@ -54,10 +54,34 @@ contract Invoice is IInvoice, DLT, AccessControl {
         require(mainTotalSupply(mainId) == 0, "Invoice: Already minted");
         _mainMetadata[mainId].initialMainMetadata = initialMainMetadata;
         _subMetadata[mainId][1] = initialSubMetadata;
+        _createInvoice(owner, mainId, initialMainMetadata, initialSubMetadata);
+    }
 
-        _mint(owner, mainId, 1, initialMainMetadata.invoiceAmount);
+    function batchCreateInvoice(
+        address[] calldata owners,
+        uint256[] calldata mainIds,
+        InitialMainMetadata[] calldata initialMainMetadata,
+        InitialSubMetadata[] calldata initialSubMetadata
+    ) external onlyRole(MINTER_ROLE) {
+        require(
+            owners.length == mainIds.length &&
+                owners.length == initialMainMetadata.length &&
+                owners.length == initialSubMetadata.length,
+            "Invoice: No array parity"
+        );
 
-        emit InvoiceCreated(msg.sender, owner, mainId);
+        for (uint counter = 0; counter < mainIds.length; ) {
+            _createInvoice(
+                owners[counter],
+                mainIds[counter],
+                initialMainMetadata[counter],
+                initialSubMetadata[counter]
+            );
+
+            unchecked {
+                ++counter;
+            }
+        }
     }
 
     function setAssetSettledMetadata(
@@ -161,5 +185,20 @@ contract Invoice is IInvoice, DLT, AccessControl {
             paymentReceiptDate,
             amountSentToLender
         );
+    }
+
+    function _createInvoice(
+        address owner,
+        uint256 mainId,
+        InitialMainMetadata calldata initialMainMetadata,
+        InitialSubMetadata calldata initialSubMetadata
+    ) private {
+        require(mainTotalSupply(mainId) == 0, "Invoice: Already minted");
+        _mainMetadata[mainId].initialMainMetadata = initialMainMetadata;
+        _subMetadata[mainId][1] = initialSubMetadata;
+
+        _mint(owner, mainId, 1, initialMainMetadata.invoiceAmount);
+
+        emit InvoiceCreated(msg.sender, owner, mainId);
     }
 }
