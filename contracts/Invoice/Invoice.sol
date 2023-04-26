@@ -64,13 +64,15 @@ contract Invoice is IInvoice, DLT, AccessControl {
         uint mainId,
         uint paymentReceiptDate,
         uint reservePaidToSupplier,
-        uint amountSentToLenders
+        uint amountSentToLenders,
+        address lender
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _setAssetSettledMetadata(
             mainId,
             paymentReceiptDate,
             reservePaidToSupplier,
-            amountSentToLenders
+            amountSentToLenders,
+            lender
         );
     }
 
@@ -138,7 +140,8 @@ contract Invoice is IInvoice, DLT, AccessControl {
         uint mainId,
         uint paymentReceiptDate,
         uint reservePaidToSupplier,
-        uint amountSentToLender
+        uint amountSentToLender,
+        address lender
     ) private {
         require(
             _mainMetadata[mainId].reservePaidToSupplier == 0 &&
@@ -149,6 +152,8 @@ contract Invoice is IInvoice, DLT, AccessControl {
 
         _mainMetadata[mainId].paymentReceiptDate = uint48(paymentReceiptDate);
         _mainMetadata[mainId].reservePaidToSupplier = reservePaidToSupplier;
+
+        _stableToken.transfer(lender, amountSentToLender);
 
         emit SettledMainMetadata(
             mainId,
