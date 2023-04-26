@@ -41,6 +41,29 @@ interface IInvoice is IDLT {
     }
 
     /**
+     * @title A new struct to define the metadata structure
+     * @dev Defining a new type of struct called Metadata to store the asset metadata
+     * @param paymentReceiptDate, is a uint48 will have 2 decimals
+    //  * @param paymentReserveDate, is a uint48 will have 2 decimals
+     * @param buyerAmountReceived, is a uint will have 2 decimals
+    //  * @param supplierAmountReceived, is a uint will have 2 decimals
+     * @param reservePaidToSupplier, is a uint will have 2 decimals
+     * @param reservePaymentTransactionId, is a uint will have 2 decimals
+     * @param amountSentToLenders, is a uint will have 2 decimals
+     * @param initialMetadata, is a InitialMetadata will hold all mandatory needed metadata to mint the AssetNFT
+     */
+    struct MainMetadata {
+        uint48 paymentReceiptDate;
+        // uint48 paymentReserveDate;
+        uint buyerAmountReceived;
+        // uint supplierAmountReceived;
+        uint reservePaidToSupplier;
+        uint reservePaymentTransactionId;
+        uint amountSentToLenders;
+        InitialMainMetadata initialMainMetadata;
+    }
+
+    /**
      * @dev Emitted when `newURI` is set to the Invoice category instead of `oldURI` by `mainId`
      * @param oldInvoiceBaseURI, Old Base URI for the Invoice category
      * @param newInvoiceBaseURI, New Base URI for the Invoice category
@@ -57,6 +80,23 @@ interface IInvoice is IDLT {
         address indexed creator,
         address indexed owner,
         uint indexed mainId
+    );
+
+    /**
+     * @dev Emitted when `reservePaidToSupplier`, `reservePaymentTransactionId`, `paymentReserveDate`
+     * & `amountSentToLender` metadata are updated on a specific `MainId`
+     * @param assetNumber, Uint of the asset NFT
+     * @param reservePaidToSupplier, Uint value of the reserved amount sent to supplier
+     * @param reservePaymentTransactionId, Uint value of the payment transaction ID
+     * @param paymentReserveDate, Uint value of the reserve payment date
+     * @param amountSentToLender, Uint value of the amount sent to the lender
+     */
+    event SettledMainMetadata(
+        uint assetNumber,
+        uint reservePaidToSupplier,
+        uint reservePaymentTransactionId,
+        uint paymentReserveDate,
+        uint amountSentToLender
     );
 
     /**

@@ -17,7 +17,7 @@ contract Invoice is IInvoice, DLT, AccessControl {
     /**
      * @dev Mapping will be indexing the InitialMainMetadata for each Invoice category by its mainId
      */
-    mapping(uint => InitialMainMetadata) private _mainMetadata;
+    mapping(uint => MainMetadata) private _mainMetadata;
 
     /**
      * @dev Mapping will be indexing the InitialSubMetadata for each Invoice category by its mainId and subId
@@ -47,12 +47,28 @@ contract Invoice is IInvoice, DLT, AccessControl {
         InitialSubMetadata calldata initialSubMetadata
     ) external onlyRole(MINTER_ROLE) {
         require(mainTotalSupply(mainId) == 0, "Invoice: Already minted");
-        _mainMetadata[mainId] = initialMainMetadata;
+        _mainMetadata[mainId].initialMainMetadata = initialMainMetadata;
         _subMetadata[mainId][1] = initialSubMetadata;
 
         _mint(owner, mainId, 1, initialMainMetadata.invoiceAmount);
 
         emit InvoiceCreated(msg.sender, owner, mainId);
+    }
+
+    function setAssetSettledMetadata(
+        uint mainId,
+        uint reservePaidToSupplier,
+        uint reservePaymentTransactionId,
+        uint paymentReceiptDate,
+        uint amountSentToLenders
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _setAssetSettledMetadata(
+            mainId,
+            reservePaidToSupplier,
+            reservePaymentTransactionId,
+            paymentReceiptDate,
+            amountSentToLenders
+        );
     }
 
     /**
@@ -105,5 +121,43 @@ contract Invoice is IInvoice, DLT, AccessControl {
         string memory oldBaseURI = _invoiceBaseURI;
         _invoiceBaseURI = newBaseURI;
         emit InvoiceBaseURISet(oldBaseURI, newBaseURI);
+    }
+
+    /**
+     * @dev Implementation of a setter for
+     * reserved payment date & amount sent to supplier & the payment transaction ID & amount sent to lender
+     * @param mainId, Unique uint MainId of the Invoice
+     * @param reservePaidToSupplier, Uint value of the reserved amount sent to supplier
+     * @param reservePaymentTransactionId, Uint value of the payment transaction ID
+     * @param paymentReceiptDate, Uint value of the reserve payment date
+     * @param amountSentToLenders, Uint value of the amount sent to the lender
+     */
+    function _setAssetSettledMetadata(
+        uint mainId,
+        uint reservePaidToSupplier,
+        uint reservePaymentTransactionId,
+        uint paymentReceiptDate,
+        uint amountSentToLenders
+    ) private {
+        require(
+            _mainMetadata[mainId].reservePaidToSupplier == 0 &&
+                _mainMetadata[mainId].reservePaymentTransactionId == 0 &&
+                _mainMetadata[mainId].paymentReceiptDate == 0 &&
+                _mainMetadata[mainId].amountSentToLenders == 0,
+            "Asset is already settled"
+        );
+
+        _mainMetadata[mainId].paymentReceiptDate = uint48(paymentReceiptDate);
+        _mainMetadata[mainId].reservePaidToSupplier = reservePaidToSupplier;
+        _mainMetadata[mainId]
+            .reservePaymentTransactionId = reservePaymentTransactionId;
+
+        emit SettledMainMetadata(
+            mainId,
+            reservePaidToSupplier,
+            reservePaymentTransactionId,
+            paymentReceiptDate,
+            amountSentToLenders
+        );
     }
 }
