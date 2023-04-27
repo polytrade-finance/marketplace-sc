@@ -13,7 +13,7 @@ contract Invoice is IInvoice, DLT, AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     IFormulas private _formulas;
-    Token private _stableToken;
+    Token private immutable _stableToken;
 
     string private _invoiceBaseURI = "https://ipfs.io/ipfs";
 

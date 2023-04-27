@@ -85,7 +85,7 @@ interface IInvoice is IDLT {
      * @param amountSentToLender, Uint value of the amount sent to the lender
      */
     event SettledMainMetadata(
-        uint mainId,
+        uint indexed mainId,
         uint paymentReceiptDate,
         uint reservePaidToSupplier,
         uint amountSentToLender
