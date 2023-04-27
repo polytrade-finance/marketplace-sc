@@ -20,7 +20,7 @@ describe("Invoice", function () {
 
     stableCoinContract = await (
       await ethers.getContractFactory("Token")
-    ).deploy("USD Dollar", "USDC", user1.address, 200000);
+    ).deploy("USD Dollar", "USDC", DECIMALS.SIX, user1.address, 200000);
 
     const InvoiceFactory = await ethers.getContractFactory("Invoice");
     invoiceContract = await InvoiceFactory.deploy(

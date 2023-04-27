@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { invoice1, DECIMALS } = require("./data");
+const { invoice1, DECIMALS, settleInvoice1 } = require("./data");
 const { BigNumber } = require("ethers");
 
 describe("Invoice", function () {
@@ -10,9 +10,10 @@ describe("Invoice", function () {
   let marketplaceContract;
   let user1;
   let buyer;
+  let admin;
 
   beforeEach(async () => {
-    [, user1, buyer] = await ethers.getSigners();
+    [admin, user1, buyer] = await ethers.getSigners();
 
     const FormulasFactory = await ethers.getContractFactory("Formulas");
     formulasContract = await FormulasFactory.deploy();
@@ -21,7 +22,11 @@ describe("Invoice", function () {
 
     stableCoinContract = await (
       await ethers.getContractFactory("Token")
-    ).deploy("USD Dollar", "USDC", buyer.address, 200000);
+    ).deploy("USD Dollar", "USDC", DECIMALS.SIX, buyer.address, 500000);
+
+    stableCoinContract
+      .connect(buyer)
+      .transfer(admin.address, ethers.utils.parseUnits("100000", DECIMALS.SIX));
 
     const InvoiceFactory = await ethers.getContractFactory("Invoice");
     invoiceContract = await InvoiceFactory.deploy(
@@ -195,5 +200,63 @@ describe("Invoice", function () {
         .connect(buyer)
         .batchBuy([user1.address], [1, 2], [1, 1], [amountToBuy1, 0])
     ).to.be.revertedWith("Marketplace: No array parity");
+  });
+
+  it("Test Invoice Settlment after selling it", async function () {
+    // creating
+    await invoiceContract.createInvoice(
+      user1.address,
+      1,
+      invoice1.initialMainMetadata,
+      invoice1.initialSubMetadata
+    );
+
+    const amountToBuy = invoice1.initialMainMetadata.invoiceAmount;
+
+    // approve for selling
+    await invoiceContract
+      .connect(user1)
+      .approve(marketplaceContract.address, 1, 1, amountToBuy);
+
+    const stableCoinAmount = await invoiceContract.advanceAmountCalculation(
+      1,
+      1,
+      amountToBuy
+    );
+
+    // approve for buying
+    await stableCoinContract
+      .connect(buyer)
+      .approve(marketplaceContract.address, stableCoinAmount);
+
+    // buy
+    await expect(
+      await marketplaceContract
+        .connect(buyer)
+        .buy(user1.address, 1, 1, amountToBuy)
+    ).not.to.be.reverted;
+
+    await stableCoinContract.transfer(
+      marketplaceContract.address,
+      settleInvoice1.amountSentToLender
+    );
+
+    const oldBalance = await stableCoinContract.balanceOf(buyer.address);
+
+    await expect(
+      await marketplaceContract.settleInvoice(
+        buyer.address,
+        1,
+        1,
+        amountToBuy,
+        settleInvoice1.paymentReceiptDate,
+        settleInvoice1.reservePaidToSupplier,
+        settleInvoice1.amountSentToLender
+      )
+    ).not.to.be.reverted;
+
+    expect(await stableCoinContract.balanceOf(buyer.address)).to.be.equal(
+      oldBalance.add(settleInvoice1.amountSentToLender)
+    );
   });
 });

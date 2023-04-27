@@ -24,6 +24,7 @@ async function main() {
   const stableCoinContract = await StableCoinFactory.deploy(
     TOKEN_NAME,
     TOKEN_SYMBOL,
+    6, // DECIMALS.SIX
     BUYER_PUBLIC_KEY,
     200000
   );
@@ -68,7 +69,13 @@ async function main() {
   await hre.run("verify:verify", {
     address: stableCoinContract.address,
     contract: "contracts/Token/Token.sol:Token",
-    constructorArguments: [TOKEN_NAME, TOKEN_SYMBOL, BUYER_PUBLIC_KEY, 200000],
+    constructorArguments: [
+      TOKEN_NAME,
+      TOKEN_SYMBOL,
+      6,
+      BUYER_PUBLIC_KEY,
+      200000,
+    ],
   });
 
   await hre.run("verify:verify", {
