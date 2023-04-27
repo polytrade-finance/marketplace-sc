@@ -20,16 +20,6 @@ async function main() {
   await formulasContract.deployed();
   console.log("formulasContract deployed to:", formulasContract.address);
 
-  const InvoiceFactory = await hre.ethers.getContractFactory("Invoice");
-  const invoiceContract = await InvoiceFactory.deploy(
-    "Polytrade Invoice Collection",
-    INVOICE_COLLECTION_SYMBOL,
-    INVOICE_COLLECTION_BASE_URI,
-    formulasContract.address
-  );
-  await invoiceContract.deployed();
-  console.log("invoiceContract deployed to:", invoiceContract.address);
-
   const StableCoinFactory = await hre.ethers.getContractFactory("Token");
   const stableCoinContract = await StableCoinFactory.deploy(
     TOKEN_NAME,
@@ -39,6 +29,17 @@ async function main() {
   );
   await stableCoinContract.deployed();
   console.log("stableCoinContract deployed to:", stableCoinContract.address);
+
+  const InvoiceFactory = await hre.ethers.getContractFactory("Invoice");
+  const invoiceContract = await InvoiceFactory.deploy(
+    "Polytrade Invoice Collection",
+    INVOICE_COLLECTION_SYMBOL,
+    INVOICE_COLLECTION_BASE_URI,
+    formulasContract.address,
+    stableCoinContract.address
+  );
+  await invoiceContract.deployed();
+  console.log("invoiceContract deployed to:", invoiceContract.address);
 
   const MarketplaceFactory = await hre.ethers.getContractFactory("Marketplace");
   const marketplaceContract = await MarketplaceFactory.deploy(
@@ -60,6 +61,7 @@ async function main() {
       INVOICE_COLLECTION_SYMBOL,
       INVOICE_COLLECTION_BASE_URI,
       formulasContract.address,
+      stableCoinContract.address,
     ],
   });
 
