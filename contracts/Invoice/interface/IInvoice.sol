@@ -91,6 +91,24 @@ interface IInvoice is IDLT {
         uint amountSentToLender
     );
 
+    function setAssetSettledMetadata(
+        uint mainId,
+        uint paymentReceiptDate,
+        uint reservePaidToSupplier,
+        uint amountSentToLenders
+    ) external;
+
+    /**
+     * @dev Calculate the net amount payable to the client
+     * @return uint Net Amount Payable to the Client
+     * @param mainId, Unique uint Invoice Number
+     */
+    function calculateNetAmountPayableToClient(
+        uint mainId,
+        uint256 subId,
+        uint256 amount
+    ) external view returns (int);
+
     /**
      * @dev Calculate the advanced amount
      * @return uint Advanced Amount

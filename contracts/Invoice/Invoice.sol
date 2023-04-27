@@ -84,12 +84,13 @@ contract Invoice is IInvoice, DLT, AccessControl {
         }
     }
 
+    // @TODO: onlyRole(DEFAULT_ADMIN_ROLE) need it later
     function setAssetSettledMetadata(
         uint mainId,
         uint paymentReceiptDate,
         uint reservePaidToSupplier,
         uint amountSentToLenders
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external {
         _setAssetSettledMetadata(
             mainId,
             paymentReceiptDate,

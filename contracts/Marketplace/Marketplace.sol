@@ -76,6 +76,41 @@ contract Marketplace is AccessControl, IMarketplace {
     }
 
     /**
+     * @dev Implementation of the function used to buy Invoice amount
+     * @param owner, address of the Invoice owner's
+     * @param invoiceMainId, Uint unique number of the Invoice amount
+     * @param subId, Uint number of the subId
+     * @param amount, Uint number of the amount to be traded
+     */
+    function settleInvoice(
+        address owner,
+        uint invoiceMainId,
+        uint256 subId,
+        uint256 amount,
+        uint paymentReceiptDate,
+        uint reservePaidToSupplier,
+        uint amountSentToLender
+    ) external {
+        require(
+            _invoiceCollection.subBalanceOf(owner, invoiceMainId, subId) ==
+                amount,
+            "Marketplace: Invalid owner"
+        );
+
+        _invoiceCollection.setAssetSettledMetadata(
+            invoiceMainId,
+            paymentReceiptDate,
+            reservePaidToSupplier,
+            amountSentToLender
+        );
+
+        // int stableCoinAmount = _invoiceCollection
+        //     .calculateNetAmountPayableToClient(invoiceMainId, subId, amount);
+
+        _stableToken.transfer(owner, amountSentToLender);
+    }
+
+    /**
      * @dev Implementation of a getter for the Invocie Collection contract
      * @return address Address of the Invocie Collection contract
      */
