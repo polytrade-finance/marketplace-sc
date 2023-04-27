@@ -88,15 +88,13 @@ contract Invoice is IInvoice, DLT, AccessControl {
         uint mainId,
         uint paymentReceiptDate,
         uint reservePaidToSupplier,
-        uint amountSentToLenders,
-        address lender
+        uint amountSentToLenders
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _setAssetSettledMetadata(
             mainId,
             paymentReceiptDate,
             reservePaidToSupplier,
-            amountSentToLenders,
-            lender
+            amountSentToLenders
         );
     }
 
@@ -115,19 +113,166 @@ contract Invoice is IInvoice, DLT, AccessControl {
      * @return uint Advance Amount
      * @param mainId, Unique uint Invoice Number
      */
-    function calculateAdvanceAmount(
+    function advanceAmountCalculation(
         uint mainId,
         uint subId,
         uint amount
     ) external view returns (uint) {
-        InitialSubMetadata memory initialSubMetadata = _subMetadata[mainId][
-            subId
-        ];
+        return _advanceAmountCalculation(mainId, subId, amount);
+    }
+
+    /**
+     * @dev Calculate the advanced amount
+     * @return uint Advance Amount
+     * @param mainId, Unique uint Invoice Number
+     */
+    function factoringFeeAmountCalculation(
+        uint mainId,
+        uint subId,
+        uint amount
+    ) external view returns (uint) {
+        return _factoringFeeAmountCalculation(mainId, subId, amount);
+    }
+
+    /**
+     * @dev Calculate the advanced amount
+     * @return uint Advance Amount
+     * @param mainId, Unique uint Invoice Number
+     */
+    function lateDaysCalculation(uint mainId) external view returns (uint) {
+        return _lateDaysCalculation(mainId);
+    }
+
+    /**
+     * @dev Calculate the discount amount
+     * @return uint Amount of the Discount
+     * @param mainId, Unique uint Invoice Number
+     */
+    function discountAmountCalculation(
+        uint mainId,
+        uint256 subId,
+        uint256 amount
+    ) external view returns (uint) {
+        return _discountAmountCalculation(mainId, subId, amount);
+    }
+
+    /**
+     * @dev Calculate the total fees amount
+     * @return uint Total Amount
+     * @param mainId, Unique uint Invoice Number
+     */
+    function totalFeesAmountCalculation(
+        uint mainId,
+        uint256 subId,
+        uint256 amount
+    ) external view returns (uint) {
+        return _totalFeesAmountCalculation(mainId, subId, amount);
+    }
+
+    /**
+     * @dev Calculate the late amount
+     * @return uint Late Amount
+     * @param mainId, Unique uint Invoice Number
+     */
+    function lateFeeAmountCalculation(
+        uint mainId,
+        uint256 subId,
+        uint256 amount
+    ) external view returns (uint) {
+        MainMetadata memory mainMetadata = _mainMetadata[mainId];
+
+        uint lateDays = _lateDaysCalculation(mainId);
+
+        uint advancedAmount = _advanceAmountCalculation(mainId, subId, amount);
+        return
+            _formulas.lateFeeAmountCalculation(
+                mainMetadata.initialMainMetadata.lateFeePercentage,
+                lateDays,
+                advancedAmount
+            );
+    }
+
+    /**
+     * @dev Calculate the total amount received
+     * @return uint Total Received Amount
+     * @param mainId, Unique uint Invoice Number
+     */
+    function calculateTotalAmountReceived(
+        uint mainId
+    ) external view returns (uint) {
+        return _calculateTotalAmountReceived(mainId);
+    }
+
+    /**
+     * @dev Calculate the net amount payable to the client
+     * @return uint Net Amount Payable to the Client
+     * @param mainId, Unique uint Invoice Number
+     */
+    function calculateNetAmountPayableToClient(
+        uint mainId,
+        uint256 subId,
+        uint256 amount
+    ) external view returns (int) {
+        uint advancedAmount = _advanceAmountCalculation(mainId, subId, amount);
+
+        uint totalAmountReceived = _calculateTotalAmountReceived(mainId);
+
+        uint totalFeesAmount = _totalFeesAmountCalculation(
+            mainId,
+            subId,
+            amount
+        );
 
         return
-            _formulas.advanceAmountCalculation(
-                amount,
-                initialSubMetadata.advanceFeePercentage
+            _formulas.netAmountPayableToClientCalculation(
+                totalAmountReceived,
+                advancedAmount,
+                totalFeesAmount
+            );
+    }
+
+    /**
+     * @dev Calculate the reserve amount
+     * @return uint Reserve Amount
+     * @param mainId, Unique uint Invoice
+     */
+    function reserveAmountCalculation(
+        uint mainId,
+        uint256 subId,
+        uint256 amount
+    ) external view returns (uint) {
+        MainMetadata memory mainMetadata = _mainMetadata[mainId];
+
+        uint advancedAmount = _advanceAmountCalculation(mainId, subId, amount);
+
+        return
+            _formulas.reserveAmountCalculation(
+                mainMetadata.initialMainMetadata.invoiceAmount,
+                advancedAmount
+            );
+    }
+
+    /**
+     * @dev Calculate the tenure
+     * @return uint Invoice Tenure or Finance Tenure
+     * @param mainId, Unique uint Invoice Number
+     */
+    function calculateTenure(uint mainId) external view returns (uint) {
+        return _calculateTenure(mainId);
+    }
+
+    /**
+     * @dev Calculate the invoice tenure
+     * @return uint Invoice Tenure
+     * @param mainId, Unique uint Invoice Number
+     */
+    function calculateInvoiceTenure(uint mainId) external view returns (uint) {
+        MainMetadata memory mainMetadata = _mainMetadata[mainId];
+
+        return
+            _formulas.invoiceTenureCalculation(
+                mainMetadata.initialMainMetadata.dueDate,
+                mainMetadata.initialMainMetadata.invoiceDate
             );
     }
 
@@ -164,8 +309,7 @@ contract Invoice is IInvoice, DLT, AccessControl {
         uint mainId,
         uint paymentReceiptDate,
         uint reservePaidToSupplier,
-        uint amountSentToLender,
-        address lender
+        uint amountSentToLender
     ) private {
         require(
             _mainMetadata[mainId].reservePaidToSupplier == 0 &&
@@ -176,8 +320,6 @@ contract Invoice is IInvoice, DLT, AccessControl {
 
         _mainMetadata[mainId].paymentReceiptDate = uint48(paymentReceiptDate);
         _mainMetadata[mainId].reservePaidToSupplier = reservePaidToSupplier;
-
-        _stableToken.transfer(lender, amountSentToLender);
 
         emit SettledMainMetadata(
             mainId,
@@ -200,5 +342,162 @@ contract Invoice is IInvoice, DLT, AccessControl {
         _mint(owner, mainId, 1, initialMainMetadata.invoiceAmount);
 
         emit InvoiceCreated(msg.sender, owner, mainId);
+    }
+
+    /**
+     * @dev Calculate the advanced amount
+     * @return uint Advance Amount
+     * @param mainId, Unique uint Invoice Number
+     */
+    function _advanceAmountCalculation(
+        uint mainId,
+        uint subId,
+        uint amount
+    ) private view returns (uint) {
+        InitialSubMetadata memory initialSubMetadata = _subMetadata[mainId][
+            subId
+        ];
+
+        return
+            _formulas.advanceAmountCalculation(
+                amount,
+                initialSubMetadata.advanceFeePercentage
+            );
+    }
+
+    /**
+     * @dev Calculate the advanced amount
+     * @return uint Advance Amount
+     * @param mainId, Unique uint Invoice Number
+     */
+    function _factoringFeeAmountCalculation(
+        uint mainId,
+        uint subId,
+        uint amount
+    ) private view returns (uint) {
+        InitialSubMetadata memory initialSubMetadata = _subMetadata[mainId][
+            subId
+        ];
+
+        return
+            _formulas.factoringFeeAmountCalculation(
+                amount,
+                initialSubMetadata.factoringFeePercentage
+            );
+    }
+
+    /**
+     * @dev Calculate the advanced amount
+     * @return uint Advance Amount
+     * @param mainId, Unique uint Invoice Number
+     */
+    function _lateDaysCalculation(uint mainId) private view returns (uint) {
+        MainMetadata memory mainMetadata = _mainMetadata[mainId];
+
+        return
+            _formulas.lateDaysCalculation(
+                mainMetadata.paymentReceiptDate,
+                mainMetadata.initialMainMetadata.dueDate,
+                mainMetadata.initialMainMetadata.lateFeePercentage
+            );
+    }
+
+    /**
+     * @dev Calculate the discount amount
+     * @return uint Amount of the Discount
+     * @param mainId, Unique uint Invoice Number
+     */
+    function _discountAmountCalculation(
+        uint mainId,
+        uint256 subId,
+        uint256 amount
+    ) private view returns (uint) {
+        InitialSubMetadata memory initialSubMetadata = _subMetadata[mainId][
+            subId
+        ];
+
+        uint tenure = _calculateTenure(mainId);
+
+        uint lateDays = _lateDaysCalculation(mainId);
+
+        uint advancedAmount = _advanceAmountCalculation(mainId, subId, amount);
+        return
+            _formulas.discountAmountCalculation(
+                initialSubMetadata.discountFeePercentage,
+                tenure,
+                lateDays,
+                advancedAmount
+            );
+    }
+
+    /**
+     * @dev Calculate the total fees amount
+     * @return uint Total Amount
+     * @param mainId, Unique uint Invoice Number
+     */
+    function _totalFeesAmountCalculation(
+        uint mainId,
+        uint256 subId,
+        uint256 amount
+    ) private view returns (uint) {
+        InitialSubMetadata memory initialSubMetadata = _subMetadata[mainId][
+            subId
+        ];
+
+        uint factoringAmount = _factoringFeeAmountCalculation(
+            mainId,
+            subId,
+            amount
+        );
+
+        uint discountAmount = _discountAmountCalculation(mainId, subId, amount);
+
+        return
+            _formulas.totalFeesAmountCalculation(
+                factoringAmount,
+                discountAmount,
+                initialSubMetadata.additionalFeeAmount,
+                initialSubMetadata.bankChargesFeeAmount
+            );
+    }
+
+    /**
+     * @dev Calculate the total amount received
+     * @return uint Total Received Amount
+     * @param mainId, Unique uint Invoice Number
+     */
+    function _calculateTotalAmountReceived(
+        uint mainId
+    ) private view returns (uint) {
+        MainMetadata memory mainMetadata = _mainMetadata[mainId];
+
+        return
+            _formulas.totalAmountReceivedCalculation(
+                mainMetadata.buyerAmountReceived,
+                mainMetadata.reservePaidToSupplier
+            );
+    }
+
+    /**
+     * @dev Calculate the tenure
+     * @return uint Invoice Tenure or Finance Tenure
+     * @param mainId, Unique uint Invoice Number
+     */
+    function _calculateTenure(uint mainId) private view returns (uint) {
+        MainMetadata memory mainMetadata = _mainMetadata[mainId];
+
+        if (mainMetadata.paymentReceiptDate == 0) {
+            return
+                _formulas.invoiceTenureCalculation(
+                    mainMetadata.initialMainMetadata.dueDate,
+                    mainMetadata.initialMainMetadata.invoiceDate
+                );
+        }
+
+        return
+            _formulas.financeTenureCalculation(
+                mainMetadata.paymentReceiptDate,
+                mainMetadata.initialMainMetadata.fundsAdvancedDate
+            );
     }
 }

@@ -128,7 +128,7 @@ contract Marketplace is AccessControl, IMarketplace {
         uint subId,
         uint amount
     ) private {
-        uint stableCoinAmount = _invoiceCollection.calculateAdvanceAmount(
+        uint stableCoinAmount = _invoiceCollection.advanceAmountCalculation(
             invoiceMainId,
             subId,
             amount

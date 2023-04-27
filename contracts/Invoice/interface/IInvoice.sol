@@ -97,7 +97,7 @@ interface IInvoice is IDLT {
      * @param mainId, Unique uint Invoice Number
      * @param subId, Unique subId
      */
-    function calculateAdvanceAmount(
+    function advanceAmountCalculation(
         uint mainId,
         uint subId,
         uint amount

@@ -69,7 +69,7 @@ describe("Invoice", function () {
         ethers.utils.parseUnits("10000", DECIMALS.SIX)
       );
 
-    const stableCoinAmount = await invoiceContract.calculateAdvanceAmount(
+    const stableCoinAmount = await invoiceContract.advanceAmountCalculation(
       1,
       1,
       amountToBuy
@@ -121,13 +121,13 @@ describe("Invoice", function () {
       .connect(user1)
       .approve(marketplaceContract.address, 2, 1, amountToBuy2);
 
-    const stableCoinAmount1 = await invoiceContract.calculateAdvanceAmount(
+    const stableCoinAmount1 = await invoiceContract.advanceAmountCalculation(
       1,
       1,
       amountToBuy1
     );
 
-    const stableCoinAmount2 = await invoiceContract.calculateAdvanceAmount(
+    const stableCoinAmount2 = await invoiceContract.advanceAmountCalculation(
       2,
       1,
       amountToBuy2
@@ -179,7 +179,7 @@ describe("Invoice", function () {
       .connect(user1)
       .approve(marketplaceContract.address, 1, 1, amountToBuy1);
 
-    const stableCoinAmount1 = await invoiceContract.calculateAdvanceAmount(
+    const stableCoinAmount1 = await invoiceContract.advanceAmountCalculation(
       1,
       1,
       amountToBuy1

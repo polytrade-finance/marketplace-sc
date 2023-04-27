@@ -218,24 +218,15 @@ describe("Invoice", function () {
       invoice1.initialSubMetadata
     );
 
-    await stableCoinContract
-      .connect(user1)
-      .transfer(invoiceContract.address, settleInvoice1.amountSentToLender);
-
     await invoiceContract.setAssetSettledMetadata(
       settleInvoice1.mainId,
       settleInvoice1.paymentReceiptDate,
       settleInvoice1.reservePaidToSupplier,
-      settleInvoice1.amountSentToLender,
-      deployer.address
+      settleInvoice1.amountSentToLender
     );
   });
 
   it("Reject Settlement for any settled invoice", async function () {
-    await stableCoinContract
-      .connect(user1)
-      .transfer(invoiceContract.address, settleInvoice1.amountSentToLender);
-
     await invoiceContract.createInvoice(
       deployer.address,
       1,
@@ -248,8 +239,7 @@ describe("Invoice", function () {
         settleInvoice1.mainId,
         settleInvoice1.paymentReceiptDate,
         settleInvoice1.reservePaidToSupplier,
-        settleInvoice1.amountSentToLender,
-        deployer.address
+        settleInvoice1.amountSentToLender
       )
     ).to.not.be.reverted;
 
@@ -258,8 +248,7 @@ describe("Invoice", function () {
         settleInvoice1.mainId,
         settleInvoice1.paymentReceiptDate,
         settleInvoice1.reservePaidToSupplier,
-        settleInvoice1.amountSentToLender,
-        deployer.address
+        settleInvoice1.amountSentToLender
       )
     ).to.be.revertedWith("Asset is already settled");
   });
@@ -272,10 +261,6 @@ describe("Invoice", function () {
       invoice1.initialSubMetadata
     );
 
-    await stableCoinContract
-      .connect(user1)
-      .transfer(invoiceContract.address, settleInvoice1.amountSentToLender);
-
     await expect(
       invoiceContract
         .connect(user1) // he is not the admin
@@ -283,8 +268,7 @@ describe("Invoice", function () {
           settleInvoice1.mainId,
           settleInvoice1.paymentReceiptDate,
           settleInvoice1.reservePaidToSupplier,
-          settleInvoice1.amountSentToLender,
-          deployer.address
+          settleInvoice1.amountSentToLender
         )
     ).to.be.reverted;
   });
