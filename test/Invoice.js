@@ -272,4 +272,151 @@ describe("Invoice", function () {
         )
     ).to.be.reverted;
   });
+
+  it("Testing factoring fee amount", async function () {
+    await invoiceContract.createInvoice(
+      deployer.address,
+      1,
+      invoice1.initialMainMetadata,
+      invoice1.initialSubMetadata
+    );
+
+    expect(
+      await invoiceContract.factoringFeeAmountCalculation(
+        1,
+        1,
+        invoice1.initialMainMetadata.invoiceAmount
+      )
+    ).to.eq(ethers.utils.parseUnits("1000", DECIMALS.SIX));
+  });
+
+  it("Testing late days", async function () {
+    await invoiceContract.createInvoice(
+      deployer.address,
+      1,
+      invoice1.initialMainMetadata,
+      invoice1.initialSubMetadata
+    );
+
+    expect(await invoiceContract.lateDaysCalculation(1)).to.eq(0);
+  });
+
+  it("Testing late days", async function () {
+    await invoiceContract.createInvoice(
+      deployer.address,
+      1,
+      invoice1.initialMainMetadata,
+      invoice1.initialSubMetadata
+    );
+
+    expect(await invoiceContract.lateDaysCalculation(1)).to.eq(0);
+  });
+
+  it("Testing Discount amount", async function () {
+    await invoiceContract.createInvoice(
+      deployer.address,
+      1,
+      invoice1.initialMainMetadata,
+      invoice1.initialSubMetadata
+    );
+
+    const discountAmount = await invoiceContract.discountAmountCalculation(
+      1,
+      1,
+      invoice1.initialMainMetadata.invoiceAmount
+    );
+
+    const parsedDiscountAmount = ethers.utils.formatUnits(
+      discountAmount,
+      DECIMALS.SIX
+    );
+
+    expect(Number(parsedDiscountAmount)).to.be.eq(Number(81.369863));
+  });
+
+  it("Testing Total fees", async function () {
+    await invoiceContract.createInvoice(
+      deployer.address,
+      1,
+      invoice1.initialMainMetadata,
+      invoice1.initialSubMetadata
+    );
+
+    const totalFees = await invoiceContract.totalFeesAmountCalculation(
+      1,
+      1,
+      invoice1.initialMainMetadata.invoiceAmount
+    );
+
+    const parsedTotalFees = ethers.utils.formatUnits(totalFees, DECIMALS.SIX);
+
+    expect(Number(parsedTotalFees)).to.be.eq(Number(1101.369863));
+  });
+
+  it("Testing Late fee", async function () {
+    await invoiceContract.createInvoice(
+      deployer.address,
+      1,
+      invoice1.initialMainMetadata,
+      invoice1.initialSubMetadata
+    );
+
+    const lateFeeAmount = await invoiceContract.lateFeeAmountCalculation(
+      1,
+      1,
+      invoice1.initialMainMetadata.invoiceAmount
+    );
+
+    const parsedLateFeeAmount = ethers.utils.formatUnits(
+      lateFeeAmount,
+      DECIMALS.SIX
+    );
+
+    expect(Number(parsedLateFeeAmount)).to.be.eq(Number(0));
+  });
+
+  it("Testing Total amount Received", async function () {
+    await invoiceContract.createInvoice(
+      deployer.address,
+      1,
+      invoice1.initialMainMetadata,
+      invoice1.initialSubMetadata
+    );
+
+    const totalAMountReceived =
+      await invoiceContract.calculateTotalAmountReceived(1);
+
+    const parsedTotalAmountReceived = ethers.utils.formatUnits(
+      totalAMountReceived,
+      DECIMALS.SIX
+    );
+
+    expect(Number(parsedTotalAmountReceived)).to.be.eq(Number(0));
+  });
+
+  it("Testing Net Amount payable for client", async function () {
+    await invoiceContract.createInvoice(
+      deployer.address,
+      1,
+      invoice1.initialMainMetadata,
+      invoice1.initialSubMetadata
+    );
+
+    const netAmountPayableToClient =
+      await invoiceContract.calculateNetAmountPayableToClient(
+        1,
+        1,
+        invoice1.initialMainMetadata.invoiceAmount
+      );
+
+    const parsedNetAmountPayableToClient = ethers.utils.formatUnits(
+      netAmountPayableToClient,
+      DECIMALS.SIX
+    );
+
+    console.log({ parsedNetAmountPayableToClient });
+    expect(Number(parsedNetAmountPayableToClient)).to.be.eq(
+      Number(10101.369863)
+    );
+  });
 });
