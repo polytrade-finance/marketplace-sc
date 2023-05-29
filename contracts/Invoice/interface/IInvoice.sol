@@ -4,40 +4,21 @@ pragma solidity 0.8.17;
 import "dual-layer-token/contracts/DLT/interface/IDLT.sol";
 
 interface IInvoice is IDLT {
-    /**
-     * @title A new struct to define the metadata structure
-     * @dev Defining a new type of struct called Metadata to store the asset metadata
-     * @param lateFeePercentage, is a uint24 will have 2 decimals
-     * @param gracePeriod, is a uint16 will have 2 decimals
-     * @param dueDate, is a uint48 will have 2 decimals
-     * @param invoiceDate, is a uint48 will have 2 decimals
-     * @param fundsAdvancedDate, is a uint48 will have 2 decimals
-     * @param invoiceAmount, is a uint will have 2 decimals
-     */
-    struct InitialMainMetadata {
-        uint24 lateFeePercentage; // %
-        uint16 gracePeriod; // days
-        uint48 dueDate;
-        uint48 invoiceDate;
-        uint48 fundsAdvancedDate;
-        uint256 invoiceAmount;
-    }
 
     /**
-     * @title A new struct to define the sub metadata structure
-     * @dev Defining a new type of struct called Metadata to store the asset metadata
-     * @param factoringFeePercentage, is a uint24 will have 2 decimals
-     * @param discountFeePercentage, is a uint24 will have 2 decimals
-     * @param bankChargesFeeAmount, is a uint24 will have 2 decimals
-     * @param additionalFeeAmount, is a uint24 will have 2 decimals
-     * @param advanceFeePercentage, is a uint16 will have 2 decimals
+     * @title A new struct to define the invoice information
+     * @param assetPrice, is the price of asset
+     * @param rewardApr, is the Apr for calculating rewards
+     * @param dueDate, is the end date for caluclating rewards
+     * @param lastSale, is the date of last sale
+     * @param lastClaim, is the date of last claim rewards
      */
-    struct InitialSubMetadata {
-        uint24 discountFeePercentage; // %
-        uint24 factoringFeePercentage; // %
-        uint24 additionalFeeAmount; // it's an amount
-        uint24 bankChargesFeeAmount; // it's an amount
-        uint16 advanceFeePercentage; // % advance ratio
+    struct InvoiceInfo {
+        uint256 assetPrice;
+        uint256 rewardApr;
+        uint256 dueDate;
+        uint256 lastSale;
+        uint256 lastClaim;
     }
 
     /**
@@ -60,12 +41,11 @@ interface IInvoice is IDLT {
     );
 
     /**
-     * @dev Calculate the advanced amount
-     * @return uint Advanced Amount
-     * @param mainId, Unique uint Invoice Number
-     * @param subId, Unique subId
+     * @dev Calculate the remaning reward
+     * @param mainId, Unique uint256 invoice identifier
+     * @return result the Rewards Amount
      */
-    function calculateAdvanceAmount(
+    function getRemainingReward(
         uint mainId,
         uint subId,
         uint amount

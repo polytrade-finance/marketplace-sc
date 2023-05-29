@@ -2,8 +2,8 @@
 pragma solidity =0.8.17;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "./interface/IMarketplace.sol";
-import "../Invoice/interface/IInvoice.sol";
+import "./Interface/IMarketplace.sol";
+import "../Invoice/Interface/IInvoice.sol";
 import "../Token/Token.sol";
 
 /**
