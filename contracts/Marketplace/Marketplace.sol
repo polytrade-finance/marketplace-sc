@@ -126,6 +126,11 @@ contract Marketplace is AccessControl, IMarketplace {
      * @param newInvoiceCollectionAddress, Address of the Invoice Collection contract
      */
     function _setInvoiceContract(address newInvoiceCollectionAddress) private {
+        require(
+            newInvoiceCollectionAddress != address(0),
+            "Marketplace: Invalid invoice collection address"
+        );
+
         address oldInvoiceCollectionAddress = address(_invoiceCollection);
         _invoiceCollection = IInvoice(newInvoiceCollectionAddress);
 
@@ -141,6 +146,11 @@ contract Marketplace is AccessControl, IMarketplace {
      * @param stableTokenAddress, Address of the stableToken (ERC20) contract
      */
     function _setStableToken(address stableTokenAddress) private {
+        require(
+            stableTokenAddress != address(0),
+            "Marketplace: Invalid stable coin address"
+        );
+
         _stableToken = Token(stableTokenAddress);
 
         emit StableTokenSet(stableTokenAddress);
@@ -153,6 +163,11 @@ contract Marketplace is AccessControl, IMarketplace {
      * @param newTreasuryWallet, Address of the new treasury wallet
      */
     function _setTreasuryWallet(address newTreasuryWallet) private {
+        require(
+            newTreasuryWallet != address(0),
+            "Marketplace: Invalid treasury wallet address"
+        );
+
         address oldTreasuryWallet = _treasuryWallet;
         _treasuryWallet = newTreasuryWallet;
 
@@ -166,6 +181,11 @@ contract Marketplace is AccessControl, IMarketplace {
      * @param newFeeWallet, Address of the new fee wallet
      */
     function _setFeeWallet(address newFeeWallet) private {
+        require(
+            newFeeWallet != address(0),
+            "Marketplace: Invalid fee wallet address"
+        );
+
         address oldFeeWallet = _feeWallet;
         _feeWallet = newFeeWallet;
 
