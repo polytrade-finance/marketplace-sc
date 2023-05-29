@@ -1,10 +1,8 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { invoice1, DECIMALS } = require("./data");
-const { BigNumber } = require("ethers");
+const { invoice } = require("./data");
 
-describe("Invoice", function () {
-  let formulasContract;
+describe("Marketplace", function () {
   let invoiceContract;
   let stableCoinContract;
   let marketplaceContract;
@@ -16,17 +14,11 @@ describe("Invoice", function () {
   beforeEach(async () => {
     [, user1, buyer, treasuryWallet, feeWallet] = await ethers.getSigners();
 
-    const FormulasFactory = await ethers.getContractFactory("Formulas");
-    formulasContract = await FormulasFactory.deploy();
-
-    await formulasContract.deployed();
-
     const InvoiceFactory = await ethers.getContractFactory("Invoice");
     invoiceContract = await InvoiceFactory.deploy(
       "Polytrade Invoice Collection",
       "PIC",
-      "https://ipfs.io/ipfs",
-      formulasContract.address
+      "https://ipfs.io/ipfs"
     );
 
     await invoiceContract.deployed();
@@ -123,87 +115,56 @@ describe("Invoice", function () {
     await invoiceContract.createInvoice(
       user1.address,
       1,
-      invoice1.initialMainMetadata,
-      invoice1.initialSubMetadata
+      invoice.assetPrice,
+      invoice.rewardApr,
+      invoice.dueDate
     );
-    const amountToBuy = ethers.utils.parseUnits("5000", DECIMALS.SIX);
 
     await invoiceContract
       .connect(user1)
-      .approve(
-        marketplaceContract.address,
-        1,
-        1,
-        ethers.utils.parseUnits("10000", DECIMALS.SIX)
-      );
-
-    const stableCoinAmount = await invoiceContract.calculateAdvanceAmount(
-      1,
-      1,
-      amountToBuy
-    );
+      .approve(marketplaceContract.address, 1, 1, 1);
 
     await stableCoinContract
       .connect(buyer)
-      .approve(marketplaceContract.address, stableCoinAmount);
+      .approve(marketplaceContract.address, invoice.assetPrice);
 
-    await expect(
-      await marketplaceContract
-        .connect(buyer)
-        .buy(user1.address, 1, 1, amountToBuy)
-    ).not.to.be.reverted;
+    await expect(await marketplaceContract.connect(buyer).buy(user1.address, 1))
+      .not.to.be.reverted;
 
-    expect(await stableCoinContract.balanceOf(user1.address)).to.eq(
-      stableCoinAmount
+    expect(await stableCoinContract.balanceOf(treasuryWallet.address)).to.eq(
+      invoice.assetPrice
     );
 
-    expect(await invoiceContract.subBalanceOf(buyer.address, 1, 1)).to.eq(
-      amountToBuy
-    );
+    expect(await invoiceContract.subBalanceOf(buyer.address, 1, 1)).to.eq(1);
   });
 
   it("Creating multiple invoices and selling it to buyer through Marketplace", async function () {
     await invoiceContract.createInvoice(
       user1.address,
       1,
-      invoice1.initialMainMetadata,
-      invoice1.initialSubMetadata
+      invoice.assetPrice,
+      invoice.rewardApr,
+      invoice.dueDate
     );
 
     await invoiceContract.createInvoice(
       user1.address,
       2,
-      invoice1.initialMainMetadata,
-      invoice1.initialSubMetadata
+      invoice.assetPrice,
+      invoice.rewardApr,
+      invoice.dueDate
     );
-
-    const amountToBuy1 = ethers.utils.parseUnits("5000", DECIMALS.SIX);
-    const amountToBuy2 = ethers.utils.parseUnits("6000", DECIMALS.SIX);
 
     // user1 approves the amount he wants to sell
     await invoiceContract
       .connect(user1)
-      .approve(marketplaceContract.address, 1, 1, amountToBuy1);
+      .approve(marketplaceContract.address, 1, 1, 1);
 
     await invoiceContract
       .connect(user1)
-      .approve(marketplaceContract.address, 2, 1, amountToBuy2);
+      .approve(marketplaceContract.address, 2, 1, 1);
 
-    const stableCoinAmount1 = await invoiceContract.calculateAdvanceAmount(
-      1,
-      1,
-      amountToBuy1
-    );
-
-    const stableCoinAmount2 = await invoiceContract.calculateAdvanceAmount(
-      2,
-      1,
-      amountToBuy2
-    );
-
-    const totalStableCoinAmount = BigNumber.from(stableCoinAmount1).add(
-      BigNumber.from(stableCoinAmount2)
-    );
+    const totalStableCoinAmount = invoice.assetPrice.add(invoice.assetPrice);
 
     await stableCoinContract
       .connect(buyer)
@@ -212,56 +173,38 @@ describe("Invoice", function () {
     await expect(
       await marketplaceContract
         .connect(buyer)
-        .batchBuy(
-          [user1.address, user1.address],
-          [1, 2],
-          [1, 1],
-          [amountToBuy1, amountToBuy2]
-        )
+        .batchBuy([user1.address, user1.address], [1, 2])
     ).not.to.be.reverted;
 
-    expect(await stableCoinContract.balanceOf(user1.address)).to.eq(
+    expect(await stableCoinContract.balanceOf(treasuryWallet.address)).to.eq(
       totalStableCoinAmount
     );
 
-    expect(await invoiceContract.subBalanceOf(buyer.address, 1, 1)).to.eq(
-      amountToBuy1
-    );
-    expect(await invoiceContract.subBalanceOf(buyer.address, 2, 1)).to.eq(
-      amountToBuy2
-    );
+    expect(await invoiceContract.subBalanceOf(buyer.address, 1, 1)).to.eq(1);
+    expect(await invoiceContract.subBalanceOf(buyer.address, 2, 1)).to.eq(1);
   });
 
   it("Revert when no array parity in batchBuy", async function () {
     await invoiceContract.createInvoice(
       user1.address,
       1,
-      invoice1.initialMainMetadata,
-      invoice1.initialSubMetadata
+      invoice.assetPrice,
+      invoice.rewardApr,
+      invoice.dueDate
     );
-
-    const amountToBuy1 = ethers.utils.parseUnits("5000", DECIMALS.SIX);
 
     // user1 approves the amount he wants to sell
     await invoiceContract
       .connect(user1)
-      .approve(marketplaceContract.address, 1, 1, amountToBuy1);
-
-    const stableCoinAmount1 = await invoiceContract.calculateAdvanceAmount(
-      1,
-      1,
-      amountToBuy1
-    );
+      .approve(marketplaceContract.address, 1, 1, 1);
 
     await stableCoinContract
       .connect(buyer)
-      .approve(marketplaceContract.address, stableCoinAmount1);
+      .approve(marketplaceContract.address, invoice.assetPrice);
 
     // owners array length is 1 and the rest is two
     await expect(
-      marketplaceContract
-        .connect(buyer)
-        .batchBuy([user1.address], [1, 2], [1, 1], [amountToBuy1, 0])
+      marketplaceContract.connect(buyer).batchBuy([user1.address], [1, 2])
     ).to.be.revertedWith("Marketplace: No array parity");
   });
 });
