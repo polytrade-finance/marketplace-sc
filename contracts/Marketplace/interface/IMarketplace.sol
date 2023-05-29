@@ -22,4 +22,14 @@ interface IMarketplace {
      * @param stableToken, Address of ERC20 contract token
      */
     event StableTokenSet(address stableToken);
+
+    /**
+     * @dev Emitted when new `Treasury Wallet` has been set
+     * @param oldTreasuryWallet, Address of the old treasury Wallet
+     * @param newTreasuryWallet, Address of the new treasury Wallet
+     */
+    event TreasuryWalletSet(
+        address oldTreasuryWallet,
+        address newTreasuryWallet
+    );
 }

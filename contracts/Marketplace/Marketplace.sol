@@ -15,14 +15,22 @@ contract Marketplace is AccessControl, IMarketplace {
     IInvoice private _invoiceCollection;
     Token private _stableToken;
 
+    address private _treasuryWallet;
+
     /**
      * @dev Constructor for the main Marketplace
      * @param invoiceCollectionAddress, Address of the Invoice Collection used in the marketplace
      * @param stableTokenAddress, Address of the stableToken (ERC20) contract
      */
-    constructor(address invoiceCollectionAddress, address stableTokenAddress) {
+    constructor(
+        address invoiceCollectionAddress,
+        address stableTokenAddress,
+        address treasuryWallet
+    ) {
         _setInvoiceContract(invoiceCollectionAddress);
         _setStableToken(stableTokenAddress);
+
+        _setTreasuryWallet(treasuryWallet);
     }
 
     /**
@@ -92,6 +100,14 @@ contract Marketplace is AccessControl, IMarketplace {
     }
 
     /**
+     * @dev Implementation of a getter for the stable coin contract
+     * @return address Address of the stable coin contract
+     */
+    function getTreasuryWallet() external view returns (address) {
+        return _treasuryWallet;
+    }
+
+    /**
      * @dev Implementation of a setter for Invoice Collection contract
      * @param newInvoiceCollectionAddress, Address of the Invoice Collection contract
      */
@@ -113,6 +129,17 @@ contract Marketplace is AccessControl, IMarketplace {
         _stableToken = Token(stableTokenAddress);
 
         emit StableTokenSet(stableTokenAddress);
+    }
+
+    /**
+     * @dev Implementation of a setter for the Treasury Wallet
+     * @param newTreasuryWallet, Address of the Treasury Wallet
+     */
+    function _setTreasuryWallet(address newTreasuryWallet) private {
+        address oldTreasuryWallet = _treasuryWallet;
+        _treasuryWallet = newTreasuryWallet;
+
+        emit TreasuryWalletSet(oldTreasuryWallet, newTreasuryWallet);
     }
 
     /**
