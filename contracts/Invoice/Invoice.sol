@@ -6,6 +6,11 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "dual-layer-token/contracts/DLT/DLT.sol";
 import "./Interface/IInvoice.sol";
 
+/**
+ * @title The Invoice contract based on EIP6960
+ * @author Polytrade.Finance
+ * @dev Manages creation of invoice and rewards distribution
+ */
 contract Invoice is IInvoice, DLT, AccessControl {
     string private _invoiceBaseURI;
     uint256 private constant _YEAR = 365 days;
@@ -24,6 +29,9 @@ contract Invoice is IInvoice, DLT, AccessControl {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
+    /**
+     * @dev See {IInvoice-createInvoice}.
+     */
     function createInvoice(
         address owner,
         uint256 mainId,
@@ -34,23 +42,32 @@ contract Invoice is IInvoice, DLT, AccessControl {
         _createInvoice(owner, mainId, price, dueDate, apr);
     }
 
+    /**
+     * @dev See {IInvoice-batchCreateInvoice}.
+     */
     function batchCreateInvoice(
         address[] calldata owners,
         uint256[] calldata mainIds,
-        uint256[] calldata price,
-        uint256[] calldata dueDate,
-        uint256[] calldata apr
+        uint256[] calldata prices,
+        uint256[] calldata dueDates,
+        uint256[] calldata aprs
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(
             owners.length == mainIds.length &&
-                owners.length == price.length &&
-                owners.length == dueDate.length &&
-                owners.length == apr.length,
+                owners.length == prices.length &&
+                owners.length == dueDates.length &&
+                owners.length == aprs.length,
             "Invoice: No array parity"
         );
 
         for (uint256 i = 0; i < mainIds.length; ) {
-            _createInvoice(owners[i], mainIds[i], price[i], dueDate[i], apr[i]);
+            _createInvoice(
+                owners[i],
+                mainIds[i],
+                prices[i],
+                dueDates[i],
+                aprs[i]
+            );
 
             unchecked {
                 ++i;
@@ -59,8 +76,7 @@ contract Invoice is IInvoice, DLT, AccessControl {
     }
 
     /**
-     * @dev Implementation of a setter for the asset base URI
-     * @param newBaseURI, String of the asset base URI
+     * @dev See {IInvoice-setBaseURI}.
      */
     function setBaseURI(
         string calldata newBaseURI
@@ -84,7 +100,7 @@ contract Invoice is IInvoice, DLT, AccessControl {
                 invoice.rewardApr
             );
         } else {
-            tenure = invoice.dueDate - invoice.lastSale;
+            tenure = invoice.dueDate - invoice.lastClaim;
             result = _calculateFormula(
                 invoice.assetPrice,
                 tenure,
@@ -94,20 +110,25 @@ contract Invoice is IInvoice, DLT, AccessControl {
     }
 
     /**
-     * @dev Implementation of a getter for mainId URI
-     * @return string URI for the invoice
-     * @param mainId, Unique uint Invoice Number
+     * @dev See {IInvoice-getInvoiceInfo}.
      */
-    function tokenURI(
+    function getInvoiceInfo(
         uint256 mainId
-    ) public view virtual returns (string memory) {
+    ) external view returns (InvoiceInfo memory) {
+        return _invoices[mainId];
+    }
+
+    /**
+     * @dev See {IInvoice-tokenURI}.
+     */
+    function tokenURI(uint256 mainId) external view returns (string memory) {
         string memory stringInvoiceNumber = Strings.toString(mainId);
         return string.concat(_invoiceBaseURI, stringInvoiceNumber);
     }
 
     /**
-     * @dev Implementation of a setter for the asset base URI
-     * @param newBaseURI, String of the asset base URI
+     * @dev Changes the invoice base URI
+     * @param newBaseURI, String of the new invoice base URI
      */
     function _setBaseURI(string memory newBaseURI) private {
         string memory oldBaseURI = _invoiceBaseURI;
@@ -115,6 +136,14 @@ contract Invoice is IInvoice, DLT, AccessControl {
         emit InvoiceBaseURISet(oldBaseURI, newBaseURI);
     }
 
+    /**
+     * @dev Creates a new invoice with given mainId and transfer it to owner
+     * @param owner, Address of the initial invoice owner
+     * @param mainId, unique identifier of invoice
+     * @param price, Invoice price to buy
+     * @param dueDate, is the end date for caluclating rewards
+     * @param apr, is the annual percentage rate for calculating rewards
+     */
     function _createInvoice(
         address owner,
         uint256 mainId,
