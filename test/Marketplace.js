@@ -45,6 +45,58 @@ describe("Invoice", function () {
     );
   });
 
+  it("it should revert on passing invalid invoice collection Address", async function () {
+    await expect(
+      (
+        await ethers.getContractFactory("Marketplace")
+      ).deploy(
+        ethers.constants.AddressZero,
+        stableCoinContract.address,
+        treasuryWallet.address,
+        feeWallet.address
+      )
+    ).to.revertedWith("Marketplace: Invalid invoice collection address");
+  });
+
+  it("it should revert on passing invalid stable coin address", async function () {
+    await expect(
+      (
+        await ethers.getContractFactory("Marketplace")
+      ).deploy(
+        invoiceContract.address,
+        ethers.constants.AddressZero,
+        treasuryWallet.address,
+        feeWallet.address
+      )
+    ).to.revertedWith("Marketplace: Invalid stable coin address");
+  });
+
+  it("it should revert on passing invalid treasury wallet Address", async function () {
+    await expect(
+      (
+        await ethers.getContractFactory("Marketplace")
+      ).deploy(
+        invoiceContract.address,
+        stableCoinContract.address,
+        ethers.constants.AddressZero,
+        feeWallet.address
+      )
+    ).to.revertedWith("Marketplace: Invalid treasury wallet address");
+  });
+
+  it("it should revert on passing invalid fee wallet Address", async function () {
+    await expect(
+      (
+        await ethers.getContractFactory("Marketplace")
+      ).deploy(
+        invoiceContract.address,
+        stableCoinContract.address,
+        treasuryWallet.address,
+        ethers.constants.AddressZero
+      )
+    ).to.revertedWith("Marketplace: Invalid fee wallet address");
+  });
+
   it("it should return the invoice contract address while calling getInvoiceCollection()", async function () {
     expect(await marketplaceContract.getInvoiceCollection()).to.eq(
       invoiceContract.address
