@@ -11,9 +11,10 @@ describe("Invoice", function () {
   let user1;
   let buyer;
   let treasuryWallet;
+  let feeWallet;
 
   beforeEach(async () => {
-    [, user1, buyer, treasuryWallet] = await ethers.getSigners();
+    [, user1, buyer, treasuryWallet, feeWallet] = await ethers.getSigners();
 
     const FormulasFactory = await ethers.getContractFactory("Formulas");
     formulasContract = await FormulasFactory.deploy();
@@ -39,7 +40,8 @@ describe("Invoice", function () {
     ).deploy(
       invoiceContract.address,
       stableCoinContract.address,
-      treasuryWallet.address
+      treasuryWallet.address,
+      feeWallet.address
     );
   });
 
@@ -59,6 +61,10 @@ describe("Invoice", function () {
     expect(await marketplaceContract.getTreasuryWallet()).to.eq(
       treasuryWallet.address
     );
+  });
+
+  it("Test Marketplace's Fee Wallet Getter", async function () {
+    expect(await marketplaceContract.getFeeWallet()).to.eq(feeWallet.address);
   });
 
   it("Creating invoice and selling it to buyer through Marketplace", async function () {

@@ -16,21 +16,26 @@ contract Marketplace is AccessControl, IMarketplace {
     Token private _stableToken;
 
     address private _treasuryWallet;
+    address private _feeWallet;
 
     /**
      * @dev Constructor for the main Marketplace
      * @param invoiceCollectionAddress, Address of the Invoice Collection used in the marketplace
      * @param stableTokenAddress, Address of the stableToken (ERC20) contract
+     * @param treasuryWallet, Address of the treasury wallet
+     * @param feeWallet, Address of the fee wallet
      */
     constructor(
         address invoiceCollectionAddress,
         address stableTokenAddress,
-        address treasuryWallet
+        address treasuryWallet,
+        address feeWallet
     ) {
         _setInvoiceContract(invoiceCollectionAddress);
         _setStableToken(stableTokenAddress);
 
         _setTreasuryWallet(treasuryWallet);
+        _setFeeWallet(feeWallet);
     }
 
     /**
@@ -100,11 +105,19 @@ contract Marketplace is AccessControl, IMarketplace {
     }
 
     /**
-     * @dev Implementation of a getter for the stable coin contract
-     * @return address Address of the stable coin contract
+     * @dev Implementation of a getter for the treasury wallet
+     * @return address Address of the treasury wallet
      */
     function getTreasuryWallet() external view returns (address) {
         return _treasuryWallet;
+    }
+
+    /**
+     * @dev Implementation of a getter for the fee wallet
+     * @return address Address of the fee wallet
+     */
+    function getFeeWallet() external view returns (address) {
+        return _feeWallet;
     }
 
     /**
@@ -132,14 +145,25 @@ contract Marketplace is AccessControl, IMarketplace {
     }
 
     /**
-     * @dev Implementation of a setter for the Treasury Wallet
-     * @param newTreasuryWallet, Address of the Treasury Wallet
+     * @dev Implementation of a setter for the treasury wallet
+     * @param newTreasuryWallet, Address of the new treasury wallet
      */
     function _setTreasuryWallet(address newTreasuryWallet) private {
         address oldTreasuryWallet = _treasuryWallet;
         _treasuryWallet = newTreasuryWallet;
 
         emit TreasuryWalletSet(oldTreasuryWallet, newTreasuryWallet);
+    }
+
+    /**
+     * @dev Implementation of a setter for the fee wallet
+     * @param newFeeWallet, Address of the new fee wallet
+     */
+    function _setFeeWallet(address newFeeWallet) private {
+        address oldFeeWallet = _feeWallet;
+        _feeWallet = newFeeWallet;
+
+        emit FeeWalletSet(oldFeeWallet, newFeeWallet);
     }
 
     /**
