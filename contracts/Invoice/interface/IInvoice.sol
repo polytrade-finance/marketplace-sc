@@ -4,7 +4,6 @@ pragma solidity 0.8.17;
 import "dual-layer-token/contracts/DLT/interface/IDLT.sol";
 
 interface IInvoice is IDLT {
-
     /**
      * @title A new struct to define the invoice information
      * @param assetPrice, is the price of asset
