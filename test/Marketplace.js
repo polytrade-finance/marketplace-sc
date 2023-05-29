@@ -45,25 +45,25 @@ describe("Invoice", function () {
     );
   });
 
-  it("Test Marketplace's Invoice collection Getter", async function () {
+  it("it should return the invoice contract address while calling getInvoiceCollection()", async function () {
     expect(await marketplaceContract.getInvoiceCollection()).to.eq(
       invoiceContract.address
     );
   });
 
-  it("Test Marketplace's Token Getter", async function () {
+  it("it should return the stable coin contract address while calling getStableCoin()", async function () {
     expect(await marketplaceContract.getStableCoin()).to.eq(
       stableCoinContract.address
     );
   });
 
-  it("Test Marketplace's Treasury Wallet Getter", async function () {
+  it("it should return the treasury wallet address while calling getTreasuryWallet()", async function () {
     expect(await marketplaceContract.getTreasuryWallet()).to.eq(
       treasuryWallet.address
     );
   });
 
-  it("Test Marketplace's Fee Wallet Getter", async function () {
+  it("it should return the fee wallet address while calling getFeeWallet()", async function () {
     expect(await marketplaceContract.getFeeWallet()).to.eq(feeWallet.address);
   });
 
