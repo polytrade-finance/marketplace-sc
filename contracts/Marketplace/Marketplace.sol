@@ -20,19 +20,19 @@ contract Marketplace is AccessControl, IMarketplace {
 
     /**
      * @dev Constructor for the main Marketplace
-     * @param invoiceCollectionAddress, Address of the Invoice Collection used in the marketplace
-     * @param stableTokenAddress, Address of the stableToken (ERC20) contract
+     * @param invoiceCollection, Address of the Invoice Collection used in the marketplace
+     * @param stableToken, Address of the stableToken (ERC20) contract
      * @param treasuryWallet, Address of the treasury wallet
      * @param feeWallet, Address of the fee wallet
      */
     constructor(
-        address invoiceCollectionAddress,
-        address stableTokenAddress,
+        IInvoice invoiceCollection,
+        Token stableToken,
         address treasuryWallet,
         address feeWallet
     ) {
-        _setInvoiceContract(invoiceCollectionAddress);
-        _setStableToken(stableTokenAddress);
+        _setInvoiceContract(invoiceCollection);
+        _setStableToken(stableToken);
 
         _setTreasuryWallet(treasuryWallet);
         _setFeeWallet(feeWallet);
@@ -123,16 +123,17 @@ contract Marketplace is AccessControl, IMarketplace {
     /**
      * @dev Implementation of a setter for Invoice Collection contract
      * @notice This function allows to set the address of the Invoice Collection contract used within the marketplace.
-     * @param newInvoiceCollectionAddress, Address of the Invoice Collection contract
+     * @param newInvoiceCollection, Invoice Collection contract
      */
-    function _setInvoiceContract(address newInvoiceCollectionAddress) private {
+    function _setInvoiceContract(IInvoice newInvoiceCollection) private {
+        address newInvoiceCollectionAddress = address(newInvoiceCollection);
         require(
             newInvoiceCollectionAddress != address(0),
             "Marketplace: Invalid invoice collection address"
         );
 
         address oldInvoiceCollectionAddress = address(_invoiceCollection);
-        _invoiceCollection = IInvoice(newInvoiceCollectionAddress);
+        _invoiceCollection = newInvoiceCollection;
 
         emit InvoiceCollectionSet(
             oldInvoiceCollectionAddress,
@@ -143,15 +144,16 @@ contract Marketplace is AccessControl, IMarketplace {
     /**
      * @notice This function allows to specify the stable coin address contract to be used within the marketplace.
      * @dev Implementation of a setter for the ERC20 token
-     * @param stableTokenAddress, Address of the stableToken (ERC20) contract
+     * @param stableToken, the stableToken (ERC20) contract
      */
-    function _setStableToken(address stableTokenAddress) private {
+    function _setStableToken(Token stableToken) private {
+        address stableTokenAddress = address(stableToken);
         require(
             stableTokenAddress != address(0),
             "Marketplace: Invalid stable coin address"
         );
 
-        _stableToken = Token(stableTokenAddress);
+        _stableToken = stableToken;
 
         emit StableTokenSet(stableTokenAddress);
     }
