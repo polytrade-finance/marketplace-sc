@@ -122,6 +122,7 @@ contract Marketplace is AccessControl, IMarketplace {
 
     /**
      * @dev Implementation of a setter for Invoice Collection contract
+     * @notice This function allows to set the address of the Invoice Collection contract used within the marketplace.
      * @param newInvoiceCollectionAddress, Address of the Invoice Collection contract
      */
     function _setInvoiceContract(address newInvoiceCollectionAddress) private {
@@ -135,6 +136,7 @@ contract Marketplace is AccessControl, IMarketplace {
     }
 
     /**
+     * @notice This function allows to specify the stable coin address contract to be used within the marketplace.
      * @dev Implementation of a setter for the ERC20 token
      * @param stableTokenAddress, Address of the stableToken (ERC20) contract
      */
@@ -145,6 +147,8 @@ contract Marketplace is AccessControl, IMarketplace {
     }
 
     /**
+     * @notice Updates the treasury wallet address used for funds allocation.
+     * @dev This function allows to set a new treasury wallet address where funds will be allocated.
      * @dev Implementation of a setter for the treasury wallet
      * @param newTreasuryWallet, Address of the new treasury wallet
      */
@@ -156,6 +160,8 @@ contract Marketplace is AccessControl, IMarketplace {
     }
 
     /**
+     * @notice This function allows to set a new address for the fee wallet.
+     * @notice The fee wallet is responsible for collecting transaction fees.
      * @dev Implementation of a setter for the fee wallet
      * @param newFeeWallet, Address of the new fee wallet
      */
