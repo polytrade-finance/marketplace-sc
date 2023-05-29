@@ -1,26 +1,19 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { invoice1, DECIMALS } = require("./data");
+const { invoice } = require("./data");
 
 describe("Invoice", function () {
-  let formulasContract;
   let invoiceContract;
   let deployer;
   let user1;
   beforeEach(async () => {
     [deployer, user1] = await ethers.getSigners();
 
-    const FormulasFactory = await ethers.getContractFactory("Formulas");
-    formulasContract = await FormulasFactory.deploy();
-
-    await formulasContract.deployed();
-
     const InvoiceFactory = await ethers.getContractFactory("Invoice");
     invoiceContract = await InvoiceFactory.deploy(
       "Polytrade Invoice Collection",
       "PIC",
-      "https://ipfs.io/ipfs",
-      formulasContract.address
+      "https://ipfs.io/ipfs"
     );
 
     await invoiceContract.deployed();
@@ -31,16 +24,15 @@ describe("Invoice", function () {
       await invoiceContract.createInvoice(
         deployer.address,
         1,
-        invoice1.initialMainMetadata,
-        invoice1.initialSubMetadata
+        invoice.assetPrice,
+        invoice.rewardApr,
+        invoice.dueDate
       )
     )
       .to.emit(invoiceContract, "InvoiceCreated")
       .withArgs(deployer.address, deployer.address, 1);
 
-    expect(await invoiceContract.mainBalanceOf(deployer.address, 1)).to.eq(
-      ethers.utils.parseUnits("10000", DECIMALS.SIX)
-    );
+    expect(await invoiceContract.mainBalanceOf(deployer.address, 1)).to.eq(1);
 
     expect(await invoiceContract.tokenURI(1)).to.eq(`https://ipfs.io/ipfs${1}`);
   });
@@ -50,8 +42,9 @@ describe("Invoice", function () {
       await invoiceContract.createInvoice(
         deployer.address,
         1,
-        invoice1.initialMainMetadata,
-        invoice1.initialSubMetadata
+        invoice.assetPrice,
+        invoice.rewardApr,
+        invoice.dueDate
       )
     )
       .to.emit(invoiceContract, "InvoiceCreated")
@@ -61,8 +54,9 @@ describe("Invoice", function () {
       invoiceContract.createInvoice(
         deployer.address,
         1,
-        invoice1.initialMainMetadata,
-        invoice1.initialSubMetadata
+        invoice.assetPrice,
+        invoice.rewardApr,
+        invoice.dueDate
       )
     ).to.revertedWith("Invoice: Already minted");
   });
@@ -74,8 +68,9 @@ describe("Invoice", function () {
         .createInvoice(
           deployer.address,
           1,
-          invoice1.initialMainMetadata,
-          invoice1.initialSubMetadata
+          invoice.assetPrice,
+          invoice.rewardApr,
+          invoice.dueDate
         )
     ).to.be.reverted;
   });
@@ -95,62 +90,43 @@ describe("Invoice", function () {
     await invoiceContract.batchCreateInvoice(
       [user1.address, user1.address, user1.address],
       [1, 2, 3],
-      [
-        invoice1.initialMainMetadata,
-        invoice1.initialMainMetadata,
-        invoice1.initialMainMetadata,
-      ],
-      [
-        invoice1.initialSubMetadata,
-        invoice1.initialSubMetadata,
-        invoice1.initialSubMetadata,
-      ]
+      [invoice.assetPrice, invoice.assetPrice, invoice.assetPrice],
+      [invoice.rewardApr, invoice.rewardApr, invoice.rewardApr],
+      [invoice.dueDate, invoice.dueDate, invoice.dueDate]
     );
 
-    expect(await invoiceContract.mainBalanceOf(user1.address, 1)).to.eq(
-      ethers.utils.parseUnits("10000", DECIMALS.SIX)
-    );
+    expect(await invoiceContract.mainBalanceOf(user1.address, 1)).to.eq(1);
 
-    expect(await invoiceContract.mainBalanceOf(user1.address, 2)).to.eq(
-      ethers.utils.parseUnits("10000", DECIMALS.SIX)
-    );
+    expect(await invoiceContract.mainBalanceOf(user1.address, 2)).to.eq(1);
 
-    expect(await invoiceContract.mainBalanceOf(user1.address, 3)).to.eq(
-      ethers.utils.parseUnits("10000", DECIMALS.SIX)
-    );
+    expect(await invoiceContract.mainBalanceOf(user1.address, 3)).to.eq(1);
   });
   it("Revert Batch create invoices on wrong array parity", async function () {
     await expect(
       invoiceContract.batchCreateInvoice(
         [user1.address, user1.address, user1.address],
-        [1, 2], // wrong array parity
+        [1, 2],
+        [invoice.assetPrice, invoice.assetPrice, invoice.assetPrice],
+        [invoice.rewardApr, invoice.rewardApr, invoice.rewardApr],
         [
-          invoice1.initialMainMetadata,
-          invoice1.initialMainMetadata,
-          invoice1.initialMainMetadata,
-        ],
-        [
-          invoice1.initialSubMetadata,
-          invoice1.initialSubMetadata,
-          // invoice1.initialSubMetadata,  wrong array parity
+          invoice.dueDate,
+          invoice.dueDate,
+          // invoice.dueDate,
         ]
       )
     ).to.be.revertedWith("Invoice: No array parity");
 
     await expect(
       invoiceContract.batchCreateInvoice(
-        [user1.address, user1.address], // user1.address  wrong array parity
+        [user1.address, user1.address],
         [1, 2, 3],
+        [invoice.assetPrice, invoice.assetPrice, invoice.assetPrice],
         [
-          invoice1.initialMainMetadata,
-          invoice1.initialMainMetadata,
-          // invoice1.initialMainMetadata,  wrong array parity
+          invoice.rewardApr,
+          invoice.rewardApr,
+          // invoice.rewardApr,
         ],
-        [
-          invoice1.initialSubMetadata,
-          invoice1.initialSubMetadata,
-          invoice1.initialSubMetadata,
-        ]
+        [invoice.dueDate, invoice.dueDate, invoice.dueDate]
       )
     ).to.be.revertedWith("Invoice: No array parity");
   });
@@ -162,16 +138,9 @@ describe("Invoice", function () {
         .batchCreateInvoice(
           [user1.address, user1.address, user1.address],
           [1, 2, 3],
-          [
-            invoice1.initialMainMetadata,
-            invoice1.initialMainMetadata,
-            invoice1.initialMainMetadata,
-          ],
-          [
-            invoice1.initialSubMetadata,
-            invoice1.initialSubMetadata,
-            invoice1.initialSubMetadata,
-          ]
+          [invoice.assetPrice, invoice.assetPrice, invoice.assetPrice],
+          [invoice.rewardApr, invoice.rewardApr, invoice.rewardApr],
+          [invoice.dueDate, invoice.dueDate, invoice.dueDate]
         )
     ).to.be.reverted;
   });

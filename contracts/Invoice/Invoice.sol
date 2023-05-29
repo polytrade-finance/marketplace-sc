@@ -36,8 +36,8 @@ contract Invoice is IInvoice, DLT, AccessControl {
         address owner,
         uint256 mainId,
         uint256 price,
-        uint256 dueDate,
-        uint256 apr
+        uint256 apr,
+        uint256 dueDate
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _createInvoice(owner, mainId, price, dueDate, apr);
     }
@@ -49,8 +49,8 @@ contract Invoice is IInvoice, DLT, AccessControl {
         address[] calldata owners,
         uint256[] calldata mainIds,
         uint256[] calldata prices,
-        uint256[] calldata dueDates,
-        uint256[] calldata aprs
+        uint256[] calldata aprs,
+        uint256[] calldata dueDates
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(
             owners.length == mainIds.length &&
