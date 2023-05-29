@@ -21,32 +21,87 @@ interface IInvoice is IDLT {
     }
 
     /**
-     * @dev Emitted when `newURI` is set to the Invoice category instead of `oldURI` by `mainId`
-     * @param oldInvoiceBaseURI, Old Base URI for the Invoice category
-     * @param newInvoiceBaseURI, New Base URI for the Invoice category
+     * @dev Emitted when `newURI` is set to the invoices instead of `oldURI`
+     * @param oldBaseURI, Old base URI for the invoices
+     * @param newBaseURI, New base URI for the invoices
      */
-    event InvoiceBaseURISet(string oldInvoiceBaseURI, string newInvoiceBaseURI);
+    event InvoiceBaseURISet(string oldBaseURI, string newBaseURI);
 
     /**
-     * @dev Emitted when `assetNumber` token with `metadata` is minted from the `creator` to the `owner`
-     * @param creator, Address of the contract that minted
-     * @param owner, Address of the receiver of this token
-     * @param mainId, mainId of the newly minted token
+     * @dev Emitted when an invoice is created with it's parameters for an owner
+     * @param creator, Address of the invoice creator
+     * @param owner, Address of the initial onvoice owner
+     * @param mainId, mainId is the unique identifier of invoice
      */
     event InvoiceCreated(
         address indexed creator,
         address indexed owner,
-        uint indexed mainId
+        uint256 indexed mainId
     );
 
     /**
-     * @dev Calculate the remaning reward
-     * @param mainId, Unique uint256 invoice identifier
-     * @return result the Rewards Amount
+     * @dev Creates an invoice with its parameters
+     * @param owner, initial owner of invoice
+     * @param mainId, unique identifier of invoice
+     * @param price, invoice price to sell
+     * @param dueDate, end date for calculating rewards
+     * @param apr, annual percentage rate for calculating rewards
+     * @dev Needs admin access to create an invoice
+     */
+    function createInvoice(
+        address owner,
+        uint256 mainId,
+        uint256 price,
+        uint256 dueDate,
+        uint256 apr
+    ) external;
+
+    /**
+     * @dev Creates batch invoice with their parameters
+     * @param owners, initial owners of invoices
+     * @param mainIds, unique identifiers of invoices
+     * @param prices, invoices price to sell
+     * @param dueDates, end dates for calculating rewards
+     * @param aprs, annual percentage rates for calculating rewards
+     * @dev Needs admin access to create an invoice
+     */
+    function batchCreateInvoice(
+        address[] calldata owners,
+        uint256[] calldata mainIds,
+        uint256[] calldata prices,
+        uint256[] calldata dueDates,
+        uint256[] calldata aprs
+    ) external;
+
+    /**
+     * @dev Set a new baseURI for invoices
+     * @dev Needs admin access to schange base URI
+     * @param newBaseURI, string value of new URI
+     */
+    function setBaseURI(string calldata newBaseURI) external;
+
+    /**
+     * @dev Calculates the remaning reward
+     * @param mainId, unique identifier of invoice
+     * @return result the rewards Amount
      */
     function getRemainingReward(
-        uint mainId,
-        uint subId,
-        uint amount
-    ) external view returns (uint);
+        uint256 mainId
+    ) external view returns (uint256 result);
+
+    /**
+     * @dev Gets the invoice information
+     * @param mainId, unique identifier of invoice
+     * @return InvoiceInfo struct
+     */
+    function getInvoiceInfo(
+        uint256 mainId
+    ) external view returns (InvoiceInfo calldata);
+
+    /**
+     * @dev concatenate invoiceId (mainId) to baseURI
+     * @param mainId, unique identifier of invoice
+     * @return string value of invoice URI
+     */
+    function tokenURI(uint256 mainId) external view returns (string memory);
 }
