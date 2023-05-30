@@ -9,14 +9,12 @@ interface IInvoice is IDLT {
      * @param assetPrice, is the price of asset
      * @param rewardApr, is the Apr for calculating rewards
      * @param dueDate, is the end date for caluclating rewards
-     * @param lastSale, is the date of last sale
      * @param lastClaim, is the date of last claim rewards
      */
     struct InvoiceInfo {
         uint256 assetPrice;
         uint256 rewardApr;
         uint256 dueDate;
-        uint256 lastSale;
         uint256 lastClaim;
     }
 

@@ -92,15 +92,15 @@ contract Invoice is IInvoice, DLT, AccessControl {
     ) external view returns (uint256 result) {
         InvoiceInfo memory invoice = _invoices[mainId];
         uint256 tenure;
-        if (invoice.lastSale == 0 && invoice.assetPrice != 0) {
-            tenure = invoice.dueDate - block.timestamp;
+        if (invoice.lastClaim != 0) {
+            tenure = invoice.dueDate - invoice.lastClaim;
             result = _calculateFormula(
                 invoice.assetPrice,
                 tenure,
                 invoice.rewardApr
             );
-        } else {
-            tenure = invoice.dueDate - invoice.lastClaim;
+        } else if (invoice.assetPrice != 0) {
+            tenure = invoice.dueDate - block.timestamp;
             result = _calculateFormula(
                 invoice.assetPrice,
                 tenure,
@@ -152,7 +152,7 @@ contract Invoice is IInvoice, DLT, AccessControl {
         uint256 apr
     ) private {
         require(mainTotalSupply(mainId) == 0, "Invoice: Already minted");
-        _invoices[mainId] = InvoiceInfo(price, apr, dueDate, 0, 0);
+        _invoices[mainId] = InvoiceInfo(price, apr, dueDate, 0);
         _mint(owner, mainId, 1, 1);
 
         emit InvoiceCreated(msg.sender, owner, mainId);
