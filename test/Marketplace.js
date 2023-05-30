@@ -12,9 +12,19 @@ describe("Invoice", function () {
   let buyer;
   let treasuryWallet;
   let feeWallet;
+  let newTreasuryWallet;
+  let newFeeWallet;
 
   beforeEach(async () => {
-    [, user1, buyer, treasuryWallet, feeWallet] = await ethers.getSigners();
+    [
+      ,
+      user1,
+      buyer,
+      treasuryWallet,
+      feeWallet,
+      newTreasuryWallet,
+      newFeeWallet,
+    ] = await ethers.getSigners();
 
     const FormulasFactory = await ethers.getContractFactory("Formulas");
     formulasContract = await FormulasFactory.deploy();
@@ -45,7 +55,7 @@ describe("Invoice", function () {
     );
   });
 
-  it("it should revert on passing invalid invoice collection Address", async function () {
+  it("it should revert on passing Zero Address rather than invalid invoice collection Address", async function () {
     await expect(
       (
         await ethers.getContractFactory("Marketplace")
@@ -56,6 +66,19 @@ describe("Invoice", function () {
         feeWallet.address
       )
     ).to.revertedWith("Marketplace: Invalid invoice collection address");
+  });
+
+  it("Should revert on passing non-compatible invoice collection Address", async function () {
+    await expect(
+      (
+        await ethers.getContractFactory("Marketplace")
+      ).deploy(
+        stableCoinContract.address, // non compatible to invoice contract
+        stableCoinContract.address,
+        treasuryWallet.address,
+        feeWallet.address
+      )
+    ).to.revertedWith("Marketplace: Non compatible invoice collection");
   });
 
   it("it should revert on passing invalid stable coin address", async function () {
@@ -117,6 +140,39 @@ describe("Invoice", function () {
 
   it("it should return the fee wallet address while calling getFeeWallet()", async function () {
     expect(await marketplaceContract.getFeeWallet()).to.eq(feeWallet.address);
+  });
+
+  it("Should set a new treasury wallet address while calling setTreasuryWallet()", async function () {
+    await expect(
+      await marketplaceContract.setTreasuryWallet(newTreasuryWallet.address)
+    ).not.to.be.reverted;
+
+    expect(await marketplaceContract.getTreasuryWallet()).to.eq(
+      newTreasuryWallet.address
+    );
+  });
+
+  it("Should revert when setting a new treasury wallet by invalid sender address while calling setTreasuryWallet()", async function () {
+    await expect(
+      marketplaceContract
+        .connect(user1)
+        .setTreasuryWallet(newTreasuryWallet.address)
+    ).to.be.reverted;
+  });
+
+  it("Should set a new fee wallet address while calling setFeeWallet()", async function () {
+    await expect(await marketplaceContract.setFeeWallet(newFeeWallet.address))
+      .not.to.be.reverted;
+
+    expect(await marketplaceContract.getFeeWallet()).to.eq(
+      newFeeWallet.address
+    );
+  });
+
+  it("Should revert when setting a new fee wallet by invalid sender address while calling setFeeWallet()", async function () {
+    await expect(
+      marketplaceContract.connect(user1).setFeeWallet(newFeeWallet.address)
+    ).to.be.reverted;
   });
 
   it("Creating invoice and selling it to buyer through Marketplace", async function () {

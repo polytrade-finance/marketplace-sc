@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "./interface/IMarketplace.sol";
 import "../Invoice/interface/IInvoice.sol";
 import "../Token/Token.sol";
-import "../Safe/interface/ISafe.sol";
 
 /**
  * @title The common marketplace for the Invoices
@@ -19,12 +18,10 @@ contract Marketplace is AccessControl, IMarketplace {
     IInvoice private _invoiceCollection;
     Token private _stableToken;
 
-    ISafe private _treasuryWallet;
-    ISafe private _feeWallet;
+    address private _treasuryWallet;
+    address private _feeWallet;
 
     bytes4 private constant _INVOICE_INTERFACE_ID = type(IInvoice).interfaceId;
-
-    bytes4 private constant _SAFE_INTERFACE_ID = type(ISafe).interfaceId;
 
     /**
      * @dev Constructor for the main Marketplace
@@ -44,6 +41,8 @@ contract Marketplace is AccessControl, IMarketplace {
 
         _setTreasuryWallet(treasuryWallet);
         _setFeeWallet(feeWallet);
+
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     /**
@@ -97,6 +96,30 @@ contract Marketplace is AccessControl, IMarketplace {
     }
 
     /**
+     * @notice External method for _setTreasuryWallet implementation.
+     * @dev This function allows to set a new treasury wallet address where funds will be allocated.
+     * @dev Implementation of a setter for the treasury wallet
+     * @param newTreasuryWallet, Address of the new treasury wallet
+     */
+    function setTreasuryWallet(
+        address newTreasuryWallet
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _setTreasuryWallet(newTreasuryWallet);
+    }
+
+    /**
+     * @notice External method for setFeeWallet implementation.
+     * @dev This function allows to set a new treasury wallet address where funds will be allocated.
+     * @dev Implementation of a setter for the treasury wallet
+     * @param newFeeWallet, Address of the new treasury wallet
+     */
+    function setFeeWallet(
+        address newFeeWallet
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _setFeeWallet(newFeeWallet);
+    }
+
+    /**
      * @dev Implementation of a getter for the Invocie Collection contract
      * @return address Address of the Invocie Collection contract
      */
@@ -139,13 +162,12 @@ contract Marketplace is AccessControl, IMarketplace {
             "Marketplace: Invalid invoice collection address"
         );
 
-        if (
-            !newInvoiceCollectionAddress.supportsInterface(
+        require(
+            newInvoiceCollectionAddress.supportsInterface(
                 _INVOICE_INTERFACE_ID
-            )
-        ) {
-            revert UnsupportedInterface();
-        }
+            ),
+            "Marketplace: Non compatible invoice collection"
+        );
 
         address oldInvoiceCollectionAddress = address(_invoiceCollection);
         _invoiceCollection = IInvoice(newInvoiceCollectionAddress);
@@ -176,51 +198,36 @@ contract Marketplace is AccessControl, IMarketplace {
      * @notice Updates the treasury wallet address used for funds allocation.
      * @dev This function allows to set a new treasury wallet address where funds will be allocated.
      * @dev Implementation of a setter for the treasury wallet
-     * @param newTreasuryWalletAddress, Address of the new treasury wallet
+     * @param newTreasuryWallet, Address of the new treasury wallet
      */
-    function _setTreasuryWallet(address newTreasuryWalletAddress) private {
+    function _setTreasuryWallet(address newTreasuryWallet) private {
         require(
-            newTreasuryWalletAddress != address(0),
+            newTreasuryWallet != address(0),
             "Marketplace: Invalid treasury wallet address"
         );
 
-        // Check if the newTreasuryWallet implements the Safe.sol interface
-        require(
-            newTreasuryWalletAddress.supportsInterface(_SAFE_INTERFACE_ID),
-            "Marketplace: Address does not implement Safe.sol"
-        );
+        address oldTreasuryWallet = address(_treasuryWallet);
+        _treasuryWallet = newTreasuryWallet;
 
-        address oldTreasuryWalletAddress = address(_treasuryWallet);
-        _treasuryWallet = ISafe(newTreasuryWalletAddress);
-
-        emit TreasuryWalletSet(
-            oldTreasuryWalletAddress,
-            newTreasuryWalletAddress
-        );
+        emit TreasuryWalletSet(oldTreasuryWallet, newTreasuryWallet);
     }
 
     /**
      * @notice This function allows to set a new address for the fee wallet.
      * @notice The fee wallet is responsible for collecting transaction fees.
      * @dev Implementation of a setter for the fee wallet
-     * @param newFeeWalletAddress, Address of the new fee wallet
+     * @param newFeeWallet, Address of the new fee wallet
      */
-    function _setFeeWallet(address newFeeWalletAddress) private {
+    function _setFeeWallet(address newFeeWallet) private {
         require(
-            newFeeWalletAddress != address(0),
+            newFeeWallet != address(0),
             "Marketplace: Invalid fee wallet address"
         );
 
-        // Check if the newFeeWallet implements the Safe.sol interface
-        require(
-            newFeeWalletAddress.supportsInterface(_SAFE_INTERFACE_ID),
-            "Marketplace: Address does not implement Safe.sol"
-        );
+        address oldFeeWallet = address(_feeWallet);
+        _feeWallet = newFeeWallet;
 
-        address oldFeeWalletAddress = address(_feeWallet);
-        _feeWallet = ISafe(newFeeWalletAddress);
-
-        emit FeeWalletSet(oldFeeWalletAddress, newFeeWalletAddress);
+        emit FeeWalletSet(oldFeeWallet, newFeeWallet);
     }
 
     /**
