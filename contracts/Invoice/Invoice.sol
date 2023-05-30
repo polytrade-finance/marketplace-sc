@@ -92,6 +92,7 @@ contract Invoice is IInvoice, DLT, AccessControl {
     ) external view returns (uint256 result) {
         InvoiceInfo memory invoice = _invoices[mainId];
         uint256 tenure;
+
         if (invoice.lastClaim != 0) {
             tenure = invoice.dueDate - invoice.lastClaim;
             result = _calculateFormula(
