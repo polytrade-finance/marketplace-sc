@@ -191,7 +191,7 @@ contract Marketplace is AccessControl, IMarketplace {
             ""
         );
 
-        uint256 price = _invoiceCollection.getInvoiceInfo(invoiceId).assetPrice;
+        uint256 price = _invoiceCollection.getInvoiceInfo(invoiceId).price;
 
         _stableToken.transferFrom(msg.sender, _treasuryWallet, price);
     }

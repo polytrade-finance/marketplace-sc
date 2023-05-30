@@ -6,16 +6,16 @@ import "dual-layer-token/contracts/DLT/interface/IDLT.sol";
 interface IInvoice is IDLT {
     /**
      * @title A new struct to define the invoice information
-     * @param assetPrice, is the price of asset
+     * @param Price, is the price of asset
      * @param rewardApr, is the Apr for calculating rewards
      * @param dueDate, is the end date for caluclating rewards
-     * @param lastClaim, is the date of last claim rewards
+     * @param lastClaimDate, is the date of last claim rewards
      */
     struct InvoiceInfo {
-        uint256 assetPrice;
+        uint256 price;
         uint256 rewardApr;
         uint256 dueDate;
-        uint256 lastClaim;
+        uint256 lastClaimDate;
     }
 
     /**

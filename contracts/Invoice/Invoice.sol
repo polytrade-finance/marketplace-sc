@@ -93,17 +93,17 @@ contract Invoice is IInvoice, DLT, AccessControl {
         InvoiceInfo memory invoice = _invoices[mainId];
         uint256 tenure;
 
-        if (invoice.lastClaim != 0) {
-            tenure = invoice.dueDate - invoice.lastClaim;
+        if (invoice.lastClaimDate != 0) {
+            tenure = invoice.dueDate - invoice.lastClaimDate;
             result = _calculateFormula(
-                invoice.assetPrice,
+                invoice.price,
                 tenure,
                 invoice.rewardApr
             );
-        } else if (invoice.assetPrice != 0) {
+        } else if (invoice.price != 0) {
             tenure = invoice.dueDate - block.timestamp;
             result = _calculateFormula(
-                invoice.assetPrice,
+                invoice.price,
                 tenure,
                 invoice.rewardApr
             );
