@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "dual-layer-token/contracts/DLT/DLT.sol";
-import "./Interface/IInvoice.sol";
+import "contracts/Invoice/Interface/IInvoice.sol";
 
 /**
  * @title The Invoice contract based on EIP6960

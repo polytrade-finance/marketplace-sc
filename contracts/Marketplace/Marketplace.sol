@@ -2,9 +2,9 @@
 pragma solidity =0.8.17;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "./Interface/IMarketplace.sol";
-import "../Invoice/Interface/IInvoice.sol";
-import "../Token/Token.sol";
+import "contracts/Marketplace/Interface/IMarketplace.sol";
+import "contracts/Invoice/Interface/IInvoice.sol";
+import "contracts/Token/Token.sol";
 
 /**
  * @title The common marketplace for the Invoices
