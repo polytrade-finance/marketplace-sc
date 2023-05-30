@@ -37,7 +37,7 @@ describe("Marketplace", function () {
     );
   });
 
-  it("it should revert on passing invalid invoice collection Address", async function () {
+  it("Should revert on passing invalid invoice collection Address", async function () {
     await expect(
       (
         await ethers.getContractFactory("Marketplace")
@@ -50,7 +50,7 @@ describe("Marketplace", function () {
     ).to.revertedWith("Marketplace: Invalid invoice collection address");
   });
 
-  it("it should revert on passing invalid stable coin address", async function () {
+  it("Should revert on passing invalid stable coin address", async function () {
     await expect(
       (
         await ethers.getContractFactory("Marketplace")
@@ -63,7 +63,7 @@ describe("Marketplace", function () {
     ).to.revertedWith("Marketplace: Invalid stable coin address");
   });
 
-  it("it should revert on passing invalid treasury wallet Address", async function () {
+  it("Should revert on passing invalid treasury wallet Address", async function () {
     await expect(
       (
         await ethers.getContractFactory("Marketplace")
@@ -76,7 +76,7 @@ describe("Marketplace", function () {
     ).to.revertedWith("Marketplace: Invalid treasury wallet address");
   });
 
-  it("it should revert on passing invalid fee wallet Address", async function () {
+  it("Should revert on passing invalid fee wallet Address", async function () {
     await expect(
       (
         await ethers.getContractFactory("Marketplace")
@@ -89,29 +89,29 @@ describe("Marketplace", function () {
     ).to.revertedWith("Marketplace: Invalid fee wallet address");
   });
 
-  it("it should return the invoice contract address while calling getInvoiceCollection()", async function () {
+  it("Should return the invoice contract address while calling getInvoiceCollection()", async function () {
     expect(await marketplaceContract.getInvoiceCollection()).to.eq(
       invoiceContract.address
     );
   });
 
-  it("it should return the stable coin contract address while calling getStableCoin()", async function () {
+  it("Should return the stable coin contract address while calling getStableCoin()", async function () {
     expect(await marketplaceContract.getStableCoin()).to.eq(
       stableCoinContract.address
     );
   });
 
-  it("it should return the treasury wallet address while calling getTreasuryWallet()", async function () {
+  it("Should return the treasury wallet address while calling getTreasuryWallet()", async function () {
     expect(await marketplaceContract.getTreasuryWallet()).to.eq(
       treasuryWallet.address
     );
   });
 
-  it("it should return the fee wallet address while calling getFeeWallet()", async function () {
+  it("Should return the fee wallet address while calling getFeeWallet()", async function () {
     expect(await marketplaceContract.getFeeWallet()).to.eq(feeWallet.address);
   });
 
-  it("Creating invoice and selling it to buyer through Marketplace", async function () {
+  it("Should create an invoice and selling it to buyer through Marketplace", async function () {
     await invoiceContract.createInvoice(
       user1.address,
       1,
@@ -138,7 +138,7 @@ describe("Marketplace", function () {
     expect(await invoiceContract.subBalanceOf(buyer.address, 1, 1)).to.eq(1);
   });
 
-  it("Creating multiple invoices and selling it to buyer through Marketplace", async function () {
+  it("Should create multiple invoices and selling it to buyer through Marketplace", async function () {
     await invoiceContract.createInvoice(
       user1.address,
       1,
@@ -184,7 +184,7 @@ describe("Marketplace", function () {
     expect(await invoiceContract.subBalanceOf(buyer.address, 2, 1)).to.eq(1);
   });
 
-  it("Revert when no array parity in batchBuy", async function () {
+  it("Should revert when no array parity in batchBuy", async function () {
     await invoiceContract.createInvoice(
       user1.address,
       1,
