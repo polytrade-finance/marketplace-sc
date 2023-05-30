@@ -6,6 +6,9 @@ const DECIMALS = {
   EIGHTEEN: 18,
 };
 
+const DAY = 24 * 60 * 60;
+const YEAR = 365 * DAY;
+
 const invoice = {
   assetPrice: ethers.utils.parseUnits("10", DECIMALS.SIX),
   rewardApr: ethers.utils.parseUnits("10", DECIMALS.TWO), // with 2 decimals
@@ -15,6 +18,8 @@ const invoice = {
 };
 
 module.exports = {
+  DAY,
+  YEAR,
   invoice,
   DECIMALS,
 };
