@@ -2,12 +2,13 @@
 pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "dual-layer-token/contracts/DLT/DLT.sol";
 import "./interface/IInvoice.sol";
 import "../Formulas/interface/IFormulas.sol";
 
-contract Invoice is IInvoice, DLT, AccessControl {
+contract Invoice is ERC165, IInvoice, DLT, AccessControl {
     // Create a new role identifier for the minter role
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
@@ -116,6 +117,17 @@ contract Invoice is IInvoice, DLT, AccessControl {
         string memory stringInvoiceNumber = Strings.toString(mainId);
 
         return string.concat(_invoiceBaseURI, stringInvoiceNumber);
+    }
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(ERC165, AccessControl) returns (bool) {
+        return
+            interfaceId == type(IInvoice).interfaceId ||
+            super.supportsInterface(interfaceId);
     }
 
     /**

@@ -2,9 +2,11 @@
 pragma solidity =0.8.17;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "./interface/IMarketplace.sol";
 import "../Invoice/interface/IInvoice.sol";
 import "../Token/Token.sol";
+import "../Safe/interface/ISafe.sol";
 
 /**
  * @title The common marketplace for the Invoices
@@ -12,11 +14,17 @@ import "../Token/Token.sol";
  * @dev Implementation of all Invoices trading operations
  */
 contract Marketplace is AccessControl, IMarketplace {
+    using ERC165Checker for address;
+
     IInvoice private _invoiceCollection;
     Token private _stableToken;
 
-    address private _treasuryWallet;
-    address private _feeWallet;
+    ISafe private _treasuryWallet;
+    ISafe private _feeWallet;
+
+    bytes4 private constant _INVOICE_INTERFACE_ID = type(IInvoice).interfaceId;
+
+    bytes4 private constant _SAFE_INTERFACE_ID = type(ISafe).interfaceId;
 
     /**
      * @dev Constructor for the main Marketplace
@@ -26,8 +34,8 @@ contract Marketplace is AccessControl, IMarketplace {
      * @param feeWallet, Address of the fee wallet
      */
     constructor(
-        IInvoice invoiceCollection,
-        Token stableToken,
+        address invoiceCollection,
+        address stableToken,
         address treasuryWallet,
         address feeWallet
     ) {
@@ -109,7 +117,7 @@ contract Marketplace is AccessControl, IMarketplace {
      * @return address Address of the treasury wallet
      */
     function getTreasuryWallet() external view returns (address) {
-        return _treasuryWallet;
+        return address(_treasuryWallet);
     }
 
     /**
@@ -117,23 +125,30 @@ contract Marketplace is AccessControl, IMarketplace {
      * @return address Address of the fee wallet
      */
     function getFeeWallet() external view returns (address) {
-        return _feeWallet;
+        return address(_feeWallet);
     }
 
     /**
      * @dev Implementation of a setter for Invoice Collection contract
      * @notice This function allows to set the address of the Invoice Collection contract used within the marketplace.
-     * @param newInvoiceCollection, Invoice Collection contract
+     * @param newInvoiceCollectionAddress, Invoice Collection contract
      */
-    function _setInvoiceContract(IInvoice newInvoiceCollection) private {
-        address newInvoiceCollectionAddress = address(newInvoiceCollection);
+    function _setInvoiceContract(address newInvoiceCollectionAddress) private {
         require(
             newInvoiceCollectionAddress != address(0),
             "Marketplace: Invalid invoice collection address"
         );
 
+        if (
+            !newInvoiceCollectionAddress.supportsInterface(
+                _INVOICE_INTERFACE_ID
+            )
+        ) {
+            revert UnsupportedInterface();
+        }
+
         address oldInvoiceCollectionAddress = address(_invoiceCollection);
-        _invoiceCollection = newInvoiceCollection;
+        _invoiceCollection = IInvoice(newInvoiceCollectionAddress);
 
         emit InvoiceCollectionSet(
             oldInvoiceCollectionAddress,
@@ -144,16 +159,15 @@ contract Marketplace is AccessControl, IMarketplace {
     /**
      * @notice This function allows to specify the stable coin address contract to be used within the marketplace.
      * @dev Implementation of a setter for the ERC20 token
-     * @param stableToken, the stableToken (ERC20) contract
+     * @param stableTokenAddress, the stableToken (ERC20) contract
      */
-    function _setStableToken(Token stableToken) private {
-        address stableTokenAddress = address(stableToken);
+    function _setStableToken(address stableTokenAddress) private {
         require(
             stableTokenAddress != address(0),
             "Marketplace: Invalid stable coin address"
         );
 
-        _stableToken = stableToken;
+        _stableToken = Token(stableTokenAddress);
 
         emit StableTokenSet(stableTokenAddress);
     }
@@ -162,36 +176,51 @@ contract Marketplace is AccessControl, IMarketplace {
      * @notice Updates the treasury wallet address used for funds allocation.
      * @dev This function allows to set a new treasury wallet address where funds will be allocated.
      * @dev Implementation of a setter for the treasury wallet
-     * @param newTreasuryWallet, Address of the new treasury wallet
+     * @param newTreasuryWalletAddress, Address of the new treasury wallet
      */
-    function _setTreasuryWallet(address newTreasuryWallet) private {
+    function _setTreasuryWallet(address newTreasuryWalletAddress) private {
         require(
-            newTreasuryWallet != address(0),
+            newTreasuryWalletAddress != address(0),
             "Marketplace: Invalid treasury wallet address"
         );
 
-        address oldTreasuryWallet = _treasuryWallet;
-        _treasuryWallet = newTreasuryWallet;
+        // Check if the newTreasuryWallet implements the Safe.sol interface
+        require(
+            newTreasuryWalletAddress.supportsInterface(_SAFE_INTERFACE_ID),
+            "Marketplace: Address does not implement Safe.sol"
+        );
 
-        emit TreasuryWalletSet(oldTreasuryWallet, newTreasuryWallet);
+        address oldTreasuryWalletAddress = address(_treasuryWallet);
+        _treasuryWallet = ISafe(newTreasuryWalletAddress);
+
+        emit TreasuryWalletSet(
+            oldTreasuryWalletAddress,
+            newTreasuryWalletAddress
+        );
     }
 
     /**
      * @notice This function allows to set a new address for the fee wallet.
      * @notice The fee wallet is responsible for collecting transaction fees.
      * @dev Implementation of a setter for the fee wallet
-     * @param newFeeWallet, Address of the new fee wallet
+     * @param newFeeWalletAddress, Address of the new fee wallet
      */
-    function _setFeeWallet(address newFeeWallet) private {
+    function _setFeeWallet(address newFeeWalletAddress) private {
         require(
-            newFeeWallet != address(0),
+            newFeeWalletAddress != address(0),
             "Marketplace: Invalid fee wallet address"
         );
 
-        address oldFeeWallet = _feeWallet;
-        _feeWallet = newFeeWallet;
+        // Check if the newFeeWallet implements the Safe.sol interface
+        require(
+            newFeeWalletAddress.supportsInterface(_SAFE_INTERFACE_ID),
+            "Marketplace: Address does not implement Safe.sol"
+        );
 
-        emit FeeWalletSet(oldFeeWallet, newFeeWallet);
+        address oldFeeWalletAddress = address(_feeWallet);
+        _feeWallet = ISafe(newFeeWalletAddress);
+
+        emit FeeWalletSet(oldFeeWalletAddress, newFeeWalletAddress);
     }
 
     /**

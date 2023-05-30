@@ -39,4 +39,9 @@ interface IMarketplace {
      * @param newFeeWallet, Address of the new fee wallet
      */
     event FeeWalletSet(address oldFeeWallet, address newFeeWallet);
+
+    /**
+     * @dev Reverted on unsupported interface detection
+     */
+    error UnsupportedInterface();
 }
