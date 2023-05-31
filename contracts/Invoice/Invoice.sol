@@ -8,7 +8,6 @@ import "dual-layer-token/contracts/DLT/DLT.sol";
 import "contracts/Invoice/interface/IInvoice.sol";
 
 contract Invoice is ERC165, IInvoice, DLT, AccessControl {
-
     string private _invoiceBaseURI;
 
     /**
