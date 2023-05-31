@@ -89,6 +89,19 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
     }
 
     /**
+     * @dev See {IInvoice-claimReward}.
+     */
+    function claimReward(
+        address owner,
+        uint256 mainId
+    ) external onlyRole(MARKETPLACE_ROLE) returns (uint256 rewards) {
+        require(mainBalanceOf(owner, mainId) == 1, "Owner address is Invalid");
+
+        rewards = _getAvailableRewards(mainId);
+        _invoices[mainId].lastClaimDate = block.timestamp;
+    }
+
+    /**
      * @dev See {IInvoice-getRemainingReward}.
      */
     function getRemainingReward(
@@ -121,19 +134,6 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
         uint256 mainId
     ) external view returns (uint256 result) {
         result = _getAvailableRewards(mainId);
-    }
-
-    /**
-     * @dev See {IInvoice-claimReward}.
-     */
-    function claimReward(
-        address owner,
-        uint256 mainId
-    ) external view onlyRole(MARKETPLACE_ROLE) returns (uint256 rewards) {
-        require(mainBalanceOf(owner, mainId) == 1, "Owner address is Invalid");
-
-        rewards = _getAvailableRewards(mainId);
-        _invoices[mainId].lastClaimDate = block.timestamp;
     }
 
     /**

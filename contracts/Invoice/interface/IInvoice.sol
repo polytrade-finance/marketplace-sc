@@ -79,6 +79,17 @@ interface IInvoice is IDLT {
     function setBaseURI(string calldata newBaseURI) external;
 
     /**
+     * @dev Set a new baseURI for invoices
+     * @dev Needs admin access to schange base URI
+     * @param owner, string value of new URI
+     * @param mainId, string value of new URI
+     */
+    function claimReward(
+        address owner,
+        uint256 mainId
+    ) external returns (uint256 rewards);
+
+    /**
      * @dev Calculates the remaning reward
      * @param mainId, unique identifier of invoice
      * @return result the rewards Amount

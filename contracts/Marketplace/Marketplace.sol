@@ -56,7 +56,6 @@ contract Marketplace is AccessControl, IMarketplace {
 
     /**
      * @dev Buys
-     * @param owner, address of the Invoice owner
      * @param invoiceId, unique number of the Invoice
      */
     function claimReward(uint invoiceId) external {
@@ -227,7 +226,6 @@ contract Marketplace is AccessControl, IMarketplace {
 
     /**
      * @dev Safe transfer invoice to buyer and transfer the price to treasury wallet
-     * @param owner, address of the Invoice owner's
      * @param invoiceId, unique identifier of the Invoice
      */
     function _claimReward(uint invoiceId) private {
