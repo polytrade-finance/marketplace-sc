@@ -1,6 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { invoice, YEAR, MarketplaceAccess } = require("./data");
+const { time } = require("@nomicfoundation/hardhat-network-helpers");
 const { now } = require("./helpers");
 
 describe("Invoice", function () {
@@ -157,7 +158,8 @@ describe("Invoice", function () {
         )
     ).to.be.reverted;
   });
-  it("Should create an invoice and get remaining rewards", async function () {
+
+  it("Should create an invoice and get remaining rewards (before due date)", async function () {
     expect(
       await invoiceContract.createInvoice(
         deployer.address,
@@ -177,6 +179,28 @@ describe("Invoice", function () {
     const actualReward = await invoiceContract.getRemainingReward(1);
 
     expect(actualReward).to.be.within(expectedReward - 1, expectedReward + 1);
+  });
+
+  it("Should create an invoice and get remaining rewards (after due date)", async function () {
+    expect(
+      await invoiceContract.createInvoice(
+        deployer.address,
+        1,
+        invoice.assetPrice,
+        invoice.rewardApr,
+        invoice.dueDate
+      )
+    )
+      .to.emit(invoiceContract, "InvoiceCreated")
+      .withArgs(deployer.address, deployer.address, 1);
+
+    await time.increase(YEAR);
+
+    const expectedReward = 0;
+
+    const actualReward = await invoiceContract.getRemainingReward(1);
+
+    expect(actualReward).to.be.equal(expectedReward);
   });
 
   it("Should return zero rewards for minted invoice with zero price", async function () {

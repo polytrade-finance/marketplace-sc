@@ -96,9 +96,15 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
         uint256 mainId
     ) external onlyRole(MARKETPLACE_ROLE) returns (uint256 reward) {
         require(mainBalanceOf(owner, mainId) == 1, "Owner address is Invalid");
+        InvoiceInfo storage invoice = _invoices[mainId];
 
         reward = _getAvailableReward(mainId);
-        _invoices[mainId].lastClaimDate = block.timestamp;
+
+        invoice.lastClaimDate = (
+            block.timestamp > invoice.dueDate
+                ? invoice.dueDate
+                : block.timestamp
+        );
     }
 
     /**
@@ -118,7 +124,13 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
                 invoice.rewardApr
             );
         } else if (invoice.price != 0) {
-            tenure = invoice.dueDate - block.timestamp;
+            tenure =
+                invoice.dueDate -
+                (
+                    block.timestamp > invoice.dueDate
+                        ? invoice.dueDate
+                        : block.timestamp
+                );
             result = _calculateFormula(
                 invoice.price,
                 tenure,
@@ -132,8 +144,8 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
      */
     function getAvailableReward(
         uint256 mainId
-    ) external view returns (uint256 result) {
-        result = _getAvailableReward(mainId);
+    ) external view returns (uint256) {
+        return _getAvailableReward(mainId);
     }
 
     /**
@@ -207,7 +219,12 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
         InvoiceInfo memory invoice = _invoices[mainId];
 
         if (invoice.lastClaimDate != 0) {
-            uint256 tenure = block.timestamp - invoice.lastClaimDate;
+            uint256 tenure = (
+                block.timestamp > invoice.dueDate
+                    ? invoice.dueDate
+                    : block.timestamp
+            ) - invoice.lastClaimDate;
+
             result = _calculateFormula(
                 invoice.price,
                 tenure,

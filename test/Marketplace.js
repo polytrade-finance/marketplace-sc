@@ -1,6 +1,8 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { invoice, MarketplaceAccess } = require("./data");
+const { invoice, MarketplaceAccess, DAY, YEAR } = require("./data");
+const { time } = require("@nomicfoundation/hardhat-network-helpers");
+const { now } = require("./helpers");
 
 describe("Marketplace", function () {
   let invoiceContract;
@@ -140,6 +142,20 @@ describe("Marketplace", function () {
     expect(await marketplaceContract.getFeeWallet()).to.eq(feeWallet.address);
   });
 
+  it("Should set a new initial fee (10.00%) percentage for first buy", async function () {
+    await expect(await marketplaceContract.setInitialFee(1000)).not.to.be
+      .reverted;
+
+    expect(await marketplaceContract.initialFee()).to.eq(1000);
+  });
+
+  it("Should set a new buying fee (10.00%) percentage for all buys", async function () {
+    await expect(await marketplaceContract.setBuyingFee(1000)).not.to.be
+      .reverted;
+
+    expect(await marketplaceContract.buyingFee()).to.eq(1000);
+  });
+
   it("Should set a new treasury wallet address while calling setTreasuryWallet()", async function () {
     await expect(
       await marketplaceContract.setTreasuryWallet(newTreasuryWallet.address)
@@ -202,6 +218,162 @@ describe("Marketplace", function () {
     );
 
     expect(await invoiceContract.subBalanceOf(buyer.address, 1, 1)).to.eq(1);
+  });
+
+  it("Should create invoice and selling it to buyer then claim rewards(before due date)", async function () {
+    await invoiceContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+    await invoiceContract.createInvoice(
+      user1.address,
+      1,
+      invoice.assetPrice,
+      invoice.rewardApr,
+      invoice.dueDate
+    );
+
+    await invoiceContract
+      .connect(user1)
+      .approve(marketplaceContract.address, 1, 1, 1);
+
+    await stableTokenContract
+      .connect(buyer)
+      .approve(marketplaceContract.address, invoice.assetPrice);
+
+    await stableTokenContract
+      .connect(treasuryWallet)
+      .approve(marketplaceContract.address, invoice.assetPrice);
+
+    await expect(await marketplaceContract.connect(buyer).buy(user1.address, 1))
+      .not.to.be.reverted;
+
+    const tenure = 10 * DAY;
+    await time.increase(tenure);
+
+    const expectedReward = Math.round(
+      (tenure * invoice.assetPrice * invoice.rewardApr) / (10000 * YEAR)
+    );
+    const actualReward = await invoiceContract.getAvailableReward(1);
+
+    expect(actualReward).to.be.within(expectedReward - 1, expectedReward + 1);
+
+    const beforeClaim = await stableTokenContract.balanceOf(buyer.address);
+    await marketplaceContract.connect(buyer).claimReward(1);
+    const afterClaim = await stableTokenContract.balanceOf(buyer.address);
+
+    expect(afterClaim.sub(beforeClaim)).to.eq(actualReward);
+  });
+
+  it("Should create invoice and selling it to buyer then claim rewards(after due date)", async function () {
+    await invoiceContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+    await invoiceContract.createInvoice(
+      user1.address,
+      1,
+      invoice.assetPrice,
+      invoice.rewardApr,
+      invoice.dueDate
+    );
+
+    await invoiceContract
+      .connect(user1)
+      .approve(marketplaceContract.address, 1, 1, 1);
+
+    await stableTokenContract
+      .connect(buyer)
+      .approve(marketplaceContract.address, invoice.assetPrice);
+
+    await stableTokenContract
+      .connect(treasuryWallet)
+      .approve(marketplaceContract.address, invoice.assetPrice);
+
+    await expect(await marketplaceContract.connect(buyer).buy(user1.address, 1))
+      .not.to.be.reverted;
+
+    const tenure = invoice.dueDate - (await now());
+    await time.increase(YEAR);
+
+    const expectedReward = Math.round(
+      (tenure * invoice.assetPrice * invoice.rewardApr) / (10000 * YEAR)
+    );
+    const actualReward = await invoiceContract.getAvailableReward(1);
+
+    expect(actualReward).to.be.within(expectedReward - 1, expectedReward + 1);
+
+    const beforeClaim = await stableTokenContract.balanceOf(buyer.address);
+    await marketplaceContract.connect(buyer).claimReward(1);
+    const afterClaim = await stableTokenContract.balanceOf(buyer.address);
+
+    expect(afterClaim.sub(beforeClaim)).to.eq(actualReward);
+  });
+
+  it("Should create invoice and selling it for 2 times and apply buying fee", async function () {
+    await invoiceContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+    await invoiceContract.createInvoice(
+      user1.address,
+      1,
+      invoice.assetPrice,
+      invoice.rewardApr,
+      invoice.dueDate
+    );
+
+    await marketplaceContract.setBuyingFee(1000);
+    await marketplaceContract.setInitialFee(2000);
+
+    await invoiceContract
+      .connect(user1)
+      .approve(marketplaceContract.address, 1, 1, 1);
+
+    await stableTokenContract
+      .connect(buyer)
+      .approve(marketplaceContract.address, 2 * invoice.assetPrice);
+
+    await stableTokenContract
+      .connect(buyer)
+      .transfer(user1.address, 2 * invoice.assetPrice);
+
+    await stableTokenContract
+      .connect(buyer)
+      .transfer(treasuryWallet.address, invoice.assetPrice);
+
+    await stableTokenContract
+      .connect(treasuryWallet)
+      .approve(marketplaceContract.address, 2 * invoice.assetPrice);
+
+    const before1stBuy = await stableTokenContract.balanceOf(feeWallet.address);
+
+    await expect(await marketplaceContract.connect(buyer).buy(user1.address, 1))
+      .not.to.be.reverted;
+
+    const after1stBuy = await stableTokenContract.balanceOf(feeWallet.address);
+
+    await invoiceContract
+      .connect(buyer)
+      .approve(marketplaceContract.address, 1, 1, 1);
+
+    await stableTokenContract
+      .connect(user1)
+      .approve(marketplaceContract.address, 2 * invoice.assetPrice);
+
+    const before2ndBuy = await stableTokenContract.balanceOf(feeWallet.address);
+
+    await expect(await marketplaceContract.connect(user1).buy(buyer.address, 1))
+      .not.to.be.reverted;
+
+    const after2ndBuy = await stableTokenContract.balanceOf(feeWallet.address);
+
+    const expected1stFee = (invoice.assetPrice * 2000) / 10000;
+    const expected2ndFee = (invoice.assetPrice * 1000) / 10000;
+
+    expect(after1stBuy.sub(before1stBuy)).to.eq(expected1stFee);
+
+    expect(after2ndBuy.sub(before2ndBuy)).to.eq(expected2ndFee);
   });
 
   it("Should create multiple invoices and selling it to buyer through Marketplace", async function () {
