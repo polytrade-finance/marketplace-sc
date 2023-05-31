@@ -23,7 +23,8 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
     string private _invoiceBaseURI;
     uint256 private constant _YEAR = 365 days;
 
-    bytes4 private constant _MARKETPLACE_INTERFACE_ID = type(IMarketplace).interfaceId;
+    bytes4 private constant _MARKETPLACE_INTERFACE_ID =
+        type(IMarketplace).interfaceId;
 
     /**
      * @dev Mapping will be indexing the InvoiceInfo for each Invoice category by its mainId
@@ -58,7 +59,7 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
     function settleInvoice(
         address owner,
         uint256 mainId
-    ) external onlyRole(MARKETPLACE_ROLE) returns(uint256) {
+    ) external onlyRole(MARKETPLACE_ROLE) returns (uint256) {
         if (!msg.sender.supportsInterface(_MARKETPLACE_INTERFACE_ID))
             revert UnsupportedInterface();
         _burn(owner, mainId, 1, 1);

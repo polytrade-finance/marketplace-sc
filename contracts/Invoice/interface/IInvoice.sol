@@ -52,7 +52,7 @@ interface IInvoice is IDLT {
     function settleInvoice(
         address owner,
         uint256 mainId
-    ) external returns(uint256);
+    ) external returns (uint256);
 
     /**
      * @dev Creates an invoice with its parameters
