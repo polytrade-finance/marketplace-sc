@@ -185,6 +185,17 @@ describe("Marketplace", function () {
     );
   });
 
+  it("Should revert to settle invoice without admin role", async function () {
+    await expect(
+      marketplaceContract.connect(user1).settleInvoice(buyer.address, 1)
+    ).to.be.revertedWith(
+      `AccessControl: account ${user1.address.toLowerCase()} is missing role ${ethers.utils.hexZeroPad(
+        ethers.utils.hexlify(0),
+        32
+      )}`
+    );
+  });
+
   it("Should revert to set buying fee without admin role", async function () {
     await expect(
       marketplaceContract.connect(user1).setBuyingFee(1000)
@@ -326,6 +337,7 @@ describe("Marketplace", function () {
       MarketplaceAccess,
       marketplaceContract.address
     );
+
     await invoiceContract.createInvoice(
       user1.address,
       1,
@@ -369,7 +381,53 @@ describe("Marketplace", function () {
     expect(remainingReward).to.eq(0);
   });
 
-  it("Should create an invoice and get remaining rewards (after due date)", async function () {
+  it("Should create an invoice settle the invoice after due date", async function () {
+    await invoiceContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+
+    expect(
+      await invoiceContract.createInvoice(
+        user1.address,
+        1,
+        invoice.assetPrice,
+        0,
+        await now()
+      )
+    )
+      .to.emit(invoiceContract, "InvoiceCreated")
+      .withArgs(user1.address, user1.address, 1);
+
+    await invoiceContract
+      .connect(user1)
+      .approve(marketplaceContract.address, 1, 1, 1);
+
+    await stableTokenContract
+      .connect(buyer)
+      .approve(marketplaceContract.address, invoice.assetPrice);
+
+    await stableTokenContract
+      .connect(treasuryWallet)
+      .approve(marketplaceContract.address, invoice.assetPrice);
+
+    await expect(await marketplaceContract.connect(buyer).buy(user1.address, 1))
+      .not.to.be.reverted;
+
+    await time.increase(10);
+
+    const beforeSettle = await stableTokenContract.balanceOf(buyer.address);
+
+    expect(await marketplaceContract.settleInvoice(buyer.address, 1))
+      .to.emit(invoiceContract, "InvoiceSettled")
+      .withArgs(buyer.address, 1);
+
+    const afterSettle = await stableTokenContract.balanceOf(buyer.address);
+
+    expect(afterSettle.sub(beforeSettle)).to.be.equal(invoice.assetPrice);
+  });
+
+  it("Should create an invoice and settle it after due date", async function () {
     expect(
       await invoiceContract.createInvoice(
         user1.address,
@@ -391,7 +449,7 @@ describe("Marketplace", function () {
     expect(actualReward).to.be.equal(expectedReward);
   });
 
-  it("Should create invoice and selling it for 2 times and apply buying fee", async function () {
+  it("Should create invoice and selling it for 2 times and apply buying fees", async function () {
     await invoiceContract.grantRole(
       MarketplaceAccess,
       marketplaceContract.address

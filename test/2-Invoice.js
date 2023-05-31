@@ -81,13 +81,45 @@ describe("Invoice", function () {
       .reverted;
   });
 
+  it("Should revert on calling `settleInvoice` without interface support", async function () {
+    await invoiceContract.grantRole(MarketplaceAccess, deployer.address);
+
+    await expect(
+      invoiceContract.settleInvoice(deployer.address, 1)
+    ).to.be.revertedWithCustomError(invoiceContract, "UnsupportedInterface");
+  });
+
+  it("Should revert on calling `claimReward` without interface support", async function () {
+    await invoiceContract.grantRole(MarketplaceAccess, deployer.address);
+
+    await expect(
+      invoiceContract.claimReward(deployer.address, 1)
+    ).to.be.revertedWithCustomError(invoiceContract, "UnsupportedInterface");
+  });
+
+  it("Should revert to settle invoice without marketplace role", async function () {
+    await expect(
+      invoiceContract.connect(deployer).settleInvoice(deployer.address, 1)
+    ).to.be.revertedWith(
+      `AccessControl: account ${deployer.address.toLowerCase()} is missing role ${MarketplaceAccess}`
+    );
+  });
+
   it("Should revert to set new base uri by invalid caller", async function () {
     await expect(
       invoiceContract.connect(user1).setBaseURI("https://ipfs2.io/ipfs")
     ).to.be.reverted;
   });
 
-  it("Should revert to update claim status without marketplace role", async function () {
+  it("Should revert to update claim status without `MarketplaceAccess` role", async function () {
+    await expect(
+      invoiceContract.connect(user1).claimReward(user1.address, 1)
+    ).to.be.revertedWith(
+      `AccessControl: account ${user1.address.toLowerCase()} is missing role ${MarketplaceAccess}`
+    );
+  });
+
+  it("Should revert to settle invoice without `MarketplaceAccess` role", async function () {
     await expect(
       invoiceContract.connect(user1).claimReward(user1.address, 1)
     ).to.be.revertedWith(
