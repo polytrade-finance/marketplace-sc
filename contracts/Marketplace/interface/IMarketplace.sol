@@ -55,9 +55,25 @@ interface IMarketplace {
     event BuyingFeeSet(uint256 oldFee, uint256 newFee);
 
     /**
+     * @dev Emitted when an invoice is settled
+     * @param owner, address of the invoice owner
+     * @param invoiceId, unique number of the invoice
+     */
+    event InvoiceSettled(address indexed owner, uint256 invoiceId);
+
+    /**
      * @dev Reverted on unsupported interface detection
      */
     error UnsupportedInterface();
+
+    /**
+     * @dev Settles an invoice after due date and claim remaining rewards for the owner
+     * @dev call `settleInvoice` function from invoice collection
+     * @dev Burns the invoice and transfers the price to current owner
+     * @param owner, address of the invoice owner
+     * @param invoiceId, unique number of the invoice
+     */
+    function settleInvoice(address owner, uint256 invoiceId) external;
 
     /**
      * @dev Transfer asset to buyer and price to treasuryWallet also deducts fee from buyer

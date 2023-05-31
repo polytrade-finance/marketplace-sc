@@ -3,9 +3,11 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "dual-layer-token/contracts/DLT/DLT.sol";
 import "contracts/Invoice/interface/IInvoice.sol";
+import "contracts/Marketplace/interface/IMarketplace.sol";
 
 /**
  * @title The Invoice contract based on EIP6960
@@ -13,11 +15,15 @@ import "contracts/Invoice/interface/IInvoice.sol";
  * @dev Manages creation of invoice and rewards distribution
  */
 contract Invoice is ERC165, IInvoice, DLT, AccessControl {
+    using ERC165Checker for address;
+
     // Create a new role identifier for the marketplace role
     bytes32 public constant MARKETPLACE_ROLE = keccak256("MARKETPLACE_ROLE");
 
     string private _invoiceBaseURI;
     uint256 private constant _YEAR = 365 days;
+
+    bytes4 private constant _MARKETPLACE_INTERFACE_ID = type(IMarketplace).interfaceId;
 
     /**
      * @dev Mapping will be indexing the InvoiceInfo for each Invoice category by its mainId
@@ -44,6 +50,19 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
         uint256 dueDate
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _createInvoice(owner, mainId, price, dueDate, apr);
+    }
+
+    /**
+     * @dev See {IInvoice-settleInvoice}.
+     */
+    function settleInvoice(
+        address owner,
+        uint256 mainId
+    ) external onlyRole(MARKETPLACE_ROLE) returns(uint256) {
+        if (!msg.sender.supportsInterface(_MARKETPLACE_INTERFACE_ID))
+            revert UnsupportedInterface();
+        _burn(owner, mainId, 1, 1);
+        return _invoices[mainId].price;
     }
 
     /**
@@ -95,6 +114,8 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
         address owner,
         uint256 mainId
     ) external onlyRole(MARKETPLACE_ROLE) returns (uint256 reward) {
+        if (!msg.sender.supportsInterface(_MARKETPLACE_INTERFACE_ID))
+            revert UnsupportedInterface();
         require(mainBalanceOf(owner, mainId) == 1, "Owner address is Invalid");
         InvoiceInfo storage invoice = _invoices[mainId];
 

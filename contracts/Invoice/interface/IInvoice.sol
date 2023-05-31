@@ -38,6 +38,23 @@ interface IInvoice is IDLT {
     );
 
     /**
+     * @dev Reverted on unsupported interface detection
+     */
+    error UnsupportedInterface();
+
+    /**
+     * @dev Settles invoice for owner and burn the invoice
+     * @param owner, current owner of invoice
+     * @param mainId, unique identifier of invoice
+     * @dev Needs marketplace access to settle an invoice
+     * @return the invoice price
+     */
+    function settleInvoice(
+        address owner,
+        uint256 mainId
+    ) external returns(uint256);
+
+    /**
      * @dev Creates an invoice with its parameters
      * @param owner, initial owner of invoice
      * @param mainId, unique identifier of invoice

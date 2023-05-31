@@ -2,17 +2,18 @@
 pragma solidity =0.8.17;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import "./interface/IMarketplace.sol";
-import "../Invoice/interface/IInvoice.sol";
-import "../Token/Token.sol";
+import "contracts/Marketplace/interface/IMarketplace.sol";
+import "contracts/Invoice/interface/IInvoice.sol";
+import "contracts/Token/Token.sol";
 
 /**
  * @title The common marketplace for the Invoices
  * @author Polytrade.Finance
  * @dev Implementation of all Invoices trading operations
  */
-contract Marketplace is AccessControl, IMarketplace {
+contract Marketplace is ERC165, AccessControl, IMarketplace {
     using ERC165Checker for address;
 
     uint256 public initialFee;
@@ -33,12 +34,7 @@ contract Marketplace is AccessControl, IMarketplace {
      * @param treasuryWallet_, Address of the treasury wallet
      * @param feeWallet_, Address of the fee wallet
      */
-    constructor(
-        address invoiceCollection_,
-        address tokenAddress_,
-        address treasuryWallet_,
-        address feeWallet_
-    ) {
+    constructor(address invoiceCollection_, address tokenAddress_, address treasuryWallet_, address feeWallet_) {
         if (!invoiceCollection_.supportsInterface(_INVOICE_INTERFACE_ID)) {
             revert UnsupportedInterface();
         }
@@ -54,6 +50,17 @@ contract Marketplace is AccessControl, IMarketplace {
     }
 
     /**
+     * @dev See {IMarketplace-settleInvoice}.
+     */
+    function settleInvoice(address owner, uint256 invoiceId) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _claimReward(owner, invoiceId);
+
+        _stableToken.transferFrom(_treasuryWallet, owner, _invoiceCollection.settleInvoice(owner, invoiceId));
+
+        emit InvoiceSettled(owner, invoiceId);
+    }
+
+    /**
      * @dev See {IMarketplace-buy}.
      */
     function buy(address owner, uint256 invoiceId) external {
@@ -63,16 +70,10 @@ contract Marketplace is AccessControl, IMarketplace {
     /**
      * @dev See {IMarketplace-batchBuy}.
      */
-    function batchBuy(
-        address[] calldata owners,
-        uint256[] calldata invoiceIds
-    ) external {
-        require(
-            owners.length == invoiceIds.length,
-            "Marketplace: No array parity"
-        );
+    function batchBuy(address[] calldata owners, uint256[] calldata invoiceIds) external {
+        require(owners.length == invoiceIds.length, "Marketplace: No array parity");
 
-        for (uint256 i = 0; i < invoiceIds.length; ) {
+        for (uint256 i = 0; i < invoiceIds.length;) {
             _buy(owners[i], invoiceIds[i]);
 
             unchecked {
@@ -85,19 +86,14 @@ contract Marketplace is AccessControl, IMarketplace {
      * @dev See {IMarketplace-claimReward}.
      */
     function claimReward(uint256 invoiceId) external {
-        require(
-            _invoiceCollection.getInvoiceInfo(invoiceId).lastClaimDate != 0,
-            "Asset not bought yet"
-        );
+        require(_invoiceCollection.getInvoiceInfo(invoiceId).lastClaimDate != 0, "Asset not bought yet");
         _claimReward(msg.sender, invoiceId);
     }
 
     /**
      * @dev See {IMarketplace-setInitialFee}.
      */
-    function setInitialFee(
-        uint256 initialFee_
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setInitialFee(uint256 initialFee_) external onlyRole(DEFAULT_ADMIN_ROLE) {
         uint256 oldFee = initialFee;
         initialFee = initialFee_;
 
@@ -107,9 +103,7 @@ contract Marketplace is AccessControl, IMarketplace {
     /**
      * @dev See {IMarketplace-setBuyingFee}.
      */
-    function setBuyingFee(
-        uint256 buyingFee_
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setBuyingFee(uint256 buyingFee_) external onlyRole(DEFAULT_ADMIN_ROLE) {
         uint256 oldFee = buyingFee;
         buyingFee = buyingFee_;
 
@@ -119,18 +113,14 @@ contract Marketplace is AccessControl, IMarketplace {
     /**
      * @dev See {IMarketplace-claimReward}.
      */
-    function setTreasuryWallet(
-        address newTreasuryWallet
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setTreasuryWallet(address newTreasuryWallet) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _setTreasuryWallet(newTreasuryWallet);
     }
 
     /**
      * @dev See {IMarketplace-claimReward}.
      */
-    function setFeeWallet(
-        address newFeeWallet
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setFeeWallet(address newFeeWallet) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _setFeeWallet(newFeeWallet);
     }
 
@@ -163,6 +153,13 @@ contract Marketplace is AccessControl, IMarketplace {
     }
 
     /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, AccessControl) returns (bool) {
+        return interfaceId == type(IMarketplace).interfaceId || super.supportsInterface(interfaceId);
+    }
+
+    /**
      * @dev Allows to set a new treasury wallet address where funds will be allocated.
      * @dev Wallet can be EOA or multisig
      * @param newTreasuryWallet, Address of the new treasury wallet
@@ -182,10 +179,7 @@ contract Marketplace is AccessControl, IMarketplace {
      * @param newFeeWallet, Address of the new fee wallet
      */
     function _setFeeWallet(address newFeeWallet) private {
-        require(
-            newFeeWallet != address(0),
-            "Marketplace: Invalid fee wallet address"
-        );
+        require(newFeeWallet != address(0), "Marketplace: Invalid fee wallet address");
 
         address oldFeeWallet = address(_feeWallet);
         _feeWallet = newFeeWallet;
@@ -215,21 +209,12 @@ contract Marketplace is AccessControl, IMarketplace {
         uint256 fee;
         uint256 price = _invoiceCollection.getInvoiceInfo(invoiceId).price;
 
-        _invoiceCollection.getInvoiceInfo(invoiceId).lastClaimDate != 0
-            ? fee = buyingFee
-            : fee = initialFee;
+        _invoiceCollection.getInvoiceInfo(invoiceId).lastClaimDate != 0 ? fee = buyingFee : fee = initialFee;
         fee = (price * fee) / 1e4;
 
         _claimReward(owner, invoiceId);
 
-        _invoiceCollection.safeTransferFrom(
-            owner,
-            msg.sender,
-            invoiceId,
-            1,
-            1,
-            ""
-        );
+        _invoiceCollection.safeTransferFrom(owner, msg.sender, invoiceId, 1, 1, "");
 
         _stableToken.transferFrom(msg.sender, _treasuryWallet, price);
         _stableToken.transferFrom(msg.sender, _feeWallet, fee);
