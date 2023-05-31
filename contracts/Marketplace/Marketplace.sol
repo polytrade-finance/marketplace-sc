@@ -89,7 +89,7 @@ contract Marketplace is AccessControl, IMarketplace {
             _invoiceCollection.getInvoiceInfo(invoiceId).lastClaimDate != 0,
             "Asset not bought yet"
         );
-        _claimReward(invoiceId);
+        _claimReward(msg.sender, invoiceId);
     }
 
     /**
@@ -197,12 +197,12 @@ contract Marketplace is AccessControl, IMarketplace {
      * @dev Transfers invoice to buyer and transfer the price to treasury wallet
      * @param invoiceId, unique identifier of the Invoice
      */
-    function _claimReward(uint256 invoiceId) private {
-        uint256 reward = _invoiceCollection.claimReward(msg.sender, invoiceId);
+    function _claimReward(address owner, uint256 invoiceId) private {
+        uint256 reward = _invoiceCollection.claimReward(owner, invoiceId);
 
-        _stableToken.transferFrom(_treasuryWallet, msg.sender, reward);
+        _stableToken.transferFrom(_treasuryWallet, owner, reward);
 
-        emit RewardsClaimed(msg.sender, reward);
+        emit RewardsClaimed(owner, reward);
     }
 
     /**
@@ -220,7 +220,7 @@ contract Marketplace is AccessControl, IMarketplace {
             : fee = initialFee;
         fee = (price * fee) / 1e4;
 
-        _claimReward(invoiceId);
+        _claimReward(owner, invoiceId);
 
         _invoiceCollection.safeTransferFrom(
             owner,

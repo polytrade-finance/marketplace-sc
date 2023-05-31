@@ -6,6 +6,10 @@ const DECIMALS = {
   EIGHTEEN: 18,
 };
 
+const MarketplaceAccess = ethers.utils.keccak256(
+  ethers.utils.toUtf8Bytes("MARKETPLACE_ROLE")
+);
+
 const DAY = 24 * 60 * 60;
 const YEAR = 365 * DAY;
 
@@ -22,4 +26,5 @@ module.exports = {
   YEAR,
   invoice,
   DECIMALS,
+  MarketplaceAccess,
 };
