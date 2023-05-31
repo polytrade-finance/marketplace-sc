@@ -2,9 +2,10 @@
 pragma solidity =0.8.17;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "contracts/Marketplace/interface/IMarketplace.sol";
-import "contracts/Invoice/interface/IInvoice.sol";
-import "contracts/Token/Token.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import "./interface/IMarketplace.sol";
+import "../Invoice/interface/IInvoice.sol";
+import "../Token/Token.sol";
 
 /**
  * @title The common marketplace for the Invoices
@@ -12,11 +13,15 @@ import "contracts/Token/Token.sol";
  * @dev Implementation of all Invoices trading operations
  */
 contract Marketplace is AccessControl, IMarketplace {
+    using ERC165Checker for address;
+
     IInvoice private _invoiceCollection;
     Token private _stableToken;
 
     address private _treasuryWallet;
     address private _feeWallet;
+
+    bytes4 private constant _INVOICE_INTERFACE_ID = type(IInvoice).interfaceId;
 
     /**
      * @dev Constructor for the main Marketplace
@@ -26,8 +31,8 @@ contract Marketplace is AccessControl, IMarketplace {
      * @param feeWallet, Address of the fee wallet
      */
     constructor(
-        IInvoice invoiceCollection,
-        Token stableToken,
+        address invoiceCollection,
+        address stableToken,
         address treasuryWallet,
         address feeWallet
     ) {
@@ -36,6 +41,8 @@ contract Marketplace is AccessControl, IMarketplace {
 
         _setTreasuryWallet(treasuryWallet);
         _setFeeWallet(feeWallet);
+
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     /**
@@ -71,6 +78,30 @@ contract Marketplace is AccessControl, IMarketplace {
     }
 
     /**
+     * @notice External method for _setTreasuryWallet implementation.
+     * @dev This function allows to set a new treasury wallet address where funds will be allocated.
+     * @dev Implementation of a setter for the treasury wallet
+     * @param newTreasuryWallet, Address of the new treasury wallet
+     */
+    function setTreasuryWallet(
+        address newTreasuryWallet
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _setTreasuryWallet(newTreasuryWallet);
+    }
+
+    /**
+     * @notice External method for setFeeWallet implementation.
+     * @dev This function allows to set a new treasury wallet address where funds will be allocated.
+     * @dev Implementation of a setter for the treasury wallet
+     * @param newFeeWallet, Address of the new treasury wallet
+     */
+    function setFeeWallet(
+        address newFeeWallet
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _setFeeWallet(newFeeWallet);
+    }
+
+    /**
      * @dev Implementation of a getter for the Invocie Collection contract
      * @return address Address of the Invocie Collection contract
      */
@@ -91,7 +122,7 @@ contract Marketplace is AccessControl, IMarketplace {
      * @return address Address of the treasury wallet
      */
     function getTreasuryWallet() external view returns (address) {
-        return _treasuryWallet;
+        return address(_treasuryWallet);
     }
 
     /**
@@ -99,23 +130,29 @@ contract Marketplace is AccessControl, IMarketplace {
      * @return address Address of the fee wallet
      */
     function getFeeWallet() external view returns (address) {
-        return _feeWallet;
+        return address(_feeWallet);
     }
 
     /**
      * @dev Implementation of a setter for Invoice Collection contract
      * @notice This function allows to set the address of the Invoice Collection contract used within the marketplace.
-     * @param newInvoiceCollection, Invoice Collection contract
+     * @param newInvoiceCollectionAddress, Invoice Collection contract
      */
-    function _setInvoiceContract(IInvoice newInvoiceCollection) private {
-        address newInvoiceCollectionAddress = address(newInvoiceCollection);
+    function _setInvoiceContract(address newInvoiceCollectionAddress) private {
         require(
             newInvoiceCollectionAddress != address(0),
             "Marketplace: Invalid invoice collection address"
         );
 
+        require(
+            newInvoiceCollectionAddress.supportsInterface(
+                _INVOICE_INTERFACE_ID
+            ),
+            "Marketplace: Non compatible invoice collection"
+        );
+
         address oldInvoiceCollectionAddress = address(_invoiceCollection);
-        _invoiceCollection = newInvoiceCollection;
+        _invoiceCollection = IInvoice(newInvoiceCollectionAddress);
 
         emit InvoiceCollectionSet(
             oldInvoiceCollectionAddress,
@@ -126,16 +163,15 @@ contract Marketplace is AccessControl, IMarketplace {
     /**
      * @notice This function allows to specify the stable coin address contract to be used within the marketplace.
      * @dev Implementation of a setter for the ERC20 token
-     * @param stableToken, the stableToken (ERC20) contract
+     * @param stableTokenAddress, the stableToken (ERC20) contract
      */
-    function _setStableToken(Token stableToken) private {
-        address stableTokenAddress = address(stableToken);
+    function _setStableToken(address stableTokenAddress) private {
         require(
             stableTokenAddress != address(0),
             "Marketplace: Invalid stable coin address"
         );
 
-        _stableToken = stableToken;
+        _stableToken = Token(stableTokenAddress);
 
         emit StableTokenSet(stableTokenAddress);
     }
@@ -152,7 +188,7 @@ contract Marketplace is AccessControl, IMarketplace {
             "Marketplace: Invalid treasury wallet address"
         );
 
-        address oldTreasuryWallet = _treasuryWallet;
+        address oldTreasuryWallet = address(_treasuryWallet);
         _treasuryWallet = newTreasuryWallet;
 
         emit TreasuryWalletSet(oldTreasuryWallet, newTreasuryWallet);
@@ -170,7 +206,7 @@ contract Marketplace is AccessControl, IMarketplace {
             "Marketplace: Invalid fee wallet address"
         );
 
-        address oldFeeWallet = _feeWallet;
+        address oldFeeWallet = address(_feeWallet);
         _feeWallet = newFeeWallet;
 
         emit FeeWalletSet(oldFeeWallet, newFeeWallet);
