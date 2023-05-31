@@ -174,6 +174,28 @@ describe("Marketplace", function () {
     ).to.be.reverted;
   });
 
+  it("Should revert to set initial fee without admin role", async function () {
+    await expect(
+      marketplaceContract.connect(user1).setInitialFee(1000)
+    ).to.be.revertedWith(
+      `AccessControl: account ${user1.address.toLowerCase()} is missing role ${ethers.utils.hexZeroPad(
+        ethers.utils.hexlify(0),
+        32
+      )}`
+    );
+  });
+
+  it("Should revert to set buying fee without admin role", async function () {
+    await expect(
+      marketplaceContract.connect(user1).setBuyingFee(1000)
+    ).to.be.revertedWith(
+      `AccessControl: account ${user1.address.toLowerCase()} is missing role ${ethers.utils.hexZeroPad(
+        ethers.utils.hexlify(0),
+        32
+      )}`
+    );
+  });
+
   it("Should set a new fee wallet address while calling setFeeWallet()", async function () {
     await expect(await marketplaceContract.setFeeWallet(newFeeWallet.address))
       .not.to.be.reverted;
@@ -187,6 +209,38 @@ describe("Marketplace", function () {
     await expect(
       marketplaceContract.connect(user1).setFeeWallet(newFeeWallet.address)
     ).to.be.reverted;
+  });
+
+  it("Should revert to claim reward if asset does not exist or not bought yet", async function () {
+    await expect(
+      marketplaceContract.connect(user1).claimReward(1)
+    ).to.be.revertedWith("Asset not bought yet");
+  });
+
+  it("Should create invoice and revert if pass wrong owner", async function () {
+    await invoiceContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+    await invoiceContract.createInvoice(
+      user1.address,
+      1,
+      invoice.assetPrice,
+      invoice.rewardApr,
+      invoice.dueDate
+    );
+
+    await invoiceContract
+      .connect(user1)
+      .approve(marketplaceContract.address, 1, 1, 1);
+
+    await stableTokenContract
+      .connect(buyer)
+      .approve(marketplaceContract.address, invoice.assetPrice);
+
+    await expect(
+      marketplaceContract.connect(buyer).buy(buyer.address, 1)
+    ).to.be.revertedWith("Owner address is Invalid");
   });
 
   it("Should create invoice and selling it to buyer through Marketplace", async function () {
@@ -262,6 +316,8 @@ describe("Marketplace", function () {
     await marketplaceContract.connect(buyer).claimReward(1);
     const afterClaim = await stableTokenContract.balanceOf(buyer.address);
 
+    await invoiceContract.getRemainingReward(1);
+
     expect(afterClaim.sub(beforeClaim)).to.eq(actualReward);
   });
 
@@ -307,7 +363,32 @@ describe("Marketplace", function () {
     await marketplaceContract.connect(buyer).claimReward(1);
     const afterClaim = await stableTokenContract.balanceOf(buyer.address);
 
+    const remainingReward = await invoiceContract.getRemainingReward(1);
+
     expect(afterClaim.sub(beforeClaim)).to.eq(actualReward);
+    expect(remainingReward).to.eq(0);
+  });
+
+  it("Should create an invoice and get remaining rewards (after due date)", async function () {
+    expect(
+      await invoiceContract.createInvoice(
+        user1.address,
+        1,
+        invoice.assetPrice,
+        invoice.rewardApr,
+        invoice.dueDate
+      )
+    )
+      .to.emit(invoiceContract, "InvoiceCreated")
+      .withArgs(user1.address, user1.address, 1);
+
+    await time.increase(YEAR);
+
+    const expectedReward = 0;
+
+    const actualReward = await invoiceContract.getRemainingReward(1);
+
+    expect(actualReward).to.be.equal(expectedReward);
   });
 
   it("Should create invoice and selling it for 2 times and apply buying fee", async function () {

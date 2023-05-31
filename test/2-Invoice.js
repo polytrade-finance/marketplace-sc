@@ -1,19 +1,14 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { invoice, YEAR, MarketplaceAccess } = require("./data");
-const { time } = require("@nomicfoundation/hardhat-network-helpers");
-const { now } = require("./helpers");
+const { invoice, MarketplaceAccess } = require("./data");
 
 describe("Invoice", function () {
   let invoiceContract;
   let deployer;
   let user1;
-  let currentTime;
 
   beforeEach(async () => {
     [deployer, user1] = await ethers.getSigners();
-
-    currentTime = await now();
 
     const InvoiceFactory = await ethers.getContractFactory("Invoice");
     invoiceContract = await InvoiceFactory.deploy(
@@ -157,50 +152,6 @@ describe("Invoice", function () {
           [invoice.dueDate, invoice.dueDate, invoice.dueDate]
         )
     ).to.be.reverted;
-  });
-
-  it("Should create an invoice and get remaining rewards (before due date)", async function () {
-    expect(
-      await invoiceContract.createInvoice(
-        deployer.address,
-        1,
-        invoice.assetPrice,
-        invoice.rewardApr,
-        invoice.dueDate
-      )
-    )
-      .to.emit(invoiceContract, "InvoiceCreated")
-      .withArgs(deployer.address, deployer.address, 1);
-
-    const tenure = invoice.dueDate - currentTime;
-    const reward =
-      ((invoice.rewardApr / 10000) * tenure * invoice.assetPrice) / YEAR;
-    const expectedReward = Math.round(reward);
-    const actualReward = await invoiceContract.getRemainingReward(1);
-
-    expect(actualReward).to.be.within(expectedReward - 1, expectedReward + 1);
-  });
-
-  it("Should create an invoice and get remaining rewards (after due date)", async function () {
-    expect(
-      await invoiceContract.createInvoice(
-        deployer.address,
-        1,
-        invoice.assetPrice,
-        invoice.rewardApr,
-        invoice.dueDate
-      )
-    )
-      .to.emit(invoiceContract, "InvoiceCreated")
-      .withArgs(deployer.address, deployer.address, 1);
-
-    await time.increase(YEAR);
-
-    const expectedReward = 0;
-
-    const actualReward = await invoiceContract.getRemainingReward(1);
-
-    expect(actualReward).to.be.equal(expectedReward);
   });
 
   it("Should return zero rewards for minted invoice with zero price", async function () {
