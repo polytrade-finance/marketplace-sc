@@ -24,11 +24,7 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
      */
     mapping(uint256 => InvoiceInfo) private _invoices;
 
-    constructor(
-        string memory name,
-        string memory symbol,
-        string memory baseURI_
-    ) DLT(name, symbol) {
+    constructor(string memory name, string memory symbol, string memory baseURI_) DLT(name, symbol) {
         _setBaseURI(baseURI_);
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
@@ -36,13 +32,10 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
     /**
      * @dev See {IInvoice-createInvoice}.
      */
-    function createInvoice(
-        address owner,
-        uint256 mainId,
-        uint256 price,
-        uint256 apr,
-        uint256 dueDate
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function createInvoice(address owner, uint256 mainId, uint256 price, uint256 apr, uint256 dueDate)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         _createInvoice(owner, mainId, price, dueDate, apr);
     }
 
@@ -57,21 +50,13 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
         uint256[] calldata dueDates
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(
-            owners.length == mainIds.length &&
-                owners.length == prices.length &&
-                owners.length == dueDates.length &&
-                owners.length == aprs.length,
+            owners.length == mainIds.length && owners.length == prices.length && owners.length == dueDates.length
+                && owners.length == aprs.length,
             "Invoice: No array parity"
         );
 
-        for (uint256 i = 0; i < mainIds.length; ) {
-            _createInvoice(
-                owners[i],
-                mainIds[i],
-                prices[i],
-                dueDates[i],
-                aprs[i]
-            );
+        for (uint256 i = 0; i < mainIds.length;) {
+            _createInvoice(owners[i], mainIds[i], prices[i], dueDates[i], aprs[i]);
 
             unchecked {
                 ++i;
@@ -82,66 +67,47 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
     /**
      * @dev See {IInvoice-setBaseURI}.
      */
-    function setBaseURI(
-        string calldata newBaseURI
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setBaseURI(string calldata newBaseURI) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _setBaseURI(newBaseURI);
     }
 
     /**
      * @dev See {IInvoice-claimReward}.
      */
-    function claimReward(
-        address owner,
-        uint256 mainId
-    ) external onlyRole(MARKETPLACE_ROLE) returns (uint256 rewards) {
+    function claimReward(address owner, uint256 mainId) external onlyRole(MARKETPLACE_ROLE) returns (uint256 reward) {
         require(mainBalanceOf(owner, mainId) == 1, "Owner address is Invalid");
 
-        rewards = _getAvailableRewards(mainId);
+        reward = _getAvailableReward(mainId);
         _invoices[mainId].lastClaimDate = block.timestamp;
     }
 
     /**
      * @dev See {IInvoice-getRemainingReward}.
      */
-    function getRemainingReward(
-        uint256 mainId
-    ) external view returns (uint256 result) {
+    function getRemainingReward(uint256 mainId) external view returns (uint256 result) {
         InvoiceInfo memory invoice = _invoices[mainId];
         uint256 tenure;
 
         if (invoice.lastClaimDate != 0) {
             tenure = invoice.dueDate - invoice.lastClaimDate;
-            result = _calculateFormula(
-                invoice.price,
-                tenure,
-                invoice.rewardApr
-            );
+            result = _calculateFormula(invoice.price, tenure, invoice.rewardApr);
         } else if (invoice.price != 0) {
             tenure = invoice.dueDate - block.timestamp;
-            result = _calculateFormula(
-                invoice.price,
-                tenure,
-                invoice.rewardApr
-            );
+            result = _calculateFormula(invoice.price, tenure, invoice.rewardApr);
         }
     }
 
     /**
-     * @dev See {IInvoice-getAvailableRewards}.
+     * @dev See {IInvoice-getAvailableReward}.
      */
-    function getAvailableRewards(
-        uint256 mainId
-    ) external view returns (uint256 result) {
-        result = _getAvailableRewards(mainId);
+    function getAvailableReward(uint256 mainId) external view returns (uint256 result) {
+        result = _getAvailableReward(mainId);
     }
 
     /**
      * @dev See {IInvoice-getInvoiceInfo}.
      */
-    function getInvoiceInfo(
-        uint256 mainId
-    ) external view returns (InvoiceInfo memory) {
+    function getInvoiceInfo(uint256 mainId) external view returns (InvoiceInfo memory) {
         return _invoices[mainId];
     }
 
@@ -156,12 +122,8 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual override(ERC165, AccessControl) returns (bool) {
-        return
-            interfaceId == type(IInvoice).interfaceId ||
-            super.supportsInterface(interfaceId);
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, AccessControl) returns (bool) {
+        return interfaceId == type(IInvoice).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /**
@@ -182,13 +144,7 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
      * @param dueDate, is the end date for caluclating rewards
      * @param apr, is the annual percentage rate for calculating rewards
      */
-    function _createInvoice(
-        address owner,
-        uint256 mainId,
-        uint256 price,
-        uint256 dueDate,
-        uint256 apr
-    ) private {
+    function _createInvoice(address owner, uint256 mainId, uint256 price, uint256 dueDate, uint256 apr) private {
         require(mainTotalSupply(mainId) == 0, "Invoice: Already minted");
         _invoices[mainId] = InvoiceInfo(price, apr, dueDate, 0);
         _mint(owner, mainId, 1, 1);
@@ -197,20 +153,16 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
     }
 
     /**
-     *
+     * @dev Calculates accumulated rewards based on rewardApr if the asset has an owner
+     * @param mainId, unique identifier of invoice
+     * @return result, accumulated rewards for the current owner
      */
-    function _getAvailableRewards(
-        uint256 mainId
-    ) private view returns (uint256 result) {
+    function _getAvailableReward(uint256 mainId) private view returns (uint256 result) {
         InvoiceInfo memory invoice = _invoices[mainId];
 
         if (invoice.lastClaimDate != 0) {
             uint256 tenure = block.timestamp - invoice.lastClaimDate;
-            result = _calculateFormula(
-                invoice.price,
-                tenure,
-                invoice.rewardApr
-            );
+            result = _calculateFormula(invoice.price, tenure, invoice.rewardApr);
         }
     }
 
@@ -220,11 +172,7 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
      * @param tenure is the duration from last updated rewards
      * @param apr is the annual percentage rate of rewards for assets
      */
-    function _calculateFormula(
-        uint256 price,
-        uint256 tenure,
-        uint256 apr
-    ) private pure returns (uint256) {
+    function _calculateFormula(uint256 price, uint256 tenure, uint256 apr) private pure returns (uint256) {
         return ((price * tenure * apr) / 1e4) / _YEAR;
     }
 }

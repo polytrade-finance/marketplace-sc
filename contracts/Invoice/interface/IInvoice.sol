@@ -79,15 +79,16 @@ interface IInvoice is IDLT {
     function setBaseURI(string calldata newBaseURI) external;
 
     /**
-     * @dev Set a new baseURI for invoices
-     * @dev Needs admin access to schange base URI
-     * @param owner, string value of new URI
-     * @param mainId, string value of new URI
+     * @dev Updates lastClaimDate whenever a buy or claimReward happens from marketplace
+     * @dev Needs marketplace access to claim
+     * @param owner, the address on asset owner
+     * @param mainId, unique identifier of invoice
+     * @return reward, accumulated rewards for the current owner
      */
     function claimReward(
         address owner,
         uint256 mainId
-    ) external returns (uint256 rewards);
+    ) external returns (uint256 reward);
 
     /**
      * @dev Calculates the remaning reward
@@ -95,6 +96,15 @@ interface IInvoice is IDLT {
      * @return result the rewards Amount
      */
     function getRemainingReward(
+        uint256 mainId
+    ) external view returns (uint256 result);
+
+    /**
+     * @dev Calculates available rewards to claim
+     * @param mainId, unique identifier of invoice
+     * @return result the accumulated rewards amount for the current owner
+     */
+    function getAvailableReward(
         uint256 mainId
     ) external view returns (uint256 result);
 
