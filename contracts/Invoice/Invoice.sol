@@ -8,7 +8,10 @@ import "dual-layer-token/contracts/DLT/DLT.sol";
 import "contracts/Invoice/interface/IInvoice.sol";
 
 contract Invoice is ERC165, IInvoice, DLT, AccessControl {
+    
     string private _invoiceBaseURI;
+    uint256 private constant _YEAR = 365 days;
+
 
     /**
      * @dev Mapping will be indexing the InvoiceInfo for each Invoice category by its mainId
