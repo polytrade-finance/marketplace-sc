@@ -57,7 +57,10 @@ describe("Marketplace", function () {
         treasuryWallet.address,
         feeWallet.address
       )
-    ).to.be.revertedWithCustomError(marketplaceContract, "UnsupportedInterface");
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "UnsupportedInterface"
+    );
   });
 
   it("Should revert on passing non-compatible invoice collection Address", async function () {
@@ -70,7 +73,10 @@ describe("Marketplace", function () {
         treasuryWallet.address,
         feeWallet.address
       )
-    ).to.be.revertedWithCustomError(marketplaceContract, "UnsupportedInterface");
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "UnsupportedInterface"
+    );
   });
 
   it("Should revert on passing invalid stable token address", async function () {
@@ -168,7 +174,10 @@ describe("Marketplace", function () {
   });
 
   it("Should create invoice and selling it to buyer through Marketplace", async function () {
-    await invoiceContract.grantRole(MarketplaceAccess, marketplaceContract.address);
+    await invoiceContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
     await invoiceContract.createInvoice(
       user1.address,
       1,
@@ -196,7 +205,10 @@ describe("Marketplace", function () {
   });
 
   it("Should create multiple invoices and selling it to buyer through Marketplace", async function () {
-    await invoiceContract.grantRole(MarketplaceAccess, marketplaceContract.address);
+    await invoiceContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
     await invoiceContract.createInvoice(
       user1.address,
       1,

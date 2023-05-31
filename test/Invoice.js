@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { invoice, YEAR } = require("./data");
+const { invoice, YEAR, MarketplaceAccess } = require("./data");
 const { now } = require("./helpers");
 
 describe("Invoice", function () {
@@ -89,6 +89,14 @@ describe("Invoice", function () {
     await expect(
       invoiceContract.connect(user1).setBaseURI("https://ipfs2.io/ipfs")
     ).to.be.reverted;
+  });
+
+  it("Should revert to update claim status without marketplace role", async function () {
+    await expect(
+      invoiceContract.connect(user1).claimReward(user1.address, 1)
+    ).to.be.revertedWith(
+      `AccessControl: account ${user1.address.toLowerCase()} is missing role ${MarketplaceAccess}`
+    );
   });
 
   it("Batch create invoices", async function () {
@@ -193,6 +201,13 @@ describe("Invoice", function () {
   it("Should return zero rewards for not minted invoice", async function () {
     const expectedReward = 0;
     const actualReward = await invoiceContract.getRemainingReward(2);
+
+    expect(actualReward).to.be.equal(expectedReward);
+  });
+
+  it("Should return zero available rewards for not minted invoice", async function () {
+    const expectedReward = 0;
+    const actualReward = await invoiceContract.getAvailableReward(2);
 
     expect(actualReward).to.be.equal(expectedReward);
   });
