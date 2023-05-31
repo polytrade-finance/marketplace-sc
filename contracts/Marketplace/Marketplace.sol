@@ -48,6 +48,19 @@ contract Marketplace is AccessControl, IMarketplace {
     }
 
     /**
+     * @dev Buys
+     * @param owner, address of the Invoice owner
+     * @param invoiceId, unique number of the Invoice
+     */
+    function claimReward(uint invoiceId) external {
+        require(
+            _invoiceCollection.getInvoiceInfo(invoiceId).lastClaimDate != 0,
+            "Asset not bought yet"
+        );
+        _claimReward(invoiceId);
+    }
+
+    /**
      * @dev Batch buy invoices from owners
      * @param owners, addresses of the invoice owners
      * @param invoiceIds, unique identifiers of the invoices
@@ -181,7 +194,20 @@ contract Marketplace is AccessControl, IMarketplace {
      * @param owner, address of the Invoice owner's
      * @param invoiceId, unique identifier of the Invoice
      */
+    function _claimReward(uint invoiceId) private {
+        uint256 rewards = _invoiceCollection.claimReward(msg.sender, invoiceId);
+
+        _stableToken.transferFrom(_treasuryWallet, msg.sender, rewards);
+    }
+
+    /**
+     * @dev Safe transfer invoice to buyer and transfer the price to treasury wallet
+     * @param owner, address of the Invoice owner's
+     * @param invoiceId, unique identifier of the Invoice
+     */
     function _buy(address owner, uint invoiceId) private {
+        _claimReward(invoiceId);
+
         _invoiceCollection.safeTransferFrom(
             owner,
             msg.sender,

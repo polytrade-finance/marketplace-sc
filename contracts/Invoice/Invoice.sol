@@ -12,6 +12,9 @@ import "contracts/Invoice/interface/IInvoice.sol";
  * @dev Manages creation of invoice and rewards distribution
  */
 contract Invoice is IInvoice, DLT, AccessControl {
+    // Create a new role identifier for the marketplace role
+    bytes32 public constant MARKETPLACE_ROLE = keccak256("MARKETPLACE_ROLE");
+
     string private _invoiceBaseURI;
     uint256 private constant _YEAR = 365 days;
 
@@ -111,6 +114,28 @@ contract Invoice is IInvoice, DLT, AccessControl {
     }
 
     /**
+     * @dev See {IInvoice-getAvailableRewards}.
+     */
+    function getAvailableRewards(
+        uint256 mainId
+    ) external view returns (uint256 result) {
+        result = _getAvailableRewards(mainId);
+    }
+
+    /**
+     * @dev See {IInvoice-claimReward}.
+     */
+    function claimReward(
+        address owner,
+        uint256 mainId
+    ) external view onlyRole(MARKETPLACE_ROLE) returns (uint256 rewards) {
+        require(mainBalanceOf(owner, mainId) == 1, "Owner address is Invalid");
+
+        rewards = _getAvailableRewards(mainId);
+        _invoices[mainId].lastClaimDate = block.timestamp;
+    }
+
+    /**
      * @dev See {IInvoice-getInvoiceInfo}.
      */
     function getInvoiceInfo(
@@ -157,6 +182,24 @@ contract Invoice is IInvoice, DLT, AccessControl {
         _mint(owner, mainId, 1, 1);
 
         emit InvoiceCreated(msg.sender, owner, mainId);
+    }
+
+    /**
+     *
+     */
+    function _getAvailableRewards(
+        uint256 mainId
+    ) private view returns (uint256 result) {
+        InvoiceInfo memory invoice = _invoices[mainId];
+
+        if (invoice.lastClaimDate != 0) {
+            uint256 tenure = block.timestamp - invoice.lastClaimDate;
+            result = _calculateFormula(
+                invoice.price,
+                tenure,
+                invoice.rewardApr
+            );
+        }
     }
 
     /**
