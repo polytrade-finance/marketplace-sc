@@ -30,7 +30,12 @@ contract Marketplace is AccessControl, IMarketplace {
      * @param treasuryWallet, Address of the treasury wallet
      * @param feeWallet, Address of the fee wallet
      */
-    constructor(address invoiceCollection, address stableToken, address treasuryWallet, address feeWallet) {
+    constructor(
+        address invoiceCollection,
+        address stableToken,
+        address treasuryWallet,
+        address feeWallet
+    ) {
         _setInvoiceContract(invoiceCollection);
         _setStableToken(stableToken);
 
@@ -50,10 +55,16 @@ contract Marketplace is AccessControl, IMarketplace {
     /**
      * @dev See {IMarketplace-batchBuy}.
      */
-    function batchBuy(address[] calldata owners, uint256[] calldata invoiceIds) external {
-        require(owners.length == invoiceIds.length, "Marketplace: No array parity");
+    function batchBuy(
+        address[] calldata owners,
+        uint256[] calldata invoiceIds
+    ) external {
+        require(
+            owners.length == invoiceIds.length,
+            "Marketplace: No array parity"
+        );
 
-        for (uint256 i = 0; i < invoiceIds.length;) {
+        for (uint256 i = 0; i < invoiceIds.length; ) {
             _buy(owners[i], invoiceIds[i]);
 
             unchecked {
@@ -66,21 +77,28 @@ contract Marketplace is AccessControl, IMarketplace {
      * @dev See {IMarketplace-claimReward}.
      */
     function claimReward(uint256 invoiceId) external {
-        require(_invoiceCollection.getInvoiceInfo(invoiceId).lastClaimDate != 0, "Asset not bought yet");
+        require(
+            _invoiceCollection.getInvoiceInfo(invoiceId).lastClaimDate != 0,
+            "Asset not bought yet"
+        );
         _claimReward(invoiceId);
     }
 
     /**
      * @dev See {IMarketplace-claimReward}.
      */
-    function setTreasuryWallet(address newTreasuryWallet) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setTreasuryWallet(
+        address newTreasuryWallet
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _setTreasuryWallet(newTreasuryWallet);
     }
 
     /**
      * @dev See {IMarketplace-claimReward}.
      */
-    function setFeeWallet(address newFeeWallet) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setFeeWallet(
+        address newFeeWallet
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _setFeeWallet(newFeeWallet);
     }
 
@@ -117,7 +135,10 @@ contract Marketplace is AccessControl, IMarketplace {
      * @param newInvoiceCollection, Invoice Collection contract
      */
     function _setInvoiceContract(address newInvoiceCollection) private {
-        require(newInvoiceCollection != address(0), "Invalid collection address");
+        require(
+            newInvoiceCollection != address(0),
+            "Invalid collection address"
+        );
 
         if (!newInvoiceCollection.supportsInterface(_INVOICE_INTERFACE_ID))
             revert UnsupportedInterface();
@@ -160,7 +181,10 @@ contract Marketplace is AccessControl, IMarketplace {
      * @param newFeeWallet, Address of the new fee wallet
      */
     function _setFeeWallet(address newFeeWallet) private {
-        require(newFeeWallet != address(0), "Marketplace: Invalid fee wallet address");
+        require(
+            newFeeWallet != address(0),
+            "Marketplace: Invalid fee wallet address"
+        );
 
         address oldFeeWallet = address(_feeWallet);
         _feeWallet = newFeeWallet;
@@ -186,7 +210,14 @@ contract Marketplace is AccessControl, IMarketplace {
     function _buy(address owner, uint256 invoiceId) private {
         _claimReward(invoiceId);
 
-        _invoiceCollection.safeTransferFrom(owner, msg.sender, invoiceId, 1, 1, "");
+        _invoiceCollection.safeTransferFrom(
+            owner,
+            msg.sender,
+            invoiceId,
+            1,
+            1,
+            ""
+        );
 
         uint256 price = _invoiceCollection.getInvoiceInfo(invoiceId).price;
 

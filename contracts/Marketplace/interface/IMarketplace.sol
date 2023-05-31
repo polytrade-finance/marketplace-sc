@@ -78,18 +78,13 @@ interface IMarketplace {
      * @dev Allows to set a new treasury wallet address where funds will be allocated.
      * @param newTreasuryWallet, Address of the new treasury wallet
      */
-    function setTreasuryWallet(
-        address newTreasuryWallet
-    ) external;
-
+    function setTreasuryWallet(address newTreasuryWallet) external;
 
     /**
      * @dev Allows to set a new fee wallet address where buying fees will be allocated.
      * @param newFeeWallet, Address of the new fee wallet
      */
-    function setFeeWallet(
-        address newFeeWallet
-    ) external;
+    function setFeeWallet(address newFeeWallet) external;
 
     /**
      * @dev Gets current invoice collection address
