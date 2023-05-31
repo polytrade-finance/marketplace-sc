@@ -83,7 +83,7 @@ interface IInvoice is IDLT {
      * @dev Needs marketplace access to claim
      * @param owner, the address on asset owner
      * @param mainId, unique identifier of invoice
-     * @return reward, accumulated rewards for the current owner
+     * @return reward , accumulated rewards for the current owner
      */
     function claimReward(
         address owner,

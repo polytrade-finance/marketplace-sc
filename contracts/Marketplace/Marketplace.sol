@@ -15,8 +15,11 @@ import "../Token/Token.sol";
 contract Marketplace is AccessControl, IMarketplace {
     using ERC165Checker for address;
 
-    IInvoice private _invoiceCollection;
-    Token private _stableToken;
+    uint256 public initialFee;
+    uint256 public buyingFee;
+
+    IInvoice private immutable _invoiceCollection;
+    Token private immutable _stableToken;
 
     address private _treasuryWallet;
     address private _feeWallet;
@@ -25,22 +28,27 @@ contract Marketplace is AccessControl, IMarketplace {
 
     /**
      * @dev Constructor for the main Marketplace
-     * @param invoiceCollection, Address of the Invoice Collection used in the marketplace
-     * @param stableToken, Address of the stableToken (ERC20) contract
-     * @param treasuryWallet, Address of the treasury wallet
-     * @param feeWallet, Address of the fee wallet
+     * @param invoiceCollection_, Address of the Invoice Collection used in the marketplace
+     * @param tokenAddress_, Address of the ERC20 token address
+     * @param treasuryWallet_, Address of the treasury wallet
+     * @param feeWallet_, Address of the fee wallet
      */
     constructor(
-        address invoiceCollection,
-        address stableToken,
-        address treasuryWallet,
-        address feeWallet
+        address invoiceCollection_,
+        address tokenAddress_,
+        address treasuryWallet_,
+        address feeWallet_
     ) {
-        _setInvoiceContract(invoiceCollection);
-        _setStableToken(stableToken);
+        if (!invoiceCollection_.supportsInterface(_INVOICE_INTERFACE_ID)) {
+            revert UnsupportedInterface();
+        }
+        require(tokenAddress_ != address(0), "Invalid address");
 
-        _setTreasuryWallet(treasuryWallet);
-        _setFeeWallet(feeWallet);
+        _invoiceCollection = IInvoice(invoiceCollection_);
+        _stableToken = Token(tokenAddress_);
+
+        _setTreasuryWallet(treasuryWallet_);
+        _setFeeWallet(feeWallet_);
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
@@ -82,6 +90,30 @@ contract Marketplace is AccessControl, IMarketplace {
             "Asset not bought yet"
         );
         _claimReward(invoiceId);
+    }
+
+    /**
+     * @dev See {IMarketplace-setInitialFee}.
+     */
+    function setInitialFee(
+        uint256 initialFee_
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        uint256 oldFee = initialFee;
+        initialFee = initialFee_;
+
+        emit InitialFeeSet(oldFee, initialFee);
+    }
+
+    /**
+     * @dev See {IMarketplace-setBuyingFee}.
+     */
+    function setBuyingFee(
+        uint256 buyingFee_
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        uint256 oldFee = buyingFee;
+        buyingFee = buyingFee_;
+
+        emit BuyingFeeSet(oldFee, buyingFee);
     }
 
     /**
@@ -131,37 +163,6 @@ contract Marketplace is AccessControl, IMarketplace {
     }
 
     /**
-     * @notice Allows to set the address of the invoice collection contract
-     * @param newInvoiceCollection, Invoice Collection contract
-     */
-    function _setInvoiceContract(address newInvoiceCollection) private {
-        require(
-            newInvoiceCollection != address(0),
-            "Invalid collection address"
-        );
-
-        if (!newInvoiceCollection.supportsInterface(_INVOICE_INTERFACE_ID))
-            revert UnsupportedInterface();
-
-        address oldInvoiceCollection = address(_invoiceCollection);
-        _invoiceCollection = IInvoice(newInvoiceCollection);
-
-        emit InvoiceCollectionSet(oldInvoiceCollection, newInvoiceCollection);
-    }
-
-    /**
-     * @notice Allows to specify the stable token contract to be used for paying fees and price
-     * @param tokenAddress, the ERC20 token address
-     */
-    function _setStableToken(address tokenAddress) private {
-        require(tokenAddress != address(0), "Invalid address");
-
-        _stableToken = Token(tokenAddress);
-
-        emit StableTokenSet(tokenAddress);
-    }
-
-    /**
      * @dev Allows to set a new treasury wallet address where funds will be allocated.
      * @dev Wallet can be EOA or multisig
      * @param newTreasuryWallet, Address of the new treasury wallet
@@ -200,14 +201,25 @@ contract Marketplace is AccessControl, IMarketplace {
         uint256 reward = _invoiceCollection.claimReward(msg.sender, invoiceId);
 
         _stableToken.transferFrom(_treasuryWallet, msg.sender, reward);
+
+        emit RewardsClaimed(msg.sender, reward);
     }
 
     /**
      * @dev Safe transfer invoice to buyer and transfer the price to treasury wallet
+     * @dev Transfer buying fee or initial fee to fee wallet based on asset status
      * @param owner, address of the Invoice owner's
      * @param invoiceId, unique identifier of the Invoice
      */
     function _buy(address owner, uint256 invoiceId) private {
+        uint256 fee;
+        uint256 price = _invoiceCollection.getInvoiceInfo(invoiceId).price;
+
+        _invoiceCollection.getInvoiceInfo(invoiceId).lastClaimDate != 0
+            ? fee = buyingFee
+            : fee = initialFee;
+        fee = (price * fee) / 1e4;
+
         _claimReward(invoiceId);
 
         _invoiceCollection.safeTransferFrom(
@@ -219,8 +231,9 @@ contract Marketplace is AccessControl, IMarketplace {
             ""
         );
 
-        uint256 price = _invoiceCollection.getInvoiceInfo(invoiceId).price;
-
         _stableToken.transferFrom(msg.sender, _treasuryWallet, price);
+        _stableToken.transferFrom(msg.sender, _feeWallet, fee);
+
+        emit AssetBought(owner, msg.sender);
     }
 }

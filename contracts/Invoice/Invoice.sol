@@ -199,7 +199,7 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
     /**
      * @dev Calculates accumulated rewards based on rewardApr if the asset has an owner
      * @param mainId, unique identifier of invoice
-     * @return result, accumulated rewards for the current owner
+     * @return result , accumulated rewards for the current owner
      */
     function _getAvailableReward(
         uint256 mainId
