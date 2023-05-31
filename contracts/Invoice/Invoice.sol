@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "dual-layer-token/contracts/DLT/DLT.sol";
 import "contracts/Invoice/interface/IInvoice.sol";
@@ -11,7 +12,7 @@ import "contracts/Invoice/interface/IInvoice.sol";
  * @author Polytrade.Finance
  * @dev Manages creation of invoice and rewards distribution
  */
-contract Invoice is IInvoice, DLT, AccessControl {
+contract Invoice is ERC165, IInvoice, DLT, AccessControl {
     // Create a new role identifier for the marketplace role
     bytes32 public constant MARKETPLACE_ROLE = keccak256("MARKETPLACE_ROLE");
 
@@ -153,8 +154,19 @@ contract Invoice is IInvoice, DLT, AccessControl {
     }
 
     /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(ERC165, AccessControl) returns (bool) {
+        return
+            interfaceId == type(IInvoice).interfaceId ||
+            super.supportsInterface(interfaceId);
+    }
+
+    /**
      * @dev Changes the invoice base URI
-     * @param newBaseURI, String of the new invoice base URI
+     * @param newBaseURI, String of the asset base URI
      */
     function _setBaseURI(string memory newBaseURI) private {
         string memory oldBaseURI = _invoiceBaseURI;
