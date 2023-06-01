@@ -110,20 +110,20 @@ interface IInvoice is IDLT {
     /**
      * @dev Calculates the remaning reward
      * @param mainId, unique identifier of invoice
-     * @return result the rewards Amount
+     * @return reward the rewards Amount
      */
     function getRemainingReward(
         uint256 mainId
-    ) external view returns (uint256 result);
+    ) external view returns (uint256 reward);
 
     /**
      * @dev Calculates available rewards to claim
      * @param mainId, unique identifier of invoice
-     * @return result the accumulated rewards amount for the current owner
+     * @return reward the accumulated rewards amount for the current owner
      */
     function getAvailableReward(
         uint256 mainId
-    ) external view returns (uint256 result);
+    ) external view returns (uint256 reward);
 
     /**
      * @dev Gets the invoice information

@@ -134,13 +134,13 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
      */
     function getRemainingReward(
         uint256 mainId
-    ) external view returns (uint256 result) {
+    ) external view returns (uint256 reward) {
         InvoiceInfo memory invoice = _invoices[mainId];
         uint256 tenure;
 
         if (invoice.lastClaimDate != 0) {
             tenure = invoice.dueDate - invoice.lastClaimDate;
-            result = _calculateFormula(
+            reward = _calculateFormula(
                 invoice.price,
                 tenure,
                 invoice.rewardApr
@@ -153,7 +153,7 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
                         ? invoice.dueDate
                         : block.timestamp
                 );
-            result = _calculateFormula(
+            reward = _calculateFormula(
                 invoice.price,
                 tenure,
                 invoice.rewardApr
@@ -233,7 +233,7 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
     /**
      * @dev Calculates accumulated rewards based on rewardApr if the asset has an owner
      * @param mainId, unique identifier of invoice
-     * @return result , accumulated rewards for the current owner
+     * @return reward , accumulated rewards for the current owner
      */
     function _getAvailableReward(
         uint256 mainId
