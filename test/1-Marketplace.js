@@ -187,7 +187,7 @@ describe("Marketplace", function () {
 
   it("Should revert to settle invoice without admin role", async function () {
     await expect(
-      marketplaceContract.connect(user1).settleInvoice(buyer.address, 1)
+      marketplaceContract.connect(user1).settleInvoice(1)
     ).to.be.revertedWith(
       `AccessControl: account ${user1.address.toLowerCase()} is missing role ${ethers.utils.hexZeroPad(
         ethers.utils.hexlify(0),
@@ -228,7 +228,7 @@ describe("Marketplace", function () {
     ).to.be.revertedWith("Asset not bought yet");
   });
 
-  it("Should create invoice and revert if pass wrong owner", async function () {
+  it("Should create invoice and revert if wrong owner calls claim reward", async function () {
     await invoiceContract.grantRole(
       MarketplaceAccess,
       marketplaceContract.address
@@ -249,9 +249,11 @@ describe("Marketplace", function () {
       .connect(buyer)
       .approve(marketplaceContract.address, invoice.assetPrice);
 
+    await marketplaceContract.connect(buyer).buy(1);
+
     await expect(
-      marketplaceContract.connect(buyer).buy(buyer.address, 1)
-    ).to.be.revertedWith("Owner address is Invalid");
+      marketplaceContract.connect(user1).claimReward(1)
+    ).to.be.revertedWith("You are not the owner");
   });
 
   it("Should create invoice and selling it to buyer through Marketplace", async function () {
@@ -275,8 +277,8 @@ describe("Marketplace", function () {
       .connect(buyer)
       .approve(marketplaceContract.address, invoice.assetPrice);
 
-    await expect(await marketplaceContract.connect(buyer).buy(user1.address, 1))
-      .not.to.be.reverted;
+    await expect(await marketplaceContract.connect(buyer).buy(1)).not.to.be
+      .reverted;
 
     expect(await stableTokenContract.balanceOf(treasuryWallet.address)).to.eq(
       invoice.assetPrice
@@ -310,8 +312,8 @@ describe("Marketplace", function () {
       .connect(treasuryWallet)
       .approve(marketplaceContract.address, invoice.assetPrice);
 
-    await expect(await marketplaceContract.connect(buyer).buy(user1.address, 1))
-      .not.to.be.reverted;
+    await expect(await marketplaceContract.connect(buyer).buy(1)).not.to.be
+      .reverted;
 
     const tenure = 10 * DAY;
     await time.increase(tenure);
@@ -358,8 +360,8 @@ describe("Marketplace", function () {
       .connect(treasuryWallet)
       .approve(marketplaceContract.address, invoice.assetPrice);
 
-    await expect(await marketplaceContract.connect(buyer).buy(user1.address, 1))
-      .not.to.be.reverted;
+    await expect(await marketplaceContract.connect(buyer).buy(1)).not.to.be
+      .reverted;
 
     const tenure = invoice.dueDate - (await now());
     await time.increase(YEAR);
@@ -411,16 +413,16 @@ describe("Marketplace", function () {
       .connect(treasuryWallet)
       .approve(marketplaceContract.address, invoice.assetPrice);
 
-    await expect(await marketplaceContract.connect(buyer).buy(user1.address, 1))
-      .not.to.be.reverted;
+    await expect(await marketplaceContract.connect(buyer).buy(1)).not.to.be
+      .reverted;
 
     await time.increase(10);
 
     const beforeSettle = await stableTokenContract.balanceOf(buyer.address);
 
-    expect(await marketplaceContract.settleInvoice(buyer.address, 1))
+    expect(await marketplaceContract.settleInvoice(1))
       .to.emit(invoiceContract, "InvoiceSettled")
-      .withArgs(buyer.address, 1);
+      .withArgs(1);
 
     const afterSettle = await stableTokenContract.balanceOf(buyer.address);
 
@@ -487,8 +489,9 @@ describe("Marketplace", function () {
 
     const before1stBuy = await stableTokenContract.balanceOf(feeWallet.address);
 
-    await expect(await marketplaceContract.connect(buyer).buy(user1.address, 1))
-      .not.to.be.reverted;
+    await expect(await marketplaceContract.connect(buyer).buy(1)).not.to.be
+      .reverted;
+    await marketplaceContract.connect(buyer).reList(1, invoice.assetPrice);
 
     const after1stBuy = await stableTokenContract.balanceOf(feeWallet.address);
 
@@ -502,8 +505,8 @@ describe("Marketplace", function () {
 
     const before2ndBuy = await stableTokenContract.balanceOf(feeWallet.address);
 
-    await expect(await marketplaceContract.connect(user1).buy(buyer.address, 1))
-      .not.to.be.reverted;
+    await expect(await marketplaceContract.connect(user1).buy(1)).not.to.be
+      .reverted;
 
     const after2ndBuy = await stableTokenContract.balanceOf(feeWallet.address);
 
@@ -551,11 +554,8 @@ describe("Marketplace", function () {
       .connect(buyer)
       .approve(marketplaceContract.address, totalStableTokenAmount);
 
-    await expect(
-      await marketplaceContract
-        .connect(buyer)
-        .batchBuy([user1.address, user1.address], [1, 2])
-    ).not.to.be.reverted;
+    await expect(await marketplaceContract.connect(buyer).batchBuy([1, 2])).not
+      .to.be.reverted;
 
     expect(await stableTokenContract.balanceOf(treasuryWallet.address)).to.eq(
       totalStableTokenAmount
@@ -565,7 +565,12 @@ describe("Marketplace", function () {
     expect(await invoiceContract.subBalanceOf(buyer.address, 2, 1)).to.eq(1);
   });
 
-  it("Should revert when no array parity in batchBuy", async function () {
+  it("Should revert when asset is not relisted", async function () {
+    await invoiceContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+
     await invoiceContract.createInvoice(
       user1.address,
       1,
@@ -583,9 +588,10 @@ describe("Marketplace", function () {
       .connect(buyer)
       .approve(marketplaceContract.address, invoice.assetPrice);
 
-    // owners array length is 1 and the rest is two
-    await expect(
-      marketplaceContract.connect(buyer).batchBuy([user1.address], [1, 2])
-    ).to.be.revertedWith("Marketplace: No array parity");
+    await marketplaceContract.connect(buyer).buy(1);
+
+    await expect(marketplaceContract.connect(user1).buy(1)).to.be.revertedWith(
+      "Invoice is not listed"
+    );
   });
 });

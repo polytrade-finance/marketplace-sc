@@ -57,13 +57,17 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
      * @dev See {IInvoice-settleInvoice}.
      */
     function settleInvoice(
-        address owner,
         uint256 mainId
-    ) external onlyRole(MARKETPLACE_ROLE) returns (uint256) {
+    ) external onlyRole(MARKETPLACE_ROLE) returns (uint256 price) {
         if (!msg.sender.supportsInterface(_MARKETPLACE_INTERFACE_ID))
             revert UnsupportedInterface();
-        _burn(owner, mainId, 1, 1);
-        return _invoices[mainId].price;
+        InvoiceInfo memory invoice = _invoices[mainId];
+
+        require(block.timestamp > invoice.dueDate, "Due date not passed");
+
+        price = invoice.price;
+        _burn(invoice.owner, mainId, 1, 1);
+        delete _invoices[mainId];
     }
 
     /**
@@ -109,15 +113,29 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
     }
 
     /**
+     * @dev See {IInvoice-changeOwner}.
+     */
+    function changeOwner(
+        address newOwner,
+        uint256 mainId
+    ) external onlyRole(MARKETPLACE_ROLE) {
+        if (!msg.sender.supportsInterface(_MARKETPLACE_INTERFACE_ID))
+            revert UnsupportedInterface();
+
+        InvoiceInfo storage invoice = _invoices[mainId];
+
+        invoice.salePrice = 0;
+        invoice.owner = newOwner;
+    }
+
+    /**
      * @dev See {IInvoice-claimReward}.
      */
     function claimReward(
-        address owner,
         uint256 mainId
     ) external onlyRole(MARKETPLACE_ROLE) returns (uint256 reward) {
         if (!msg.sender.supportsInterface(_MARKETPLACE_INTERFACE_ID))
             revert UnsupportedInterface();
-        require(mainBalanceOf(owner, mainId) == 1, "Owner address is Invalid");
         InvoiceInfo storage invoice = _invoices[mainId];
 
         reward = _getAvailableReward(mainId);
@@ -127,6 +145,20 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
                 ? invoice.dueDate
                 : block.timestamp
         );
+    }
+
+    /**
+     * @dev See {IInvoice-reList}.
+     */
+    function reList(
+        address owner,
+        uint256 mainId,
+        uint256 salePrice
+    ) external onlyRole(MARKETPLACE_ROLE) {
+        require(_invoices[mainId].owner == owner, "You are not the owner");
+
+        _invoices[mainId].salePrice = salePrice;
+        _approve(owner, msg.sender, mainId, 1, 1);
     }
 
     /**
@@ -223,8 +255,9 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
         uint256 dueDate,
         uint256 apr
     ) private {
+        require(owner != address(0), "Invalid owner address");
         require(mainTotalSupply(mainId) == 0, "Invoice: Already minted");
-        _invoices[mainId] = InvoiceInfo(price, apr, dueDate, 0);
+        _invoices[mainId] = InvoiceInfo(owner, price, price, apr, dueDate, 0);
         _mint(owner, mainId, 1, 1);
 
         emit InvoiceCreated(msg.sender, owner, mainId);

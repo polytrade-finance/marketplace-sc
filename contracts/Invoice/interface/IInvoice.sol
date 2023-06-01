@@ -12,7 +12,9 @@ interface IInvoice is IDLT {
      * @param lastClaimDate, is the date of last claim rewards
      */
     struct InvoiceInfo {
+        address owner;
         uint256 price;
+        uint256 salePrice;
         uint256 rewardApr;
         uint256 dueDate;
         uint256 lastClaimDate;
@@ -44,15 +46,11 @@ interface IInvoice is IDLT {
 
     /**
      * @dev Settles invoice for owner and burn the invoice
-     * @param owner, current owner of invoice
      * @param mainId, unique identifier of invoice
      * @dev Needs marketplace access to settle an invoice
      * @return the invoice price
      */
-    function settleInvoice(
-        address owner,
-        uint256 mainId
-    ) external returns (uint256);
+    function settleInvoice(uint256 mainId) external returns (uint256);
 
     /**
      * @dev Creates an invoice with its parameters
@@ -70,6 +68,8 @@ interface IInvoice is IDLT {
         uint256 dueDate,
         uint256 apr
     ) external;
+
+    function reList(address owner, uint256 mainId, uint256 salePrice) external;
 
     /**
      * @dev Creates batch invoice with their parameters
@@ -98,14 +98,12 @@ interface IInvoice is IDLT {
     /**
      * @dev Updates lastClaimDate whenever a buy or claimReward happens from marketplace
      * @dev Needs marketplace access to claim
-     * @param owner, the address on asset owner
      * @param mainId, unique identifier of invoice
      * @return reward , accumulated rewards for the current owner
      */
-    function claimReward(
-        address owner,
-        uint256 mainId
-    ) external returns (uint256 reward);
+    function claimReward(uint256 mainId) external returns (uint256 reward);
+
+    function changeOwner(address newOwner, uint256 mainId) external;
 
     /**
      * @dev Calculates the remaning reward

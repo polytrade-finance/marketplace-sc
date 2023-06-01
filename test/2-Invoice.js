@@ -85,21 +85,22 @@ describe("Invoice", function () {
     await invoiceContract.grantRole(MarketplaceAccess, deployer.address);
 
     await expect(
-      invoiceContract.settleInvoice(deployer.address, 1)
+      invoiceContract.settleInvoice(1)
     ).to.be.revertedWithCustomError(invoiceContract, "UnsupportedInterface");
   });
 
   it("Should revert on calling `claimReward` without interface support", async function () {
     await invoiceContract.grantRole(MarketplaceAccess, deployer.address);
 
-    await expect(
-      invoiceContract.claimReward(deployer.address, 1)
-    ).to.be.revertedWithCustomError(invoiceContract, "UnsupportedInterface");
+    await expect(invoiceContract.claimReward(1)).to.be.revertedWithCustomError(
+      invoiceContract,
+      "UnsupportedInterface"
+    );
   });
 
   it("Should revert to settle invoice without marketplace role", async function () {
     await expect(
-      invoiceContract.connect(deployer).settleInvoice(deployer.address, 1)
+      invoiceContract.connect(deployer).settleInvoice(1)
     ).to.be.revertedWith(
       `AccessControl: account ${deployer.address.toLowerCase()} is missing role ${MarketplaceAccess}`
     );
@@ -113,7 +114,7 @@ describe("Invoice", function () {
 
   it("Should revert to update claim status without `MarketplaceAccess` role", async function () {
     await expect(
-      invoiceContract.connect(user1).claimReward(user1.address, 1)
+      invoiceContract.connect(user1).claimReward(1)
     ).to.be.revertedWith(
       `AccessControl: account ${user1.address.toLowerCase()} is missing role ${MarketplaceAccess}`
     );
@@ -121,7 +122,7 @@ describe("Invoice", function () {
 
   it("Should revert to settle invoice without `MarketplaceAccess` role", async function () {
     await expect(
-      invoiceContract.connect(user1).claimReward(user1.address, 1)
+      invoiceContract.connect(user1).claimReward(1)
     ).to.be.revertedWith(
       `AccessControl: account ${user1.address.toLowerCase()} is missing role ${MarketplaceAccess}`
     );

@@ -62,6 +62,13 @@ interface IMarketplace {
     event InvoiceSettled(address indexed owner, uint256 invoiceId);
 
     /**
+     * @dev Emitted when an invoice is settled
+     * @param invoiceId, unique number of the invoice
+     * @param salePrice, unique number of the invoice
+     */
+    event InvoiceRelisted(uint256 invoiceId, uint256 salePrice);
+
+    /**
      * @dev Reverted on unsupported interface detection
      */
     error UnsupportedInterface();
@@ -70,31 +77,25 @@ interface IMarketplace {
      * @dev Settles an invoice after due date and claim remaining rewards for the owner
      * @dev call `settleInvoice` function from invoice collection
      * @dev Burns the invoice and transfers the price to current owner
-     * @param owner, address of the invoice owner
      * @param invoiceId, unique number of the invoice
      */
-    function settleInvoice(address owner, uint256 invoiceId) external;
+    function settleInvoice(uint256 invoiceId) external;
 
     /**
      * @dev Transfer asset to buyer and price to treasuryWallet also deducts fee from buyer
      * @dev Owner should have approved marketplace to transfer its assets
      * @dev Buyer should have approved marketplace to transfer its ERC20 tokens to pay price and fees
      * @dev Automatically claims rewards for prevoius owner
-     * @param owner, address of the Invoice owner
      * @param invoiceId, unique number of the Invoice
      */
-    function buy(address owner, uint256 invoiceId) external;
+    function buy(uint256 invoiceId) external;
 
     /**
      * @dev Batch buy invoices from owners
      * @dev Loop through arrays and calls the buy function
-     * @param owners, addresses of the invoice owners
      * @param invoiceIds, unique identifiers of the invoices
      */
-    function batchBuy(
-        address[] calldata owners,
-        uint[] calldata invoiceIds
-    ) external;
+    function batchBuy(uint[] calldata invoiceIds) external;
 
     /**
      * @dev claim available rewards for current owner
