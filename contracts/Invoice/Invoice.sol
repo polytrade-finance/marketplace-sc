@@ -237,7 +237,7 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
      */
     function _getAvailableReward(
         uint256 mainId
-    ) private view returns (uint256 result) {
+    ) private view returns (uint256 reward) {
         InvoiceInfo memory invoice = _invoices[mainId];
 
         if (invoice.lastClaimDate != 0) {
@@ -247,7 +247,7 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
                     : block.timestamp
             ) - invoice.lastClaimDate;
 
-            result = _calculateFormula(
+            reward = _calculateFormula(
                 invoice.price,
                 tenure,
                 invoice.rewardApr
