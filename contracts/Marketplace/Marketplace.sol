@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "contracts/Marketplace/interface/IMarketplace.sol";
 import "contracts/Invoice/interface/IInvoice.sol";
-import "contracts/Token/Token.sol";
+import "contracts/Token//interface/IToken.sol";
 
 /**
  * @title The common marketplace for the Invoices
@@ -20,7 +20,7 @@ contract Marketplace is ERC165, AccessControl, IMarketplace {
     uint256 public buyingFee;
 
     IInvoice private immutable _invoiceCollection;
-    Token private immutable _stableToken;
+    IToken private immutable _stableToken;
 
     address private _treasuryWallet;
     address private _feeWallet;
@@ -46,7 +46,7 @@ contract Marketplace is ERC165, AccessControl, IMarketplace {
         require(tokenAddress_ != address(0), "Invalid address");
 
         _invoiceCollection = IInvoice(invoiceCollection_);
-        _stableToken = Token(tokenAddress_);
+        _stableToken = IToken(tokenAddress_);
 
         _setTreasuryWallet(treasuryWallet_);
         _setFeeWallet(feeWallet_);

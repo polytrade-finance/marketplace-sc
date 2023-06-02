@@ -37,7 +37,9 @@ describe("Marketplace", function () {
 
     stableTokenContract = await (
       await ethers.getContractFactory("Token")
-    ).deploy("USD Dollar", "USDC", buyer.address, 200000);
+    ).deploy("USD Dollar", "USDC", 18, buyer.address, 200000);
+
+    await stableTokenContract.decimals();
 
     marketplaceContract = await (
       await ethers.getContractFactory("Marketplace")
