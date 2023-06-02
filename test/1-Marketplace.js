@@ -235,7 +235,6 @@ describe("Marketplace", function () {
   });
 
   it("Should revert to settle invoice before due date", async function () {
-
     await invoiceContract.grantRole(
       MarketplaceAccess,
       marketplaceContract.address
@@ -265,18 +264,15 @@ describe("Marketplace", function () {
       .connect(treasuryWallet)
       .approve(marketplaceContract.address, invoice.assetPrice);
 
-    await expect(
-        marketplaceContract.settleInvoice(1)
-      ).to.be.revertedWith("Due date not passed");  
-
+    await expect(marketplaceContract.settleInvoice(1)).to.be.revertedWith(
+      "Due date not passed"
+    );
   });
 
   it("Should revert to settle invoice with invalid id", async function () {
-
-    await expect(
-        marketplaceContract.settleInvoice(1)
-      ).to.be.revertedWith("Invalid invoice id");  
-
+    await expect(marketplaceContract.settleInvoice(1)).to.be.revertedWith(
+      "Invalid invoice id"
+    );
   });
 
   it("Should create invoice and revert if wrong owner calls claim reward", async function () {
@@ -501,7 +497,6 @@ describe("Marketplace", function () {
 
     expect(actualReward).to.be.equal(expectedReward);
   });
-
 
   it("Should create invoice and selling it for 2 times and apply buying fees", async function () {
     await invoiceContract.grantRole(

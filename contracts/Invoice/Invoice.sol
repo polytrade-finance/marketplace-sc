@@ -154,7 +154,6 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
         uint256 mainId,
         uint256 salePrice
     ) external onlyRole(MARKETPLACE_ROLE) {
-
         _invoices[mainId].salePrice = salePrice;
         _approve(_invoices[mainId].owner, msg.sender, mainId, 1, 1);
     }

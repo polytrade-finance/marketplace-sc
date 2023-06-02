@@ -101,19 +101,17 @@ describe("Invoice", function () {
   it("Should revert on calling `changeOwner` without interface support", async function () {
     await invoiceContract.grantRole(MarketplaceAccess, deployer.address);
 
-    await expect(invoiceContract.changeOwner(user1.address, 1)).to.be.revertedWithCustomError(
-      invoiceContract,
-      "UnsupportedInterface"
-    );
+    await expect(
+      invoiceContract.changeOwner(user1.address, 1)
+    ).to.be.revertedWithCustomError(invoiceContract, "UnsupportedInterface");
   });
 
   it("Should revert on calling `reList` without interface support", async function () {
     await invoiceContract.grantRole(MarketplaceAccess, deployer.address);
 
-    await expect(invoiceContract.changeOwner(user1.address, 1)).to.be.revertedWithCustomError(
-      invoiceContract,
-      "UnsupportedInterface"
-    );
+    await expect(
+      invoiceContract.changeOwner(user1.address, 1)
+    ).to.be.revertedWithCustomError(invoiceContract, "UnsupportedInterface");
   });
 
   it("Should revert to relist invoice without marketplace role", async function () {
