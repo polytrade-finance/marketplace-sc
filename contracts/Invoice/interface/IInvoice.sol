@@ -69,6 +69,12 @@ interface IInvoice is IDLT {
         uint256 apr
     ) external;
 
+    /**
+     * @dev Relist an invoice by marketplace
+     * @param mainId, unique identifier of invoice
+     * @param salePrice, New price for sale
+     * @dev Needs marketplace access to relist an invoice
+     */
     function reList(uint256 mainId, uint256 salePrice) external;
 
     /**
@@ -103,6 +109,12 @@ interface IInvoice is IDLT {
      */
     function claimReward(uint256 mainId) external returns (uint256 reward);
 
+    /**
+     * @dev Changes the owner of invoice by marketplace
+     * @param newOwner, address of the new owner
+     * @param mainId, unique identifier of invoice
+     * @dev Needs marketplace access to change the owner
+     */
     function changeOwner(address newOwner, uint256 mainId) external;
 
     /**

@@ -98,6 +98,13 @@ interface IMarketplace {
     function batchBuy(uint[] calldata invoiceIds) external;
 
     /**
+     * @dev Relist an invoice by current owner
+     * @param invoiceId, unique identifier of the invoice
+     * @param salePrice, new price for invoice sale
+     */
+    function reList(uint256 invoiceId, uint256 salePrice) external;
+
+    /**
      * @dev claim available rewards for current owner
      * @dev updates lastClaimDate for the invoice in the Invoice contract
      * @dev Caller should own the invoiceId

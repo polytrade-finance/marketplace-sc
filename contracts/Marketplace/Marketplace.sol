@@ -74,7 +74,7 @@ contract Marketplace is ERC165, AccessControl, IMarketplace {
     }
 
     /**
-     * @dev See {IInvoice-reList}.
+     * @dev See {IMarketplace-reList}.
      */
     function reList(uint256 invoiceId, uint256 salePrice) external {
         require(
