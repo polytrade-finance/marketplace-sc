@@ -94,6 +94,12 @@ describe("Marketplace", function () {
     ).to.revertedWith("Invalid address");
   });
 
+  it("Should revert on on relisting and invoice without ownership", async function () {
+    await expect(
+      marketplaceContract.connect(user1).reList(1, invoice.assetPrice)
+    ).to.be.revertedWith("You are not the owner");
+  });
+
   it("Should revert on passing invalid treasury wallet Address", async function () {
     await expect(
       (
@@ -226,6 +232,51 @@ describe("Marketplace", function () {
     await expect(
       marketplaceContract.connect(user1).claimReward(1)
     ).to.be.revertedWith("Asset not bought yet");
+  });
+
+  it("Should revert to settle invoice before due date", async function () {
+
+    await invoiceContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+
+    expect(
+      await invoiceContract.createInvoice(
+        user1.address,
+        1,
+        invoice.assetPrice,
+        invoice.rewardApr,
+        invoice.dueDate
+      )
+    )
+      .to.emit(invoiceContract, "InvoiceCreated")
+      .withArgs(user1.address, user1.address, 1);
+
+    await invoiceContract
+      .connect(user1)
+      .approve(marketplaceContract.address, 1, 1, 1);
+
+    await stableTokenContract
+      .connect(buyer)
+      .transfer(treasuryWallet.address, invoice.assetPrice);
+
+    await stableTokenContract
+      .connect(treasuryWallet)
+      .approve(marketplaceContract.address, invoice.assetPrice);
+
+    await expect(
+        marketplaceContract.settleInvoice(1)
+      ).to.be.revertedWith("Due date not passed");  
+
+  });
+
+  it("Should revert to settle invoice with invalid id", async function () {
+
+    await expect(
+        marketplaceContract.settleInvoice(1)
+      ).to.be.revertedWith("Invalid invoice id");  
+
   });
 
   it("Should create invoice and revert if wrong owner calls claim reward", async function () {
@@ -429,7 +480,7 @@ describe("Marketplace", function () {
     expect(afterSettle.sub(beforeSettle)).to.be.equal(invoice.assetPrice);
   });
 
-  it("Should create an invoice and settle it after due date", async function () {
+  it("Should get remaining zero reward after due date", async function () {
     expect(
       await invoiceContract.createInvoice(
         user1.address,
@@ -450,6 +501,7 @@ describe("Marketplace", function () {
 
     expect(actualReward).to.be.equal(expectedReward);
   });
+
 
   it("Should create invoice and selling it for 2 times and apply buying fees", async function () {
     await invoiceContract.grantRole(

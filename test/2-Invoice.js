@@ -98,6 +98,32 @@ describe("Invoice", function () {
     );
   });
 
+  it("Should revert on calling `changeOwner` without interface support", async function () {
+    await invoiceContract.grantRole(MarketplaceAccess, deployer.address);
+
+    await expect(invoiceContract.changeOwner(user1.address, 1)).to.be.revertedWithCustomError(
+      invoiceContract,
+      "UnsupportedInterface"
+    );
+  });
+
+  it("Should revert on calling `reList` without interface support", async function () {
+    await invoiceContract.grantRole(MarketplaceAccess, deployer.address);
+
+    await expect(invoiceContract.changeOwner(user1.address, 1)).to.be.revertedWithCustomError(
+      invoiceContract,
+      "UnsupportedInterface"
+    );
+  });
+
+  it("Should revert to relist invoice without marketplace role", async function () {
+    await expect(
+      invoiceContract.connect(deployer).reList(1, invoice.assetPrice)
+    ).to.be.revertedWith(
+      `AccessControl: account ${deployer.address.toLowerCase()} is missing role ${MarketplaceAccess}`
+    );
+  });
+
   it("Should revert to settle invoice without marketplace role", async function () {
     await expect(
       invoiceContract.connect(deployer).settleInvoice(1)
@@ -120,12 +146,32 @@ describe("Invoice", function () {
     );
   });
 
+  it("Should revert to change owner without `MarketplaceAccess` role", async function () {
+    await expect(
+      invoiceContract.connect(user1).changeOwner(user1.address, 1)
+    ).to.be.revertedWith(
+      `AccessControl: account ${user1.address.toLowerCase()} is missing role ${MarketplaceAccess}`
+    );
+  });
+
   it("Should revert to settle invoice without `MarketplaceAccess` role", async function () {
     await expect(
       invoiceContract.connect(user1).claimReward(1)
     ).to.be.revertedWith(
       `AccessControl: account ${user1.address.toLowerCase()} is missing role ${MarketplaceAccess}`
     );
+  });
+
+  it("Should revert to create invoice with invalid owner address", async function () {
+    await expect(
+      invoiceContract.createInvoice(
+        ethers.constants.AddressZero,
+        1,
+        0,
+        invoice.rewardApr,
+        invoice.dueDate
+      )
+    ).to.revertedWith("Invalid owner address");
   });
 
   it("Batch create invoices", async function () {

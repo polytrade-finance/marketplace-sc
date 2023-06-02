@@ -69,7 +69,7 @@ interface IInvoice is IDLT {
         uint256 apr
     ) external;
 
-    function reList(address owner, uint256 mainId, uint256 salePrice) external;
+    function reList(uint256 mainId, uint256 salePrice) external;
 
     /**
      * @dev Creates batch invoice with their parameters

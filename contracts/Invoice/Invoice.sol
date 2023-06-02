@@ -151,14 +151,12 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
      * @dev See {IInvoice-reList}.
      */
     function reList(
-        address owner,
         uint256 mainId,
         uint256 salePrice
     ) external onlyRole(MARKETPLACE_ROLE) {
-        require(_invoices[mainId].owner == owner, "You are not the owner");
 
         _invoices[mainId].salePrice = salePrice;
-        _approve(owner, msg.sender, mainId, 1, 1);
+        _approve(_invoices[mainId].owner, msg.sender, mainId, 1, 1);
     }
 
     /**
