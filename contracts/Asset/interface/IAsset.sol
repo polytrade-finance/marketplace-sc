@@ -3,15 +3,15 @@ pragma solidity 0.8.17;
 
 import "dual-layer-token/contracts/DLT/interface/IDLT.sol";
 
-interface IInvoice is IDLT {
+interface IAsset is IDLT {
     /**
-     * @title A new struct to define the invoice information
+     * @title A new struct to define the asset information
      * @param Price, is the price of asset
      * @param rewardApr, is the Apr for calculating rewards
      * @param dueDate, is the end date for caluclating rewards
      * @param lastClaimDate, is the date of last claim rewards
      */
-    struct InvoiceInfo {
+    struct AssetInfo {
         address owner;
         uint256 price;
         uint256 salePrice;
@@ -21,19 +21,19 @@ interface IInvoice is IDLT {
     }
 
     /**
-     * @dev Emitted when `newURI` is set to the invoices instead of `oldURI`
-     * @param oldBaseURI, Old base URI for the invoices
-     * @param newBaseURI, New base URI for the invoices
+     * @dev Emitted when `newURI` is set to the assets instead of `oldURI`
+     * @param oldBaseURI, Old base URI for the assets
+     * @param newBaseURI, New base URI for the assets
      */
-    event InvoiceBaseURISet(string oldBaseURI, string newBaseURI);
+    event AssetBaseURISet(string oldBaseURI, string newBaseURI);
 
     /**
-     * @dev Emitted when an invoice is created with it's parameters for an owner
-     * @param creator, Address of the invoice creator
+     * @dev Emitted when an asset is created with it's parameters for an owner
+     * @param creator, Address of the asset creator
      * @param owner, Address of the initial onvoice owner
-     * @param mainId, mainId is the unique identifier of invoice
+     * @param mainId, mainId is the unique identifier of asset
      */
-    event InvoiceCreated(
+    event AssetCreated(
         address indexed creator,
         address indexed owner,
         uint256 indexed mainId
@@ -45,23 +45,23 @@ interface IInvoice is IDLT {
     error UnsupportedInterface();
 
     /**
-     * @dev Settles invoice for owner and burn the invoice
-     * @param mainId, unique identifier of invoice
-     * @dev Needs marketplace access to settle an invoice
-     * @return the invoice price
+     * @dev Settles asset for owner and burn the asset
+     * @param mainId, unique identifier of asset
+     * @dev Needs marketplace access to settle an asset
+     * @return the asset price
      */
-    function settleInvoice(uint256 mainId) external returns (uint256);
+    function settleAsset(uint256 mainId) external returns (uint256);
 
     /**
-     * @dev Creates an invoice with its parameters
-     * @param owner, initial owner of invoice
-     * @param mainId, unique identifier of invoice
-     * @param price, invoice price to sell
+     * @dev Creates an asset with its parameters
+     * @param owner, initial owner of asset
+     * @param mainId, unique identifier of asset
+     * @param price, asset price to sell
      * @param dueDate, end date for calculating rewards
      * @param apr, annual percentage rate for calculating rewards
-     * @dev Needs admin access to create an invoice
+     * @dev Needs admin access to create an asset
      */
-    function createInvoice(
+    function createAsset(
         address owner,
         uint256 mainId,
         uint256 price,
@@ -70,23 +70,23 @@ interface IInvoice is IDLT {
     ) external;
 
     /**
-     * @dev Relist an invoice by marketplace
-     * @param mainId, unique identifier of invoice
+     * @dev Relist an asset by marketplace
+     * @param mainId, unique identifier of asset
      * @param salePrice, New price for sale
-     * @dev Needs marketplace access to relist an invoice
+     * @dev Needs marketplace access to relist an asset
      */
     function relist(uint256 mainId, uint256 salePrice) external;
 
     /**
-     * @dev Creates batch invoice with their parameters
-     * @param owners, initial owners of invoices
-     * @param mainIds, unique identifiers of invoices
-     * @param prices, invoices price to sell
+     * @dev Creates batch asset with their parameters
+     * @param owners, initial owners of assets
+     * @param mainIds, unique identifiers of assets
+     * @param prices, assets price to sell
      * @param dueDates, end dates for calculating rewards
      * @param aprs, annual percentage rates for calculating rewards
-     * @dev Needs admin access to create an invoice
+     * @dev Needs admin access to create an asset
      */
-    function batchCreateInvoice(
+    function batchCreateAsset(
         address[] calldata owners,
         uint256[] calldata mainIds,
         uint256[] calldata prices,
@@ -95,7 +95,7 @@ interface IInvoice is IDLT {
     ) external;
 
     /**
-     * @dev Set a new baseURI for invoices
+     * @dev Set a new baseURI for assets
      * @dev Needs admin access to schange base URI
      * @param newBaseURI, string value of new URI
      */
@@ -104,22 +104,22 @@ interface IInvoice is IDLT {
     /**
      * @dev Updates lastClaimDate whenever a buy or claimReward happens from marketplace
      * @dev Needs marketplace access to claim
-     * @param mainId, unique identifier of invoice
+     * @param mainId, unique identifier of asset
      * @return reward , accumulated rewards for the current owner
      */
     function claimReward(uint256 mainId) external returns (uint256 reward);
 
     /**
-     * @dev Changes the owner of invoice by marketplace
+     * @dev Changes the owner of asset by marketplace
      * @param newOwner, address of the new owner
-     * @param mainId, unique identifier of invoice
+     * @param mainId, unique identifier of asset
      * @dev Needs marketplace access to change the owner
      */
     function changeOwner(address newOwner, uint256 mainId) external;
 
     /**
      * @dev Calculates the remaning reward
-     * @param mainId, unique identifier of invoice
+     * @param mainId, unique identifier of asset
      * @return reward the rewards Amount
      */
     function getRemainingReward(
@@ -128,7 +128,7 @@ interface IInvoice is IDLT {
 
     /**
      * @dev Calculates available rewards to claim
-     * @param mainId, unique identifier of invoice
+     * @param mainId, unique identifier of asset
      * @return reward the accumulated rewards amount for the current owner
      */
     function getAvailableReward(
@@ -136,18 +136,18 @@ interface IInvoice is IDLT {
     ) external view returns (uint256 reward);
 
     /**
-     * @dev Gets the invoice information
-     * @param mainId, unique identifier of invoice
-     * @return InvoiceInfo struct
+     * @dev Gets the asset information
+     * @param mainId, unique identifier of asset
+     * @return assetInfo struct
      */
-    function getInvoiceInfo(
+    function getAssetInfo(
         uint256 mainId
-    ) external view returns (InvoiceInfo calldata);
+    ) external view returns (AssetInfo calldata);
 
     /**
-     * @dev concatenate invoiceId (mainId) to baseURI
-     * @param mainId, unique identifier of invoice
-     * @return string value of invoice URI
+     * @dev concatenate asset id (mainId) to baseURI
+     * @param mainId, unique identifier of asset
+     * @return string value of asset URI
      */
     function tokenURI(uint256 mainId) external view returns (string memory);
 }

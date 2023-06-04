@@ -6,13 +6,13 @@ import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "contracts/Marketplace/interface/IMarketplace.sol";
-import "contracts/Invoice/interface/IInvoice.sol";
+import "contracts/Asset/interface/IAsset.sol";
 import "contracts/Token//interface/IToken.sol";
 
 /**
- * @title The common marketplace for the Invoices
+ * @title The common marketplace for the assets
  * @author Polytrade.Finance
- * @dev Implementation of all Invoices trading operations
+ * @dev Implementation of all assets trading operations
  */
 contract Marketplace is ERC165, AccessControl, IMarketplace {
     using SafeERC20 for IToken;
@@ -21,33 +21,33 @@ contract Marketplace is ERC165, AccessControl, IMarketplace {
     uint256 public initialFee;
     uint256 public buyingFee;
 
-    IInvoice private immutable _invoiceCollection;
+    IAsset private immutable _assetCollection;
     IToken private immutable _stableToken;
 
     address private _treasuryWallet;
     address private _feeWallet;
 
-    bytes4 private constant _INVOICE_INTERFACE_ID = type(IInvoice).interfaceId;
+    bytes4 private constant _ASSET_INTERFACE_ID = type(IAsset).interfaceId;
 
     /**
      * @dev Constructor for the main Marketplace
-     * @param invoiceCollection_, Address of the Invoice Collection used in the marketplace
+     * @param assetCollection_, Address of the asset Collection used in the marketplace
      * @param tokenAddress_, Address of the ERC20 token address
      * @param treasuryWallet_, Address of the treasury wallet
      * @param feeWallet_, Address of the fee wallet
      */
     constructor(
-        address invoiceCollection_,
+        address assetCollection_,
         address tokenAddress_,
         address treasuryWallet_,
         address feeWallet_
     ) {
-        if (!invoiceCollection_.supportsInterface(_INVOICE_INTERFACE_ID)) {
+        if (!assetCollection_.supportsInterface(_ASSET_INTERFACE_ID)) {
             revert UnsupportedInterface();
         }
         require(tokenAddress_ != address(0), "Invalid address");
 
-        _invoiceCollection = IInvoice(invoiceCollection_);
+        _assetCollection = IAsset(assetCollection_);
         _stableToken = IToken(tokenAddress_);
 
         _setTreasuryWallet(treasuryWallet_);
@@ -57,51 +57,51 @@ contract Marketplace is ERC165, AccessControl, IMarketplace {
     }
 
     /**
-     * @dev See {IMarketplace-settleInvoice}.
+     * @dev See {IMarketplace-settleAsset}.
      */
-    function settleInvoice(
-        uint256 invoiceId
+    function settleAsset(
+        uint256 assetId
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        address owner = _invoiceCollection.getInvoiceInfo(invoiceId).owner;
-        require(owner != address(0), "Invalid invoice id");
-        _claimReward(invoiceId);
+        address owner = _assetCollection.getAssetInfo(assetId).owner;
+        require(owner != address(0), "Invalid asset id");
+        _claimReward(assetId);
 
         _stableToken.safeTransferFrom(
             _treasuryWallet,
             owner,
-            _invoiceCollection.settleInvoice(invoiceId)
+            _assetCollection.settleAsset(assetId)
         );
 
-        emit InvoiceSettled(owner, invoiceId);
+        emit AssetSettled(owner, assetId);
     }
 
     /**
      * @dev See {IMarketplace-relist}.
      */
-    function relist(uint256 invoiceId, uint256 salePrice) external {
+    function relist(uint256 assetId, uint256 salePrice) external {
         require(
-            _invoiceCollection.getInvoiceInfo(invoiceId).owner == msg.sender,
+            _assetCollection.getAssetInfo(assetId).owner == msg.sender,
             "You are not the owner"
         );
 
-        _invoiceCollection.relist(invoiceId, salePrice);
+        _assetCollection.relist(assetId, salePrice);
 
-        emit InvoiceRelisted(invoiceId, salePrice);
+        emit AssetRelisted(assetId, salePrice);
     }
 
     /**
      * @dev See {IMarketplace-buy}.
      */
-    function buy(uint256 invoiceId) external {
-        _buy(invoiceId);
+    function buy(uint256 assetId) external {
+        _buy(assetId);
     }
 
     /**
      * @dev See {IMarketplace-batchBuy}.
      */
-    function batchBuy(uint256[] calldata invoiceIds) external {
-        for (uint256 i = 0; i < invoiceIds.length; ) {
-            _buy(invoiceIds[i]);
+    function batchBuy(uint256[] calldata assetIds) external {
+        for (uint256 i = 0; i < assetIds.length; ) {
+            _buy(assetIds[i]);
 
             unchecked {
                 ++i;
@@ -112,16 +112,16 @@ contract Marketplace is ERC165, AccessControl, IMarketplace {
     /**
      * @dev See {IMarketplace-claimReward}.
      */
-    function claimReward(uint256 invoiceId) external {
+    function claimReward(uint256 assetId) external {
         require(
-            _invoiceCollection.getInvoiceInfo(invoiceId).lastClaimDate != 0,
+            _assetCollection.getAssetInfo(assetId).lastClaimDate != 0,
             "Asset not bought yet"
         );
         require(
-            _invoiceCollection.getInvoiceInfo(invoiceId).owner == msg.sender,
+            _assetCollection.getAssetInfo(assetId).owner == msg.sender,
             "You are not the owner"
         );
-        _claimReward(invoiceId);
+        _claimReward(assetId);
     }
 
     /**
@@ -167,10 +167,10 @@ contract Marketplace is ERC165, AccessControl, IMarketplace {
     }
 
     /**
-     * @dev See {IMarketplace-getInvoiceCollection}.
+     * @dev See {IMarketplace-getAssetCollection}.
      */
-    function getInvoiceCollection() external view returns (address) {
-        return address(_invoiceCollection);
+    function getAssetCollection() external view returns (address) {
+        return address(_assetCollection);
     }
 
     /**
@@ -234,12 +234,12 @@ contract Marketplace is ERC165, AccessControl, IMarketplace {
     }
 
     /**
-     * @dev Transfers invoice to buyer and transfer the price to treasury wallet
-     * @param invoiceId, unique identifier of the Invoice
+     * @dev Transfers asset to buyer and transfer the price to treasury wallet
+     * @param assetId, unique identifier of the asset
      */
-    function _claimReward(uint256 invoiceId) private {
-        address owner = _invoiceCollection.getInvoiceInfo(invoiceId).owner;
-        uint256 reward = _invoiceCollection.claimReward(invoiceId);
+    function _claimReward(uint256 assetId) private {
+        address owner = _assetCollection.getAssetInfo(assetId).owner;
+        uint256 reward = _assetCollection.claimReward(assetId);
 
         _stableToken.safeTransferFrom(_treasuryWallet, owner, reward);
 
@@ -247,38 +247,31 @@ contract Marketplace is ERC165, AccessControl, IMarketplace {
     }
 
     /**
-     * @dev Safe transfer invoice to buyer and transfer the price to treasury wallet
+     * @dev Safe transfer asset to buyer and transfer the price to treasury wallet
      * @dev Transfer buying fee or initial fee to fee wallet based on asset status
-     * @param invoiceId, unique identifier of the Invoice
+     * @param assetId, unique identifier of the asset
      */
-    function _buy(uint256 invoiceId) private {
-        uint256 price = _invoiceCollection.getInvoiceInfo(invoiceId).salePrice;
-        require(price != 0, "Invoice is not listed");
-        uint256 lastClaimDate = _invoiceCollection
-            .getInvoiceInfo(invoiceId)
+    function _buy(uint256 assetId) private {
+        uint256 price = _assetCollection.getAssetInfo(assetId).salePrice;
+        require(price != 0, "Asset is not listed");
+        uint256 lastClaimDate = _assetCollection
+            .getAssetInfo(assetId)
             .lastClaimDate;
-        address owner = _invoiceCollection.getInvoiceInfo(invoiceId).owner;
+        address owner = _assetCollection.getAssetInfo(assetId).owner;
         uint256 fee = lastClaimDate != 0 ? buyingFee : initialFee;
         address receiver = lastClaimDate != 0 ? owner : _treasuryWallet;
 
         fee = (price * fee) / 1e4;
 
-        _claimReward(invoiceId);
+        _claimReward(assetId);
 
-        _invoiceCollection.changeOwner(msg.sender, invoiceId);
+        _assetCollection.changeOwner(msg.sender, assetId);
 
-        _invoiceCollection.safeTransferFrom(
-            owner,
-            msg.sender,
-            invoiceId,
-            1,
-            1,
-            ""
-        );
+        _assetCollection.safeTransferFrom(owner, msg.sender, assetId, 1, 1, "");
 
         _stableToken.safeTransferFrom(msg.sender, receiver, price);
         _stableToken.safeTransferFrom(msg.sender, _feeWallet, fee);
 
-        emit AssetBought(owner, msg.sender, invoiceId);
+        emit AssetBought(owner, msg.sender, assetId);
     }
 }

@@ -60,18 +60,18 @@ interface IMarketplace {
     event BuyingFeeSet(uint256 oldFee, uint256 newFee);
 
     /**
-     * @dev Emitted when an invoice is settled
-     * @param owner, address of the invoice owner
-     * @param invoiceId, unique number of the invoice
+     * @dev Emitted when an asset is settled
+     * @param owner, address of the asset owner
+     * @param assetId, unique number of the asset
      */
-    event InvoiceSettled(address indexed owner, uint256 invoiceId);
+    event AssetSettled(address indexed owner, uint256 assetId);
 
     /**
-     * @dev Emitted when an invoice is settled
-     * @param invoiceId, unique number of the invoice
-     * @param salePrice, unique number of the invoice
+     * @dev Emitted when an asset is settled
+     * @param assetId, unique number of the asset
+     * @param salePrice, unique number of the asset
      */
-    event InvoiceRelisted(uint256 invoiceId, uint256 salePrice);
+    event AssetRelisted(uint256 assetId, uint256 salePrice);
 
     /**
      * @dev Reverted on unsupported interface detection
@@ -79,43 +79,43 @@ interface IMarketplace {
     error UnsupportedInterface();
 
     /**
-     * @dev Settles an invoice after due date and claim remaining rewards for the owner
-     * @dev call `settleInvoice` function from invoice collection
-     * @dev Burns the invoice and transfers the price to current owner
-     * @param invoiceId, unique number of the invoice
+     * @dev Settles an asset after due date and claim remaining rewards for the owner
+     * @dev call `settleasset` function from asset collection
+     * @dev Burns the asset and transfers the price to current owner
+     * @param assetId, unique number of the asset
      */
-    function settleInvoice(uint256 invoiceId) external;
+    function settleAsset(uint256 assetId) external;
 
     /**
      * @dev Transfer asset to buyer and price to treasuryWallet also deducts fee from buyer
      * @dev Owner should have approved marketplace to transfer its assets
      * @dev Buyer should have approved marketplace to transfer its ERC20 tokens to pay price and fees
      * @dev Automatically claims rewards for prevoius owner
-     * @param invoiceId, unique number of the Invoice
+     * @param assetId, unique number of the asset
      */
-    function buy(uint256 invoiceId) external;
+    function buy(uint256 assetId) external;
 
     /**
-     * @dev Batch buy invoices from owners
+     * @dev Batch buy assets from owners
      * @dev Loop through arrays and calls the buy function
-     * @param invoiceIds, unique identifiers of the invoices
+     * @param assetIds, unique identifiers of the assets
      */
-    function batchBuy(uint[] calldata invoiceIds) external;
+    function batchBuy(uint[] calldata assetIds) external;
 
     /**
-     * @dev Relist an invoice by current owner
-     * @param invoiceId, unique identifier of the invoice
-     * @param salePrice, new price for invoice sale
+     * @dev Relist an asset by current owner
+     * @param assetId, unique identifier of the asset
+     * @param salePrice, new price for asset sale
      */
-    function relist(uint256 invoiceId, uint256 salePrice) external;
+    function relist(uint256 assetId, uint256 salePrice) external;
 
     /**
      * @dev claim available rewards for current owner
-     * @dev updates lastClaimDate for the invoice in the Invoice contract
-     * @dev Caller should own the invoiceId
-     * @param invoiceId, unique number of the Invoice
+     * @dev updates lastClaimDate for the asset in the asset contract
+     * @dev Caller should own the assetId
+     * @param assetId, unique number of the asset
      */
-    function claimReward(uint256 invoiceId) external;
+    function claimReward(uint256 assetId) external;
 
     /**
      * @dev Set new initial fee
@@ -146,10 +146,10 @@ interface IMarketplace {
     function setFeeWallet(address newFeeWallet) external;
 
     /**
-     * @dev Gets current invoice collection address
+     * @dev Gets current asset collection address
      * @return address, Address of the invocie collection contract
      */
-    function getInvoiceCollection() external view returns (address);
+    function getAssetCollection() external view returns (address);
 
     /**
      * @dev Gets current stable token address
