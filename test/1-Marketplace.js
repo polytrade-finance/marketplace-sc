@@ -125,7 +125,7 @@ describe("Marketplace", function () {
         treasuryWallet.address,
         ethers.constants.AddressZero
       )
-    ).to.revertedWith("Marketplace: Invalid fee wallet address");
+    ).to.revertedWith("Invalid wallet address");
   });
 
   it("Should return the invoice contract address while calling getInvoiceCollection()", async function () {

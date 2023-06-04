@@ -223,10 +223,7 @@ contract Marketplace is ERC165, AccessControl, IMarketplace {
      * @param newFeeWallet, Address of the new fee wallet
      */
     function _setFeeWallet(address newFeeWallet) private {
-        require(
-            newFeeWallet != address(0),
-            "Marketplace: Invalid fee wallet address"
-        );
+        require(newFeeWallet != address(0), "Invalid wallet address");
 
         address oldFeeWallet = address(_feeWallet);
         _feeWallet = newFeeWallet;

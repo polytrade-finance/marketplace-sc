@@ -18,7 +18,8 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
     using ERC165Checker for address;
 
     // Create a new role identifier for the marketplace role
-    bytes32 public constant MARKETPLACE_ROLE = keccak256("MARKETPLACE_ROLE");
+    bytes32 public constant MARKETPLACE_ROLE =
+        0x0ea61da3a8a09ad801432653699f8c1860b1ae9d2ea4a141fadfd63227717bc8;
 
     string private _invoiceBaseURI;
     uint256 private constant _YEAR = 365 days;
