@@ -35,8 +35,13 @@ interface IMarketplace {
      * @dev Emitted when asset owner changes
      * @param oldOwner, Address of the previous owner
      * @param newOwner, Address of the new owner
+     * @param id, idof the bought asset
      */
-    event AssetBought(address indexed oldOwner, address indexed newOwner);
+    event AssetBought(
+        address indexed oldOwner,
+        address indexed newOwner,
+        uint256 id
+    );
 
     /**
      * @dev Emitted when a new initial fee set

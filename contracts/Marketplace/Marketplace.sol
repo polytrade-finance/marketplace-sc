@@ -277,6 +277,6 @@ contract Marketplace is ERC165, AccessControl, IMarketplace {
         _stableToken.transferFrom(msg.sender, receiver, price);
         _stableToken.transferFrom(msg.sender, _feeWallet, fee);
 
-        emit AssetBought(owner, msg.sender);
+        emit AssetBought(owner, msg.sender, invoiceId);
     }
 }
