@@ -3,6 +3,7 @@ pragma solidity =0.8.17;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interface/IMarketplace.sol";
 import "../Invoice/interface/IInvoice.sol";
 import "../Token/Token.sol";
@@ -13,6 +14,7 @@ import "../Token/Token.sol";
  * @dev Implementation of all Invoices trading operations
  */
 contract Marketplace is AccessControl, IMarketplace {
+    using SafeERC20 for Token;
     using ERC165Checker for address;
 
     IInvoice private _invoiceCollection;
@@ -229,6 +231,6 @@ contract Marketplace is AccessControl, IMarketplace {
 
         uint256 price = _invoiceCollection.getInvoiceInfo(invoiceId).price;
 
-        _stableToken.transferFrom(msg.sender, _treasuryWallet, price);
+        _stableToken.safeTransferFrom(msg.sender, _treasuryWallet, price);
     }
 }
