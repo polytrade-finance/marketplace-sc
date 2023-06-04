@@ -5,16 +5,16 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "dual-layer-token/contracts/DLT/DLT.sol";
-import "contracts/Invoice/interface/IInvoice.sol";
+import "contracts/Asset/interface/IAsset.sol";
 
-contract Invoice is ERC165, IInvoice, DLT, AccessControl {
-    string private _invoiceBaseURI;
+contract Asset is ERC165, IAsset, DLT, AccessControl {
+    string private _assetBaseURI;
     uint256 private constant _YEAR = 365 days;
 
     /**
-     * @dev Mapping will be indexing the InvoiceInfo for each Invoice category by its mainId
+     * @dev Mapping will be indexing the AssetInfo for each asset category by its mainId
      */
-    mapping(uint256 => InvoiceInfo) private _invoices;
+    mapping(uint256 => AssetInfo) private _assets;
 
     constructor(
         string memory name,
@@ -26,22 +26,22 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
     }
 
     /**
-     * @dev See {IInvoice-createInvoice}.
+     * @dev See {IAsset-createAsset}.
      */
-    function createInvoice(
+    function createAsset(
         address owner,
         uint256 mainId,
         uint256 price,
         uint256 apr,
         uint256 dueDate
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _createInvoice(owner, mainId, price, dueDate, apr);
+        _createAsset(owner, mainId, price, dueDate, apr);
     }
 
     /**
-     * @dev See {IInvoice-batchCreateInvoice}.
+     * @dev See {IAsset-batchCreateAsset}.
      */
-    function batchCreateInvoice(
+    function batchCreateAsset(
         address[] calldata owners,
         uint256[] calldata mainIds,
         uint256[] calldata prices,
@@ -53,11 +53,11 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
                 owners.length == prices.length &&
                 owners.length == dueDates.length &&
                 owners.length == aprs.length,
-            "Invoice: No array parity"
+            "No array parity"
         );
 
         for (uint256 i = 0; i < mainIds.length; ) {
-            _createInvoice(
+            _createAsset(
                 owners[i],
                 mainIds[i],
                 prices[i],
@@ -72,7 +72,7 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
     }
 
     /**
-     * @dev See {IInvoice-setBaseURI}.
+     * @dev See {IAsset-setBaseURI}.
      */
     function setBaseURI(
         string calldata newBaseURI
@@ -81,46 +81,38 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
     }
 
     /**
-     * @dev See {IInvoice-getRemainingReward}.
+     * @dev See {IAsset-getRemainingReward}.
      */
     function getRemainingReward(
         uint256 mainId
     ) external view returns (uint256 result) {
-        InvoiceInfo memory invoice = _invoices[mainId];
+        AssetInfo memory asset = _assets[mainId];
         uint256 tenure;
 
-        if (invoice.lastClaimDate != 0) {
-            tenure = invoice.dueDate - invoice.lastClaimDate;
-            result = _calculateFormula(
-                invoice.price,
-                tenure,
-                invoice.rewardApr
-            );
-        } else if (invoice.price != 0) {
-            tenure = invoice.dueDate - block.timestamp;
-            result = _calculateFormula(
-                invoice.price,
-                tenure,
-                invoice.rewardApr
-            );
+        if (asset.lastClaimDate != 0) {
+            tenure = asset.dueDate - asset.lastClaimDate;
+            result = _calculateFormula(asset.price, tenure, asset.rewardApr);
+        } else if (asset.price != 0) {
+            tenure = asset.dueDate - block.timestamp;
+            result = _calculateFormula(asset.price, tenure, asset.rewardApr);
         }
     }
 
     /**
-     * @dev See {IInvoice-getInvoiceInfo}.
+     * @dev See {IAsset-getAssetInfo}.
      */
-    function getInvoiceInfo(
+    function getAssetInfo(
         uint256 mainId
-    ) external view returns (InvoiceInfo memory) {
-        return _invoices[mainId];
+    ) external view returns (AssetInfo memory) {
+        return _assets[mainId];
     }
 
     /**
-     * @dev See {IInvoice-tokenURI}.
+     * @dev See {IAsset-tokenURI}.
      */
     function tokenURI(uint256 mainId) external view returns (string memory) {
-        string memory stringInvoiceNumber = Strings.toString(mainId);
-        return string.concat(_invoiceBaseURI, stringInvoiceNumber);
+        string memory stringAssetNumber = Strings.toString(mainId);
+        return string.concat(_assetBaseURI, stringAssetNumber);
     }
 
     /**
@@ -130,45 +122,45 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
         bytes4 interfaceId
     ) public view virtual override(ERC165, AccessControl) returns (bool) {
         return
-            interfaceId == type(IInvoice).interfaceId ||
+            interfaceId == type(IAsset).interfaceId ||
             super.supportsInterface(interfaceId);
     }
 
     /**
-     * @dev Changes the invoice base URI
+     * @dev Changes the asset base URI
      * @param newBaseURI, String of the asset base URI
      */
     function _setBaseURI(string memory newBaseURI) private {
-        string memory oldBaseURI = _invoiceBaseURI;
-        _invoiceBaseURI = newBaseURI;
-        emit InvoiceBaseURISet(oldBaseURI, newBaseURI);
+        string memory oldBaseURI = _assetBaseURI;
+        _assetBaseURI = newBaseURI;
+        emit AssetBaseURISet(oldBaseURI, newBaseURI);
     }
 
     /**
-     * @dev Creates a new invoice with given mainId and transfer it to owner
-     * @param owner, Address of the initial invoice owner
-     * @param mainId, unique identifier of invoice
-     * @param price, Invoice price to buy
+     * @dev Creates a new asset with given mainId and transfer it to owner
+     * @param owner, Address of the initial asset owner
+     * @param mainId, unique identifier of asset
+     * @param price, asset price to buy
      * @param dueDate, is the end date for caluclating rewards
      * @param apr, is the annual percentage rate for calculating rewards
      */
-    function _createInvoice(
+    function _createAsset(
         address owner,
         uint256 mainId,
         uint256 price,
         uint256 dueDate,
         uint256 apr
     ) private {
-        require(mainTotalSupply(mainId) == 0, "Invoice: Already minted");
-        _invoices[mainId] = InvoiceInfo(price, apr, dueDate, 0);
+        require(mainTotalSupply(mainId) == 0, "Asset: Already minted");
+        _assets[mainId] = AssetInfo(price, apr, dueDate, 0);
         _mint(owner, mainId, 1, 1);
 
-        emit InvoiceCreated(msg.sender, owner, mainId);
+        emit AssetCreated(msg.sender, owner, mainId);
     }
 
     /**
      * @dev Calculates the rewards for a given asset
-     * @param price is the price of invoice
+     * @param price is the price of asset
      * @param tenure is the duration from last updated rewards
      * @param apr is the annual percentage rate of rewards for assets
      */

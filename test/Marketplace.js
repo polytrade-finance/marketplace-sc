@@ -1,9 +1,9 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { invoice } = require("./data");
+const { asset } = require("./data");
 
 describe("Marketplace", function () {
-  let invoiceContract;
+  let assetContract;
   let stableCoinContract;
   let marketplaceContract;
   let user1;
@@ -24,14 +24,14 @@ describe("Marketplace", function () {
       newFeeWallet,
     ] = await ethers.getSigners();
 
-    const InvoiceFactory = await ethers.getContractFactory("Invoice");
-    invoiceContract = await InvoiceFactory.deploy(
-      "Polytrade Invoice Collection",
+    const AssetFactory = await ethers.getContractFactory("Asset");
+    assetContract = await AssetFactory.deploy(
+      "Polytrade Asset Collection",
       "PIC",
       "https://ipfs.io/ipfs"
     );
 
-    await invoiceContract.deployed();
+    await assetContract.deployed();
 
     stableCoinContract = await (
       await ethers.getContractFactory("Token")
@@ -40,14 +40,14 @@ describe("Marketplace", function () {
     marketplaceContract = await (
       await ethers.getContractFactory("Marketplace")
     ).deploy(
-      invoiceContract.address,
+      assetContract.address,
       stableCoinContract.address,
       treasuryWallet.address,
       feeWallet.address
     );
   });
 
-  it("Should revert on passing invalid invoice collection Address", async function () {
+  it("Should revert on passing invalid asset collection Address", async function () {
     await expect(
       (
         await ethers.getContractFactory("Marketplace")
@@ -57,33 +57,23 @@ describe("Marketplace", function () {
         treasuryWallet.address,
         feeWallet.address
       )
-    ).to.revertedWith("Marketplace: Invalid invoice collection address");
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "UnsupportedInterface"
+    );
   });
 
-  it("Should revert on passing non-compatible invoice collection Address", async function () {
+  it("Should revert on passing invalid token Address", async function () {
     await expect(
       (
         await ethers.getContractFactory("Marketplace")
       ).deploy(
-        stableCoinContract.address, // non compatible to invoice contract
-        stableCoinContract.address,
-        treasuryWallet.address,
-        feeWallet.address
-      )
-    ).to.revertedWith("Marketplace: Non compatible invoice collection");
-  });
-
-  it("Should revert on passing invalid stable coin address", async function () {
-    await expect(
-      (
-        await ethers.getContractFactory("Marketplace")
-      ).deploy(
-        invoiceContract.address,
+        assetContract.address,
         ethers.constants.AddressZero,
         treasuryWallet.address,
         feeWallet.address
       )
-    ).to.revertedWith("Marketplace: Invalid stable coin address");
+    ).to.revertedWith("Invalid address");
   });
 
   it("Should revert on passing invalid treasury wallet Address", async function () {
@@ -91,7 +81,7 @@ describe("Marketplace", function () {
       (
         await ethers.getContractFactory("Marketplace")
       ).deploy(
-        invoiceContract.address,
+        assetContract.address,
         stableCoinContract.address,
         ethers.constants.AddressZero,
         feeWallet.address
@@ -104,7 +94,7 @@ describe("Marketplace", function () {
       (
         await ethers.getContractFactory("Marketplace")
       ).deploy(
-        invoiceContract.address,
+        assetContract.address,
         stableCoinContract.address,
         treasuryWallet.address,
         ethers.constants.AddressZero
@@ -112,9 +102,9 @@ describe("Marketplace", function () {
     ).to.revertedWith("Marketplace: Invalid fee wallet address");
   });
 
-  it("Should return the invoice contract address while calling getInvoiceCollection()", async function () {
-    expect(await marketplaceContract.getInvoiceCollection()).to.eq(
-      invoiceContract.address
+  it("Should return the asset contract address while calling getAssetCollection()", async function () {
+    expect(await marketplaceContract.getAssetCollection()).to.eq(
+      assetContract.address
     );
   });
 
@@ -167,60 +157,60 @@ describe("Marketplace", function () {
     ).to.be.reverted;
   });
 
-  it("Should create invoice and selling it to buyer through Marketplace", async function () {
-    await invoiceContract.createInvoice(
+  it("Should create asset and selling it to buyer through Marketplace", async function () {
+    await assetContract.createAsset(
       user1.address,
       1,
-      invoice.assetPrice,
-      invoice.rewardApr,
-      invoice.dueDate
+      asset.assetPrice,
+      asset.rewardApr,
+      asset.dueDate
     );
 
-    await invoiceContract
+    await assetContract
       .connect(user1)
       .approve(marketplaceContract.address, 1, 1, 1);
 
     await stableCoinContract
       .connect(buyer)
-      .approve(marketplaceContract.address, invoice.assetPrice);
+      .approve(marketplaceContract.address, asset.assetPrice);
 
     await expect(await marketplaceContract.connect(buyer).buy(user1.address, 1))
       .not.to.be.reverted;
 
     expect(await stableCoinContract.balanceOf(treasuryWallet.address)).to.eq(
-      invoice.assetPrice
+      asset.assetPrice
     );
 
-    expect(await invoiceContract.subBalanceOf(buyer.address, 1, 1)).to.eq(1);
+    expect(await assetContract.subBalanceOf(buyer.address, 1, 1)).to.eq(1);
   });
 
-  it("Should create multiple invoices and selling it to buyer through Marketplace", async function () {
-    await invoiceContract.createInvoice(
+  it("Should create multiple assets and selling it to buyer through Marketplace", async function () {
+    await assetContract.createAsset(
       user1.address,
       1,
-      invoice.assetPrice,
-      invoice.rewardApr,
-      invoice.dueDate
+      asset.assetPrice,
+      asset.rewardApr,
+      asset.dueDate
     );
 
-    await invoiceContract.createInvoice(
+    await assetContract.createAsset(
       user1.address,
       2,
-      invoice.assetPrice,
-      invoice.rewardApr,
-      invoice.dueDate
+      asset.assetPrice,
+      asset.rewardApr,
+      asset.dueDate
     );
 
     // user1 approves the amount he wants to sell
-    await invoiceContract
+    await assetContract
       .connect(user1)
       .approve(marketplaceContract.address, 1, 1, 1);
 
-    await invoiceContract
+    await assetContract
       .connect(user1)
       .approve(marketplaceContract.address, 2, 1, 1);
 
-    const totalStableCoinAmount = invoice.assetPrice.add(invoice.assetPrice);
+    const totalStableCoinAmount = asset.assetPrice.add(asset.assetPrice);
 
     await stableCoinContract
       .connect(buyer)
@@ -236,27 +226,27 @@ describe("Marketplace", function () {
       totalStableCoinAmount
     );
 
-    expect(await invoiceContract.subBalanceOf(buyer.address, 1, 1)).to.eq(1);
-    expect(await invoiceContract.subBalanceOf(buyer.address, 2, 1)).to.eq(1);
+    expect(await assetContract.subBalanceOf(buyer.address, 1, 1)).to.eq(1);
+    expect(await assetContract.subBalanceOf(buyer.address, 2, 1)).to.eq(1);
   });
 
   it("Should revert when no array parity in batchBuy", async function () {
-    await invoiceContract.createInvoice(
+    await assetContract.createAsset(
       user1.address,
       1,
-      invoice.assetPrice,
-      invoice.rewardApr,
-      invoice.dueDate
+      asset.assetPrice,
+      asset.rewardApr,
+      asset.dueDate
     );
 
     // user1 approves the amount he wants to sell
-    await invoiceContract
+    await assetContract
       .connect(user1)
       .approve(marketplaceContract.address, 1, 1, 1);
 
     await stableCoinContract
       .connect(buyer)
-      .approve(marketplaceContract.address, invoice.assetPrice);
+      .approve(marketplaceContract.address, asset.assetPrice);
 
     // owners array length is 1 and the rest is two
     await expect(

@@ -5,41 +5,45 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interface/IMarketplace.sol";
-import "../Invoice/interface/IInvoice.sol";
+import "../Asset/interface/IAsset.sol";
 import "../Token/Token.sol";
 
 /**
- * @title The common marketplace for the Invoices
+ * @title The common marketplace for the assets
  * @author Polytrade.Finance
- * @dev Implementation of all Invoices trading operations
+ * @dev Implementation of all assets trading operations
  */
 contract Marketplace is AccessControl, IMarketplace {
     using SafeERC20 for Token;
     using ERC165Checker for address;
 
-    IInvoice private _invoiceCollection;
+    IAsset private _assetCollection;
     Token private _stableToken;
 
     address private _treasuryWallet;
     address private _feeWallet;
 
-    bytes4 private constant _INVOICE_INTERFACE_ID = type(IInvoice).interfaceId;
+    bytes4 private constant _ASSET_INTERFACE_ID = type(IAsset).interfaceId;
 
     /**
      * @dev Constructor for the main Marketplace
-     * @param invoiceCollection, Address of the Invoice Collection used in the marketplace
+     * @param assetCollection, Address of the asset collection used in the marketplace
      * @param stableToken, Address of the stableToken (ERC20) contract
      * @param treasuryWallet, Address of the treasury wallet
      * @param feeWallet, Address of the fee wallet
      */
     constructor(
-        address invoiceCollection,
+        address assetCollection,
         address stableToken,
         address treasuryWallet,
         address feeWallet
     ) {
-        _setInvoiceContract(invoiceCollection);
-        _setStableToken(stableToken);
+        if (!assetCollection.supportsInterface(_ASSET_INTERFACE_ID)) {
+            revert UnsupportedInterface();
+        }
+        require(stableToken != address(0), "Invalid address");
+        _assetCollection = IAsset(assetCollection);
+        _stableToken = Token(stableToken);
 
         _setTreasuryWallet(treasuryWallet);
         _setFeeWallet(feeWallet);
@@ -49,29 +53,29 @@ contract Marketplace is AccessControl, IMarketplace {
 
     /**
      * @dev Buys
-     * @param owner, address of the Invoice owner
-     * @param invoiceId, unique number of the Invoice
+     * @param owner, address of the asset owner
+     * @param assetId, unique number of the asset
      */
-    function buy(address owner, uint invoiceId) external {
-        _buy(owner, invoiceId);
+    function buy(address owner, uint assetId) external {
+        _buy(owner, assetId);
     }
 
     /**
-     * @dev Batch buy invoices from owners
-     * @param owners, addresses of the invoice owners
-     * @param invoiceIds, unique identifiers of the invoices
+     * @dev Batch buy assets from owners
+     * @param owners, addresses of the asset owners
+     * @param assetIds, unique identifiers of the assets
      */
     function batchBuy(
         address[] calldata owners,
-        uint[] calldata invoiceIds
+        uint[] calldata assetIds
     ) external {
         require(
-            owners.length == invoiceIds.length,
+            owners.length == assetIds.length,
             "Marketplace: No array parity"
         );
 
-        for (uint i = 0; i < invoiceIds.length; ) {
-            _buy(owners[i], invoiceIds[i]);
+        for (uint i = 0; i < assetIds.length; ) {
+            _buy(owners[i], assetIds[i]);
 
             unchecked {
                 ++i;
@@ -107,8 +111,8 @@ contract Marketplace is AccessControl, IMarketplace {
      * @dev Implementation of a getter for the Invocie Collection contract
      * @return address Address of the Invocie Collection contract
      */
-    function getInvoiceCollection() external view returns (address) {
-        return address(_invoiceCollection);
+    function getAssetCollection() external view returns (address) {
+        return address(_assetCollection);
     }
 
     /**
@@ -133,49 +137,6 @@ contract Marketplace is AccessControl, IMarketplace {
      */
     function getFeeWallet() external view returns (address) {
         return address(_feeWallet);
-    }
-
-    /**
-     * @dev Implementation of a setter for Invoice Collection contract
-     * @notice This function allows to set the address of the Invoice Collection contract used within the marketplace.
-     * @param newInvoiceCollectionAddress, Invoice Collection contract
-     */
-    function _setInvoiceContract(address newInvoiceCollectionAddress) private {
-        require(
-            newInvoiceCollectionAddress != address(0),
-            "Marketplace: Invalid invoice collection address"
-        );
-
-        require(
-            newInvoiceCollectionAddress.supportsInterface(
-                _INVOICE_INTERFACE_ID
-            ),
-            "Marketplace: Non compatible invoice collection"
-        );
-
-        address oldInvoiceCollectionAddress = address(_invoiceCollection);
-        _invoiceCollection = IInvoice(newInvoiceCollectionAddress);
-
-        emit InvoiceCollectionSet(
-            oldInvoiceCollectionAddress,
-            newInvoiceCollectionAddress
-        );
-    }
-
-    /**
-     * @notice This function allows to specify the stable coin address contract to be used within the marketplace.
-     * @dev Implementation of a setter for the ERC20 token
-     * @param stableTokenAddress, the stableToken (ERC20) contract
-     */
-    function _setStableToken(address stableTokenAddress) private {
-        require(
-            stableTokenAddress != address(0),
-            "Marketplace: Invalid stable coin address"
-        );
-
-        _stableToken = Token(stableTokenAddress);
-
-        emit StableTokenSet(stableTokenAddress);
     }
 
     /**
@@ -215,21 +176,14 @@ contract Marketplace is AccessControl, IMarketplace {
     }
 
     /**
-     * @dev Safe transfer invoice to buyer and transfer the price to treasury wallet
-     * @param owner, address of the Invoice owner's
-     * @param invoiceId, unique identifier of the Invoice
+     * @dev Safe transfer asset to buyer and transfer the price to treasury wallet
+     * @param owner, address of the asset owner's
+     * @param assetId, unique identifier of the asset
      */
-    function _buy(address owner, uint invoiceId) private {
-        _invoiceCollection.safeTransferFrom(
-            owner,
-            msg.sender,
-            invoiceId,
-            1,
-            1,
-            ""
-        );
+    function _buy(address owner, uint assetId) private {
+        _assetCollection.safeTransferFrom(owner, msg.sender, assetId, 1, 1, "");
 
-        uint256 price = _invoiceCollection.getInvoiceInfo(invoiceId).price;
+        uint256 price = _assetCollection.getAssetInfo(assetId).price;
 
         _stableToken.safeTransferFrom(msg.sender, _treasuryWallet, price);
     }
