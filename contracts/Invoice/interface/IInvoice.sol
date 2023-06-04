@@ -75,7 +75,7 @@ interface IInvoice is IDLT {
      * @param salePrice, New price for sale
      * @dev Needs marketplace access to relist an invoice
      */
-    function reList(uint256 mainId, uint256 salePrice) external;
+    function relist(uint256 mainId, uint256 salePrice) external;
 
     /**
      * @dev Creates batch invoice with their parameters

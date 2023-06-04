@@ -106,7 +106,7 @@ describe("Invoice", function () {
     ).to.be.revertedWithCustomError(invoiceContract, "UnsupportedInterface");
   });
 
-  it("Should revert on calling `reList` without interface support", async function () {
+  it("Should revert on calling `relist` without interface support", async function () {
     await invoiceContract.grantRole(MarketplaceAccess, deployer.address);
 
     await expect(
@@ -116,7 +116,7 @@ describe("Invoice", function () {
 
   it("Should revert to relist invoice without marketplace role", async function () {
     await expect(
-      invoiceContract.connect(deployer).reList(1, invoice.assetPrice)
+      invoiceContract.connect(deployer).relist(1, invoice.assetPrice)
     ).to.be.revertedWith(
       `AccessControl: account ${deployer.address.toLowerCase()} is missing role ${MarketplaceAccess}`
     );

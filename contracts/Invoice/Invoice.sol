@@ -149,9 +149,9 @@ contract Invoice is ERC165, IInvoice, DLT, AccessControl {
     }
 
     /**
-     * @dev See {IInvoice-reList}.
+     * @dev See {IInvoice-relist}.
      */
-    function reList(
+    function relist(
         uint256 mainId,
         uint256 salePrice
     ) external onlyRole(MARKETPLACE_ROLE) {

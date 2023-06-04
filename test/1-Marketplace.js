@@ -98,7 +98,7 @@ describe("Marketplace", function () {
 
   it("Should revert on on relisting and invoice without ownership", async function () {
     await expect(
-      marketplaceContract.connect(user1).reList(1, invoice.assetPrice)
+      marketplaceContract.connect(user1).relist(1, invoice.assetPrice)
     ).to.be.revertedWith("You are not the owner");
   });
 
@@ -540,7 +540,7 @@ describe("Marketplace", function () {
 
     await expect(await marketplaceContract.connect(buyer).buy(1)).not.to.be
       .reverted;
-    await marketplaceContract.connect(buyer).reList(1, invoice.assetPrice);
+    await marketplaceContract.connect(buyer).relist(1, invoice.assetPrice);
 
     const after1stBuy = await stableTokenContract.balanceOf(feeWallet.address);
 

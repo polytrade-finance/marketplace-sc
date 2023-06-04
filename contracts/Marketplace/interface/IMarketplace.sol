@@ -102,7 +102,7 @@ interface IMarketplace {
      * @param invoiceId, unique identifier of the invoice
      * @param salePrice, new price for invoice sale
      */
-    function reList(uint256 invoiceId, uint256 salePrice) external;
+    function relist(uint256 invoiceId, uint256 salePrice) external;
 
     /**
      * @dev claim available rewards for current owner

@@ -74,15 +74,15 @@ contract Marketplace is ERC165, AccessControl, IMarketplace {
     }
 
     /**
-     * @dev See {IMarketplace-reList}.
+     * @dev See {IMarketplace-relist}.
      */
-    function reList(uint256 invoiceId, uint256 salePrice) external {
+    function relist(uint256 invoiceId, uint256 salePrice) external {
         require(
             _invoiceCollection.getInvoiceInfo(invoiceId).owner == msg.sender,
             "You are not the owner"
         );
 
-        _invoiceCollection.reList(invoiceId, salePrice);
+        _invoiceCollection.relist(invoiceId, salePrice);
 
         emit InvoiceRelisted(invoiceId, salePrice);
     }
