@@ -4,6 +4,7 @@ pragma solidity =0.8.17;
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "contracts/Marketplace/interface/IMarketplace.sol";
 import "contracts/Invoice/interface/IInvoice.sol";
 import "contracts/Token//interface/IToken.sol";
@@ -14,6 +15,7 @@ import "contracts/Token//interface/IToken.sol";
  * @dev Implementation of all Invoices trading operations
  */
 contract Marketplace is ERC165, AccessControl, IMarketplace {
+    using SafeERC20 for IToken;
     using ERC165Checker for address;
 
     uint256 public initialFee;
@@ -64,7 +66,7 @@ contract Marketplace is ERC165, AccessControl, IMarketplace {
         require(owner != address(0), "Invalid invoice id");
         _claimReward(invoiceId);
 
-        _stableToken.transferFrom(
+        _stableToken.safeTransferFrom(
             _treasuryWallet,
             owner,
             _invoiceCollection.settleInvoice(invoiceId)
@@ -239,7 +241,7 @@ contract Marketplace is ERC165, AccessControl, IMarketplace {
         address owner = _invoiceCollection.getInvoiceInfo(invoiceId).owner;
         uint256 reward = _invoiceCollection.claimReward(invoiceId);
 
-        _stableToken.transferFrom(_treasuryWallet, owner, reward);
+        _stableToken.safeTransferFrom(_treasuryWallet, owner, reward);
 
         emit RewardsClaimed(owner, reward);
     }
@@ -274,8 +276,8 @@ contract Marketplace is ERC165, AccessControl, IMarketplace {
             ""
         );
 
-        _stableToken.transferFrom(msg.sender, receiver, price);
-        _stableToken.transferFrom(msg.sender, _feeWallet, fee);
+        _stableToken.safeTransferFrom(msg.sender, receiver, price);
+        _stableToken.safeTransferFrom(msg.sender, _feeWallet, fee);
 
         emit AssetBought(owner, msg.sender, invoiceId);
     }
