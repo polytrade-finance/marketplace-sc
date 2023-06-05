@@ -169,7 +169,6 @@ contract Asset is Context, ERC165, IAsset, DLT, AccessControl {
 
         if (asset.lastClaimDate != 0) {
             tenure = asset.dueDate - asset.lastClaimDate;
-            reward = _calculateFormula(asset.price, tenure, asset.rewardApr);
         } else if (asset.price != 0) {
             tenure =
                 asset.dueDate -
@@ -178,8 +177,8 @@ contract Asset is Context, ERC165, IAsset, DLT, AccessControl {
                         ? asset.dueDate
                         : block.timestamp
                 );
-            reward = _calculateFormula(asset.price, tenure, asset.rewardApr);
         }
+        reward = _calculateFormula(asset.price, tenure, asset.rewardApr);
     }
 
     /**
