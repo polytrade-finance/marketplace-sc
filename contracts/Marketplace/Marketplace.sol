@@ -240,7 +240,7 @@ contract Marketplace is Context, ERC165, AccessControl, IMarketplace {
      */
     function _claimReward(uint256 assetId) private {
         address owner = _assetCollection.getAssetInfo(assetId).owner;
-        uint256 reward = _assetCollection.claimReward(assetId);
+        uint256 reward = _assetCollection.updateClaim(assetId);
 
         _stableToken.safeTransferFrom(_treasuryWallet, owner, reward);
 

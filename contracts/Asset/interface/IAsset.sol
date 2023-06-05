@@ -107,7 +107,7 @@ interface IAsset is IDLT {
      * @param mainId, unique identifier of asset
      * @return reward , accumulated rewards for the current owner
      */
-    function claimReward(uint256 mainId) external returns (uint256 reward);
+    function updateClaim(uint256 mainId) external returns (uint256 reward);
 
     /**
      * @dev Changes the owner of asset by marketplace

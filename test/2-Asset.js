@@ -93,7 +93,7 @@ describe("Asset", function () {
   it("Should revert on calling `claimReward` without interface support", async function () {
     await assetContract.grantRole(MarketplaceAccess, deployer.address);
 
-    await expect(assetContract.claimReward(1)).to.be.revertedWithCustomError(
+    await expect(assetContract.updateClaim(1)).to.be.revertedWithCustomError(
       assetContract,
       "UnsupportedInterface"
     );
@@ -139,7 +139,7 @@ describe("Asset", function () {
 
   it("Should revert to update claim status without `MarketplaceAccess` role", async function () {
     await expect(
-      assetContract.connect(user1).claimReward(1)
+      assetContract.connect(user1).updateClaim(1)
     ).to.be.revertedWith(
       `AccessControl: account ${user1.address.toLowerCase()} is missing role ${MarketplaceAccess}`
     );
@@ -155,7 +155,7 @@ describe("Asset", function () {
 
   it("Should revert to settle asset without `MarketplaceAccess` role", async function () {
     await expect(
-      assetContract.connect(user1).claimReward(1)
+      assetContract.connect(user1).updateClaim(1)
     ).to.be.revertedWith(
       `AccessControl: account ${user1.address.toLowerCase()} is missing role ${MarketplaceAccess}`
     );

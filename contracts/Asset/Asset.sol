@@ -131,9 +131,9 @@ contract Asset is Context, ERC165, IAsset, DLT, AccessControl {
     }
 
     /**
-     * @dev See {IAsset-claimReward}.
+     * @dev See {IAsset-updateClaim}.
      */
-    function claimReward(
+    function updateClaim(
         uint256 mainId
     ) external onlyRole(MARKETPLACE_ROLE) returns (uint256 reward) {
         if (!_msgSender().supportsInterface(_MARKETPLACE_INTERFACE_ID))
