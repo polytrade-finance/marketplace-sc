@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity =0.8.17;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "contracts/Marketplace/interface/IMarketplace.sol";
-import "contracts/Asset/interface/IAsset.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/utils/Context.sol";
 import "contracts/Token//interface/IToken.sol";
+import "contracts/Asset/interface/IAsset.sol";
 
 /**
  * @title The common marketplace for the assets
  * @author Polytrade.Finance
  * @dev Implementation of all assets trading operations
  */
-contract Marketplace is ERC165, AccessControl, IMarketplace {
+contract Marketplace is Context, ERC165, AccessControl, IMarketplace {
     using SafeERC20 for IToken;
     using ERC165Checker for address;
 
@@ -53,7 +54,7 @@ contract Marketplace is ERC165, AccessControl, IMarketplace {
         _setTreasuryWallet(treasuryWallet_);
         _setFeeWallet(feeWallet_);
 
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
     /**
@@ -80,7 +81,7 @@ contract Marketplace is ERC165, AccessControl, IMarketplace {
      */
     function relist(uint256 assetId, uint256 salePrice) external {
         require(
-            _assetCollection.getAssetInfo(assetId).owner == msg.sender,
+            _assetCollection.getAssetInfo(assetId).owner == _msgSender(),
             "You are not the owner"
         );
 
@@ -118,7 +119,7 @@ contract Marketplace is ERC165, AccessControl, IMarketplace {
             "Asset not bought yet"
         );
         require(
-            _assetCollection.getAssetInfo(assetId).owner == msg.sender,
+            _assetCollection.getAssetInfo(assetId).owner == _msgSender(),
             "You are not the owner"
         );
         _claimReward(assetId);
@@ -265,13 +266,20 @@ contract Marketplace is ERC165, AccessControl, IMarketplace {
 
         _claimReward(assetId);
 
-        _assetCollection.changeOwner(msg.sender, assetId);
+        _assetCollection.changeOwner(_msgSender(), assetId);
 
-        _assetCollection.safeTransferFrom(owner, msg.sender, assetId, 1, 1, "");
+        _assetCollection.safeTransferFrom(
+            owner,
+            _msgSender(),
+            assetId,
+            1,
+            1,
+            ""
+        );
 
-        _stableToken.safeTransferFrom(msg.sender, receiver, price);
-        _stableToken.safeTransferFrom(msg.sender, _feeWallet, fee);
+        _stableToken.safeTransferFrom(_msgSender(), receiver, price);
+        _stableToken.safeTransferFrom(_msgSender(), _feeWallet, fee);
 
-        emit AssetBought(owner, msg.sender, assetId);
+        emit AssetBought(owner, _msgSender(), assetId);
     }
 }

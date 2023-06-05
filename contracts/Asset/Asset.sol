@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "contracts/Marketplace/interface/IMarketplace.sol";
+import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "dual-layer-token/contracts/DLT/DLT.sol";
 import "contracts/Asset/interface/IAsset.sol";
-import "contracts/Marketplace/interface/IMarketplace.sol";
 
 /**
  * @title The asset contract based on EIP6960
  * @author Polytrade.Finance
  * @dev Manages creation of asset and rewards distribution
  */
-contract Asset is ERC165, IAsset, DLT, AccessControl {
+contract Asset is Context, ERC165, IAsset, DLT, AccessControl {
     using ERC165Checker for address;
 
     // Create a new role identifier for the marketplace role
@@ -38,7 +39,7 @@ contract Asset is ERC165, IAsset, DLT, AccessControl {
         string memory baseURI_
     ) DLT(name, symbol) {
         _setBaseURI(baseURI_);
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
     /**
@@ -60,7 +61,7 @@ contract Asset is ERC165, IAsset, DLT, AccessControl {
     function settleAsset(
         uint256 mainId
     ) external onlyRole(MARKETPLACE_ROLE) returns (uint256 price) {
-        if (!msg.sender.supportsInterface(_MARKETPLACE_INTERFACE_ID))
+        if (!_msgSender().supportsInterface(_MARKETPLACE_INTERFACE_ID))
             revert UnsupportedInterface();
         AssetInfo memory asset = _assets[mainId];
 
@@ -120,7 +121,7 @@ contract Asset is ERC165, IAsset, DLT, AccessControl {
         address newOwner,
         uint256 mainId
     ) external onlyRole(MARKETPLACE_ROLE) {
-        if (!msg.sender.supportsInterface(_MARKETPLACE_INTERFACE_ID))
+        if (!_msgSender().supportsInterface(_MARKETPLACE_INTERFACE_ID))
             revert UnsupportedInterface();
 
         AssetInfo storage asset = _assets[mainId];
@@ -135,7 +136,7 @@ contract Asset is ERC165, IAsset, DLT, AccessControl {
     function claimReward(
         uint256 mainId
     ) external onlyRole(MARKETPLACE_ROLE) returns (uint256 reward) {
-        if (!msg.sender.supportsInterface(_MARKETPLACE_INTERFACE_ID))
+        if (!_msgSender().supportsInterface(_MARKETPLACE_INTERFACE_ID))
             revert UnsupportedInterface();
         AssetInfo storage asset = _assets[mainId];
 
@@ -154,7 +155,7 @@ contract Asset is ERC165, IAsset, DLT, AccessControl {
         uint256 salePrice
     ) external onlyRole(MARKETPLACE_ROLE) {
         _assets[mainId].salePrice = salePrice;
-        _approve(_assets[mainId].owner, msg.sender, mainId, 1, 1);
+        _approve(_assets[mainId].owner, _msgSender(), mainId, 1, 1);
     }
 
     /**
@@ -248,7 +249,7 @@ contract Asset is ERC165, IAsset, DLT, AccessControl {
         _assets[mainId] = AssetInfo(owner, price, price, apr, dueDate, 0);
         _mint(owner, mainId, 1, 1);
 
-        emit AssetCreated(msg.sender, owner, mainId);
+        emit AssetCreated(_msgSender(), owner, mainId);
     }
 
     /**
