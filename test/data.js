@@ -21,10 +21,16 @@ const asset = {
   lastClaim: 0,
 };
 
+const offer = {
+  offerPrice: ethers.utils.parseUnits("5", DECIMALS.SIX),
+  deadline: 3 * DAY, // in seconds
+};
+
 module.exports = {
   DAY,
   YEAR,
   asset,
+  offer,
   DECIMALS,
   MarketplaceAccess,
 };

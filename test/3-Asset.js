@@ -59,7 +59,7 @@ describe("Asset", function () {
         asset.rewardApr,
         asset.dueDate
       )
-    ).to.revertedWith("Asset: Already minted");
+    ).to.revertedWith("Already minted");
   });
 
   it("Should revert on creating asset by invalid caller", async function () {
