@@ -22,11 +22,15 @@ describe("Asset", function () {
 
   it("Should revert on creating asset by invalid caller", async function () {
     await expect(
-      assetContract.connect(deployer).createAsset(deployer.address,
-        1,
-        asset.assetPrice,
-        asset.rewardApr,
-        asset.dueDate)
+      assetContract
+        .connect(deployer)
+        .createAsset(
+          deployer.address,
+          1,
+          asset.assetPrice,
+          asset.rewardApr,
+          asset.dueDate
+        )
     ).to.be.revertedWith(
       `AccessControl: account ${deployer.address.toLowerCase()} is missing role ${MarketplaceAccess}`
     );
@@ -35,18 +39,16 @@ describe("Asset", function () {
   it("Should revert on calling `createAsset` without interface support", async function () {
     await assetContract.grantRole(MarketplaceAccess, deployer.address);
 
-    await expect(assetContract
-      .createAsset(
+    await expect(
+      assetContract.createAsset(
         deployer.address,
         1,
         asset.assetPrice,
         asset.rewardApr,
         asset.dueDate
-      )).to.be.revertedWithCustomError(
-      assetContract,
-      "UnsupportedInterface"
-    );
-  })
+      )
+    ).to.be.revertedWithCustomError(assetContract, "UnsupportedInterface");
+  });
 
   it("Should to set new base uri", async function () {
     await expect(assetContract.setBaseURI("https://ipfs2.io/ipfs")).to.not.be

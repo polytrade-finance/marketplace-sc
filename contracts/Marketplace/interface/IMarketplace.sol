@@ -202,4 +202,16 @@ interface IMarketplace {
      * @return address Address of the fee wallet
      */
     function getFeeWallet() external view returns (address);
+
+    /**
+     * @dev Gets initial fee percentage that applies to first buyings
+     * @return percentage of initial fee with 2 decimals
+     */
+    function getInitialFee() external view returns (uint256);
+
+    /**
+     * @dev Gets buying fee percentage that applies to all buyings except first one
+     * @return percentage of buying fee with 2 decimals
+     */
+    function getBuyingFee() external view returns (uint256);
 }

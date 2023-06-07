@@ -191,7 +191,6 @@ describe("Marketplace", function () {
   });
 
   it("Should revert on creating minted asset", async function () {
-
     await assetContract.grantRole(
       MarketplaceAccess,
       marketplaceContract.address
@@ -323,14 +322,14 @@ describe("Marketplace", function () {
     await expect(await marketplaceContract.setInitialFee(1000)).not.to.be
       .reverted;
 
-    expect(await marketplaceContract.initialFee()).to.eq(1000);
+    expect(await marketplaceContract.getInitialFee()).to.eq(1000);
   });
 
   it("Should set a new buying fee (10.00%) percentage for all buys", async function () {
     await expect(await marketplaceContract.setBuyingFee(1000)).not.to.be
       .reverted;
 
-    expect(await marketplaceContract.buyingFee()).to.eq(1000);
+    expect(await marketplaceContract.getBuyingFee()).to.eq(1000);
   });
 
   it("Should set a new treasury wallet address while calling setTreasuryWallet()", async function () {
@@ -364,13 +363,15 @@ describe("Marketplace", function () {
 
   it("Should revert to create asset without admin role", async function () {
     await expect(
-      marketplaceContract.connect(user1).createAsset(
-        user1.address,
-        1,
-        asset.assetPrice,
-        asset.rewardApr,
-        asset.dueDate
-      )
+      marketplaceContract
+        .connect(user1)
+        .createAsset(
+          user1.address,
+          1,
+          asset.assetPrice,
+          asset.rewardApr,
+          asset.dueDate
+        )
     ).to.be.revertedWith(
       `AccessControl: account ${user1.address.toLowerCase()} is missing role ${ethers.utils.hexZeroPad(
         ethers.utils.hexlify(0),

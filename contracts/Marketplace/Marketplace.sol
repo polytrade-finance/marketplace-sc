@@ -19,8 +19,8 @@ contract Marketplace is Context, ERC165, AccessControl, IMarketplace {
     using SafeERC20 for IToken;
     using ERC165Checker for address;
 
-    uint256 public initialFee;
-    uint256 public buyingFee;
+    uint256 private _initialFee;
+    uint256 private _buyingFee;
 
     IAsset private immutable _assetCollection;
     IToken private immutable _stableToken;
@@ -89,7 +89,13 @@ contract Marketplace is Context, ERC165, AccessControl, IMarketplace {
         );
 
         for (uint256 i = 0; i < mainIds.length; ) {
-            _assetCollection.createAsset(owners[i], mainIds[i], prices[i], aprs[i], dueDates[i]);
+            _assetCollection.createAsset(
+                owners[i],
+                mainIds[i],
+                prices[i],
+                aprs[i],
+                dueDates[i]
+            );
 
             unchecked {
                 ++i;
@@ -171,10 +177,10 @@ contract Marketplace is Context, ERC165, AccessControl, IMarketplace {
     function setInitialFee(
         uint256 initialFee_
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        uint256 oldFee = initialFee;
-        initialFee = initialFee_;
+        uint256 oldFee = _initialFee;
+        _initialFee = initialFee_;
 
-        emit InitialFeeSet(oldFee, initialFee);
+        emit InitialFeeSet(oldFee, _initialFee);
     }
 
     /**
@@ -183,10 +189,10 @@ contract Marketplace is Context, ERC165, AccessControl, IMarketplace {
     function setBuyingFee(
         uint256 buyingFee_
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        uint256 oldFee = buyingFee;
-        buyingFee = buyingFee_;
+        uint256 oldFee = _buyingFee;
+        _buyingFee = buyingFee_;
 
-        emit BuyingFeeSet(oldFee, buyingFee);
+        emit BuyingFeeSet(oldFee, _buyingFee);
     }
 
     /**
@@ -233,6 +239,20 @@ contract Marketplace is Context, ERC165, AccessControl, IMarketplace {
      */
     function getFeeWallet() external view returns (address) {
         return address(_feeWallet);
+    }
+
+    /**
+     * @dev See {IMarketplace-getInitialFee}.
+     */
+    function getInitialFee() external view returns (uint256) {
+        return _initialFee;
+    }
+
+    /**
+     * @dev See {IMarketplace-getBuyingFee}.
+     */
+    function getBuyingFee() external view returns (uint256) {
+        return _buyingFee;
     }
 
     /**
@@ -299,7 +319,7 @@ contract Marketplace is Context, ERC165, AccessControl, IMarketplace {
             .getAssetInfo(assetId)
             .lastClaimDate;
         address owner = _assetCollection.getAssetInfo(assetId).owner;
-        uint256 fee = lastClaimDate != 0 ? buyingFee : initialFee;
+        uint256 fee = lastClaimDate != 0 ? _buyingFee : _initialFee;
         address receiver = lastClaimDate != 0 ? owner : _treasuryWallet;
         fee = (price * fee) / 1e4;
 

@@ -76,7 +76,7 @@ interface IAsset is IDLT {
      * @dev Needs marketplace access to relist an asset
      */
     function relist(uint256 mainId, uint256 salePrice) external;
-    
+
     /**
      * @dev Set a new baseURI for assets
      * @dev Needs admin access to schange base URI
