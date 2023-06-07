@@ -33,6 +33,12 @@ contract Asset is Context, ERC165, IAsset, DLT, AccessControl {
      */
     mapping(uint256 => AssetInfo) private _assets;
 
+    modifier isValidInterface() {
+        if (!_msgSender().supportsInterface(_MARKETPLACE_INTERFACE_ID))
+            revert UnsupportedInterface();
+        _;
+    }
+
     constructor(
         string memory name,
         string memory symbol,
@@ -60,9 +66,12 @@ contract Asset is Context, ERC165, IAsset, DLT, AccessControl {
      */
     function settleAsset(
         uint256 mainId
-    ) external onlyRole(MARKETPLACE_ROLE) returns (uint256 price) {
-        if (!_msgSender().supportsInterface(_MARKETPLACE_INTERFACE_ID))
-            revert UnsupportedInterface();
+    )
+        external
+        onlyRole(MARKETPLACE_ROLE)
+        isValidInterface
+        returns (uint256 price)
+    {
         AssetInfo memory asset = _assets[mainId];
 
         require(block.timestamp > asset.dueDate, "Due date not passed");
@@ -120,10 +129,7 @@ contract Asset is Context, ERC165, IAsset, DLT, AccessControl {
     function changeOwner(
         address newOwner,
         uint256 mainId
-    ) external onlyRole(MARKETPLACE_ROLE) {
-        if (!_msgSender().supportsInterface(_MARKETPLACE_INTERFACE_ID))
-            revert UnsupportedInterface();
-
+    ) external onlyRole(MARKETPLACE_ROLE) isValidInterface {
         AssetInfo storage asset = _assets[mainId];
 
         asset.salePrice = 0;
@@ -135,9 +141,12 @@ contract Asset is Context, ERC165, IAsset, DLT, AccessControl {
      */
     function updateClaim(
         uint256 mainId
-    ) external onlyRole(MARKETPLACE_ROLE) returns (uint256 reward) {
-        if (!_msgSender().supportsInterface(_MARKETPLACE_INTERFACE_ID))
-            revert UnsupportedInterface();
+    )
+        external
+        onlyRole(MARKETPLACE_ROLE)
+        isValidInterface
+        returns (uint256 reward)
+    {
         AssetInfo storage asset = _assets[mainId];
 
         reward = _getAvailableReward(mainId);
