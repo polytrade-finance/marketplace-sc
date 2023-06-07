@@ -79,6 +79,40 @@ interface IMarketplace {
     error UnsupportedInterface();
 
     /**
+     * @dev Creates an asset with its parameters
+     * @param owner, initial owner of asset
+     * @param mainId, unique identifier of asset
+     * @param price, asset price to sell
+     * @param dueDate, end date for calculating rewards
+     * @param apr, annual percentage rate for calculating rewards
+     * @dev Needs admin access to create an asset
+     */
+    function createAsset(
+        address owner,
+        uint256 mainId,
+        uint256 price,
+        uint256 apr,
+        uint256 dueDate
+    ) external;
+
+    /**
+     * @dev Creates batch asset with their parameters
+     * @param owners, initial owners of assets
+     * @param mainIds, unique identifiers of assets
+     * @param prices, assets price to sell
+     * @param dueDates, end dates for calculating rewards
+     * @param aprs, annual percentage rates for calculating rewards
+     * @dev Needs admin access to batch create asset
+     */
+    function batchCreateAsset(
+        address[] calldata owners,
+        uint256[] calldata mainIds,
+        uint256[] calldata prices,
+        uint256[] calldata aprs,
+        uint256[] calldata dueDates
+    ) external;
+
+    /**
      * @dev Settles an asset after due date and claim remaining rewards for the owner
      * @dev call `settleasset` function from asset collection
      * @dev Burns the asset and transfers the price to current owner

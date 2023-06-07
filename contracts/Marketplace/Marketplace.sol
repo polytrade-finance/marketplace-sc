@@ -58,6 +58,46 @@ contract Marketplace is Context, ERC165, AccessControl, IMarketplace {
     }
 
     /**
+     * @dev See {IMarketplace-createAsset}.
+     */
+    function createAsset(
+        address owner,
+        uint256 mainId,
+        uint256 price,
+        uint256 apr,
+        uint256 dueDate
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _assetCollection.createAsset(owner, mainId, price, apr, dueDate);
+    }
+
+    /**
+     * @dev See {IMarketplace-batchCreateAsset}.
+     */
+    function batchCreateAsset(
+        address[] calldata owners,
+        uint256[] calldata mainIds,
+        uint256[] calldata prices,
+        uint256[] calldata aprs,
+        uint256[] calldata dueDates
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(
+            owners.length == mainIds.length &&
+                owners.length == prices.length &&
+                owners.length == dueDates.length &&
+                owners.length == aprs.length,
+            "No array parity"
+        );
+
+        for (uint256 i = 0; i < mainIds.length; ) {
+            _assetCollection.createAsset(owners[i], mainIds[i], prices[i], aprs[i], dueDates[i]);
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /**
      * @dev See {IMarketplace-settleAsset}.
      */
     function settleAsset(
@@ -261,10 +301,9 @@ contract Marketplace is Context, ERC165, AccessControl, IMarketplace {
         address owner = _assetCollection.getAssetInfo(assetId).owner;
         uint256 fee = lastClaimDate != 0 ? buyingFee : initialFee;
         address receiver = lastClaimDate != 0 ? owner : _treasuryWallet;
-
         fee = (price * fee) / 1e4;
 
-        _claimReward(assetId);
+        if (lastClaimDate == 0) _assetCollection.updateClaim(assetId);
 
         _assetCollection.safeTransferFrom(
             owner,

@@ -59,7 +59,7 @@ interface IAsset is IDLT {
      * @param price, asset price to sell
      * @param dueDate, end date for calculating rewards
      * @param apr, annual percentage rate for calculating rewards
-     * @dev Needs admin access to create an asset
+     * @dev Needs marketplace access to create an asset
      */
     function createAsset(
         address owner,
@@ -76,24 +76,7 @@ interface IAsset is IDLT {
      * @dev Needs marketplace access to relist an asset
      */
     function relist(uint256 mainId, uint256 salePrice) external;
-
-    /**
-     * @dev Creates batch asset with their parameters
-     * @param owners, initial owners of assets
-     * @param mainIds, unique identifiers of assets
-     * @param prices, assets price to sell
-     * @param dueDates, end dates for calculating rewards
-     * @param aprs, annual percentage rates for calculating rewards
-     * @dev Needs admin access to create an asset
-     */
-    function batchCreateAsset(
-        address[] calldata owners,
-        uint256[] calldata mainIds,
-        uint256[] calldata prices,
-        uint256[] calldata dueDates,
-        uint256[] calldata aprs
-    ) external;
-
+    
     /**
      * @dev Set a new baseURI for assets
      * @dev Needs admin access to schange base URI
