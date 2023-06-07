@@ -59,17 +59,13 @@ describe("Marketplace Signatures", function () {
       MarketplaceAccess,
       marketplaceContract.address
     );
-    await assetContract.createAsset(
+    await marketplaceContract.createAsset(
       user1.address,
       1,
       asset.assetPrice,
       asset.rewardApr,
       asset.dueDate
     );
-
-    await assetContract
-      .connect(user1)
-      .approve(marketplaceContract.address, 1, 1, 1);
 
     await stableTokenContract
       .connect(offeror)
