@@ -4,6 +4,8 @@ pragma solidity =0.8.17;
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "contracts/Marketplace/interface/IMarketplace.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
@@ -15,7 +17,7 @@ import "contracts/Asset/interface/IAsset.sol";
  * @author Polytrade.Finance
  * @dev Implementation of all assets trading operations
  */
-contract Marketplace is Context, ERC165, AccessControl, IMarketplace {
+contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace {
     using SafeERC20 for IToken;
     using ERC165Checker for address;
 
@@ -28,6 +30,22 @@ contract Marketplace is Context, ERC165, AccessControl, IMarketplace {
     address private _treasuryWallet;
     address private _feeWallet;
 
+    mapping(address => uint256) private _currentNonce;
+
+    // solhint-disable-next-line var-name-mixedcase
+    bytes32 private constant _OFFER_TYPEHASH =
+        keccak256(
+            abi.encodePacked(
+                "CounterOffer(",
+                "address owner,",
+                "address offeror,",
+                "uint256 offerPrice,",
+                "uint256 assetId,",
+                "uint256 nonce,",
+                "uint256 deadline",
+                ")"
+            )
+        );
     bytes4 private constant _ASSET_INTERFACE_ID = type(IAsset).interfaceId;
 
     /**
@@ -42,7 +60,7 @@ contract Marketplace is Context, ERC165, AccessControl, IMarketplace {
         address tokenAddress_,
         address treasuryWallet_,
         address feeWallet_
-    ) {
+    ) EIP712("Polytrade", "2.1") {
         if (!assetCollection_.supportsInterface(_ASSET_INTERFACE_ID)) {
             revert UnsupportedInterface();
         }
@@ -91,10 +109,49 @@ contract Marketplace is Context, ERC165, AccessControl, IMarketplace {
     }
 
     /**
+     * @dev See {IMarketplace-counterOffer}.
+     */
+    function counterOffer(
+        address owner,
+        address offeror,
+        uint256 offerPrice,
+        uint256 assetId,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external {
+        require(block.timestamp <= deadline, "Offer expired");
+        require(
+            owner == _assetCollection.getAssetInfo(assetId).owner,
+            "Signer is not the owner"
+        );
+        require(offeror == _msgSender(), "You are not the offeror");
+
+        bytes32 offerHash = keccak256(
+            abi.encode(
+                _OFFER_TYPEHASH,
+                owner,
+                offeror,
+                offerPrice,
+                assetId,
+                _useNonce(owner),
+                deadline
+            )
+        );
+
+        bytes32 hash = _hashTypedDataV4(offerHash);
+        address signer = ECDSA.recover(hash, v, r, s);
+
+        require(signer == owner, "Invalid signature");
+        _buy(assetId, offerPrice);
+    }
+
+    /**
      * @dev See {IMarketplace-buy}.
      */
     function buy(uint256 assetId) external {
-        _buy(assetId);
+        _buy(assetId, _assetCollection.getAssetInfo(assetId).salePrice);
     }
 
     /**
@@ -102,7 +159,10 @@ contract Marketplace is Context, ERC165, AccessControl, IMarketplace {
      */
     function batchBuy(uint256[] calldata assetIds) external {
         for (uint256 i = 0; i < assetIds.length; ) {
-            _buy(assetIds[i]);
+            _buy(
+                assetIds[i],
+                _assetCollection.getAssetInfo(assetIds[i]).salePrice
+            );
 
             unchecked {
                 ++i;
@@ -196,6 +256,21 @@ contract Marketplace is Context, ERC165, AccessControl, IMarketplace {
     }
 
     /**
+     * @dev See {IMarketplace-DOMAIN_SEPARATOR}.
+     */
+    // solhint-disable-next-line func-name-mixedcase
+    function DOMAIN_SEPARATOR() external view virtual returns (bytes32) {
+        return _domainSeparatorV4();
+    }
+
+    /**
+     * @dev See {IMarketplace-nonces}.
+     */
+    function nonces(address owner) external view virtual returns (uint256) {
+        return _currentNonce[owner];
+    }
+
+    /**
      * @dev See {IERC165-supportsInterface}.
      */
     function supportsInterface(
@@ -204,6 +279,16 @@ contract Marketplace is Context, ERC165, AccessControl, IMarketplace {
         return
             interfaceId == type(IMarketplace).interfaceId ||
             super.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @dev "Consume a nonce": return the current value and increment
+     */
+    function _useNonce(
+        address owner
+    ) internal virtual returns (uint256 current) {
+        current = _currentNonce[owner];
+        _currentNonce[owner]++;
     }
 
     /**
@@ -252,9 +337,11 @@ contract Marketplace is Context, ERC165, AccessControl, IMarketplace {
      * @dev Transfer buying fee or initial fee to fee wallet based on asset status
      * @param assetId, unique identifier of the asset
      */
-    function _buy(uint256 assetId) private {
-        uint256 price = _assetCollection.getAssetInfo(assetId).salePrice;
-        require(price != 0, "Asset is not listed");
+    function _buy(uint256 assetId, uint256 salePrice) private {
+        require(
+            _assetCollection.getAssetInfo(assetId).salePrice != 0,
+            "Asset is not listed"
+        );
         uint256 lastClaimDate = _assetCollection
             .getAssetInfo(assetId)
             .lastClaimDate;
@@ -262,7 +349,7 @@ contract Marketplace is Context, ERC165, AccessControl, IMarketplace {
         uint256 fee = lastClaimDate != 0 ? buyingFee : initialFee;
         address receiver = lastClaimDate != 0 ? owner : _treasuryWallet;
 
-        fee = (price * fee) / 1e4;
+        fee = (salePrice * fee) / 1e4;
 
         _claimReward(assetId);
 
@@ -277,7 +364,7 @@ contract Marketplace is Context, ERC165, AccessControl, IMarketplace {
             ""
         );
 
-        _stableToken.safeTransferFrom(_msgSender(), receiver, price);
+        _stableToken.safeTransferFrom(_msgSender(), receiver, salePrice);
         _stableToken.safeTransferFrom(_msgSender(), _feeWallet, fee);
 
         emit AssetBought(owner, _msgSender(), assetId);
