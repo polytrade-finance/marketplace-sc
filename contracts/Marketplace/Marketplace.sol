@@ -21,8 +21,8 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace {
     using SafeERC20 for IToken;
     using ERC165Checker for address;
 
-    uint256 public initialFee;
-    uint256 public buyingFee;
+    uint256 private _initialFee;
+    uint256 private _buyingFee;
 
     IAsset private immutable _assetCollection;
     IToken private immutable _stableToken;
@@ -73,6 +73,52 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace {
         _setFeeWallet(feeWallet_);
 
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
+    }
+
+    /**
+     * @dev See {IMarketplace-createAsset}.
+     */
+    function createAsset(
+        address owner,
+        uint256 mainId,
+        uint256 price,
+        uint256 apr,
+        uint256 dueDate
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _assetCollection.createAsset(owner, mainId, price, apr, dueDate);
+    }
+
+    /**
+     * @dev See {IMarketplace-batchCreateAsset}.
+     */
+    function batchCreateAsset(
+        address[] calldata owners,
+        uint256[] calldata mainIds,
+        uint256[] calldata prices,
+        uint256[] calldata aprs,
+        uint256[] calldata dueDates
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(
+            owners.length == mainIds.length &&
+                owners.length == prices.length &&
+                owners.length == dueDates.length &&
+                owners.length == aprs.length,
+            "No array parity"
+        );
+
+        for (uint256 i = 0; i < mainIds.length; ) {
+            _assetCollection.createAsset(
+                owners[i],
+                mainIds[i],
+                prices[i],
+                aprs[i],
+                dueDates[i]
+            );
+
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     /**
@@ -191,10 +237,10 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace {
     function setInitialFee(
         uint256 initialFee_
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        uint256 oldFee = initialFee;
-        initialFee = initialFee_;
+        uint256 oldFee = _initialFee;
+        _initialFee = initialFee_;
 
-        emit InitialFeeSet(oldFee, initialFee);
+        emit InitialFeeSet(oldFee, _initialFee);
     }
 
     /**
@@ -203,10 +249,10 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace {
     function setBuyingFee(
         uint256 buyingFee_
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        uint256 oldFee = buyingFee;
-        buyingFee = buyingFee_;
+        uint256 oldFee = _buyingFee;
+        _buyingFee = buyingFee_;
 
-        emit BuyingFeeSet(oldFee, buyingFee);
+        emit BuyingFeeSet(oldFee, _buyingFee);
     }
 
     /**
@@ -268,6 +314,17 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace {
      */
     function nonces(address owner) external view virtual returns (uint256) {
         return _currentNonce[owner];
+    }
+
+    function getInitialFee() external view returns (uint256) {
+        return _initialFee;
+    }
+
+    /**
+     * @dev See {IMarketplace-getBuyingFee}.
+     */
+    function getBuyingFee() external view returns (uint256) {
+        return _buyingFee;
     }
 
     /**
@@ -346,14 +403,12 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace {
             .getAssetInfo(assetId)
             .lastClaimDate;
         address owner = _assetCollection.getAssetInfo(assetId).owner;
-        uint256 fee = lastClaimDate != 0 ? buyingFee : initialFee;
+        uint256 fee = lastClaimDate != 0 ? _buyingFee : _initialFee;
         address receiver = lastClaimDate != 0 ? owner : _treasuryWallet;
 
         fee = (salePrice * fee) / 1e4;
 
-        _claimReward(assetId);
-
-        _assetCollection.changeOwner(_msgSender(), assetId);
+        if (lastClaimDate == 0) _assetCollection.updateClaim(assetId);
 
         _assetCollection.safeTransferFrom(
             owner,

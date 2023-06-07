@@ -57,8 +57,14 @@ contract Asset is Context, ERC165, IAsset, DLT, AccessControl {
         uint256 price,
         uint256 apr,
         uint256 dueDate
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _createAsset(owner, mainId, price, dueDate, apr);
+    ) external onlyRole(MARKETPLACE_ROLE) isValidInterface {
+        require(owner != address(0), "Invalid owner address");
+        require(mainTotalSupply(mainId) == 0, "Asset: Already minted");
+        _assets[mainId] = AssetInfo(owner, price, price, apr, dueDate, 0);
+        _mint(owner, mainId, 1, 1);
+        _approve(_assets[mainId].owner, _msgSender(), mainId, 1, 1);
+
+        emit AssetCreated(_msgSender(), owner, mainId);
     }
 
     /**
@@ -82,58 +88,12 @@ contract Asset is Context, ERC165, IAsset, DLT, AccessControl {
     }
 
     /**
-     * @dev See {IAsset-batchCreateAsset}.
-     */
-    function batchCreateAsset(
-        address[] calldata owners,
-        uint256[] calldata mainIds,
-        uint256[] calldata prices,
-        uint256[] calldata aprs,
-        uint256[] calldata dueDates
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(
-            owners.length == mainIds.length &&
-                owners.length == prices.length &&
-                owners.length == dueDates.length &&
-                owners.length == aprs.length,
-            "No array parity"
-        );
-
-        for (uint256 i = 0; i < mainIds.length; ) {
-            _createAsset(
-                owners[i],
-                mainIds[i],
-                prices[i],
-                dueDates[i],
-                aprs[i]
-            );
-
-            unchecked {
-                ++i;
-            }
-        }
-    }
-
-    /**
      * @dev See {IAsset-setBaseURI}.
      */
     function setBaseURI(
         string calldata newBaseURI
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _setBaseURI(newBaseURI);
-    }
-
-    /**
-     * @dev See {IAsset-changeOwner}.
-     */
-    function changeOwner(
-        address newOwner,
-        uint256 mainId
-    ) external onlyRole(MARKETPLACE_ROLE) isValidInterface {
-        AssetInfo storage asset = _assets[mainId];
-
-        asset.salePrice = 0;
-        asset.owner = newOwner;
     }
 
     /**
@@ -228,6 +188,28 @@ contract Asset is Context, ERC165, IAsset, DLT, AccessControl {
     }
 
     /**
+     * @dev Override transfer function to change the owner
+     * @param sender, Address of sender
+     * @param recipient, Address of recipient
+     * @param mainId, main Id of asset
+     * @param subId, sub Id of asset
+     * @param amount, amount of sub id to transfer
+     */
+    function _transfer(
+        address sender,
+        address recipient,
+        uint256 mainId,
+        uint256 subId,
+        uint256 amount
+    ) internal override(DLT) {
+        super._transfer(sender, recipient, mainId, subId, amount);
+        AssetInfo storage asset = _assets[mainId];
+
+        asset.salePrice = 0;
+        asset.owner = recipient;
+    }
+
+    /**
      * @dev Changes the asset base URI
      * @param newBaseURI, String of the asset base URI
      */
@@ -235,29 +217,6 @@ contract Asset is Context, ERC165, IAsset, DLT, AccessControl {
         string memory oldBaseURI = _assetBaseURI;
         _assetBaseURI = newBaseURI;
         emit AssetBaseURISet(oldBaseURI, newBaseURI);
-    }
-
-    /**
-     * @dev Creates a new asset with given mainId and transfer it to owner
-     * @param owner, Address of the initial asset owner
-     * @param mainId, unique identifier of asset
-     * @param price, asset price to buy
-     * @param dueDate, is the end date for caluclating rewards
-     * @param apr, is the annual percentage rate for calculating rewards
-     */
-    function _createAsset(
-        address owner,
-        uint256 mainId,
-        uint256 price,
-        uint256 dueDate,
-        uint256 apr
-    ) private {
-        require(owner != address(0), "Invalid owner address");
-        require(mainTotalSupply(mainId) == 0, "Already minted");
-        _assets[mainId] = AssetInfo(owner, price, price, apr, dueDate, 0);
-        _mint(owner, mainId, 1, 1);
-
-        emit AssetCreated(_msgSender(), owner, mainId);
     }
 
     /**

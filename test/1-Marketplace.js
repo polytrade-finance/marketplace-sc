@@ -51,6 +51,174 @@ describe("Marketplace", function () {
     );
   });
 
+  it("Should create asset successfully", async function () {
+    await assetContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+
+    expect(
+      await marketplaceContract.createAsset(
+        user1.address,
+        1,
+        asset.assetPrice,
+        asset.rewardApr,
+        asset.dueDate
+      )
+    )
+      .to.emit(assetContract, "AssetCreated")
+      .withArgs(user1.address, user1.address, 1);
+
+    expect(await assetContract.mainBalanceOf(user1.address, 1)).to.eq(1);
+
+    expect(await assetContract.tokenURI(1)).to.eq(`https://ipfs.io/ipfs${1}`);
+  });
+
+  it("Should revert to create asset with invalid owner address", async function () {
+    await assetContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+
+    await expect(
+      marketplaceContract.createAsset(
+        ethers.constants.AddressZero,
+        1,
+        0,
+        asset.rewardApr,
+        asset.dueDate
+      )
+    ).to.revertedWith("Invalid owner address");
+  });
+
+  it("Batch create assets", async function () {
+    await assetContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+
+    await marketplaceContract.batchCreateAsset(
+      [user1.address, user1.address, user1.address],
+      [1, 2, 3],
+      [asset.assetPrice, asset.assetPrice, asset.assetPrice],
+      [asset.rewardApr, asset.rewardApr, asset.rewardApr],
+      [asset.dueDate, asset.dueDate, asset.dueDate]
+    );
+
+    expect(await assetContract.mainBalanceOf(user1.address, 1)).to.eq(1);
+
+    expect(await assetContract.mainBalanceOf(user1.address, 2)).to.eq(1);
+
+    expect(await assetContract.mainBalanceOf(user1.address, 3)).to.eq(1);
+  });
+
+  it("Should revert Batch create assets on wrong array parity", async function () {
+    await assetContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+
+    await expect(
+      marketplaceContract.batchCreateAsset(
+        [user1.address, user1.address, user1.address],
+        [1, 2],
+        [asset.assetPrice, asset.assetPrice, asset.assetPrice],
+        [asset.rewardApr, asset.rewardApr, asset.rewardApr],
+        [
+          asset.dueDate,
+          asset.dueDate,
+          // asset.dueDate,
+        ]
+      )
+    ).to.be.revertedWith("No array parity");
+
+    await expect(
+      marketplaceContract.batchCreateAsset(
+        [user1.address, user1.address],
+        [1, 2, 3],
+        [asset.assetPrice, asset.assetPrice, asset.assetPrice],
+        [
+          asset.rewardApr,
+          asset.rewardApr,
+          // asset.rewardApr,
+        ],
+        [asset.dueDate, asset.dueDate, asset.dueDate]
+      )
+    ).to.be.revertedWith("No array parity");
+  });
+
+  it("Should revert on batch creating assets by invalid caller", async function () {
+    await assetContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+
+    await expect(
+      marketplaceContract
+        .connect(user1)
+        .batchCreateAsset(
+          [user1.address, user1.address, user1.address],
+          [1, 2, 3],
+          [asset.assetPrice, asset.assetPrice, asset.assetPrice],
+          [asset.rewardApr, asset.rewardApr, asset.rewardApr],
+          [asset.dueDate, asset.dueDate, asset.dueDate]
+        )
+    ).to.be.reverted;
+  });
+
+  it("Should return zero rewards for minted asset with zero price", async function () {
+    await assetContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+
+    expect(
+      await marketplaceContract.createAsset(
+        user1.address,
+        1,
+        0,
+        asset.rewardApr,
+        asset.dueDate
+      )
+    )
+      .to.emit(assetContract, "AssetCreated")
+      .withArgs(user1.address, user1.address, 1);
+
+    const expectedReward = 0;
+    const actualReward = await assetContract.getRemainingReward(1);
+
+    expect(actualReward).to.be.equal(expectedReward);
+  });
+
+  it("Should revert on creating minted asset", async function () {
+    await assetContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+
+    expect(
+      await marketplaceContract.createAsset(
+        user1.address,
+        1,
+        asset.assetPrice,
+        asset.rewardApr,
+        asset.dueDate
+      )
+    )
+      .to.emit(assetContract, "AssetCreated")
+      .withArgs(user1.address, user1.address, 1);
+
+    await expect(
+      marketplaceContract.createAsset(
+        user1.address,
+        1,
+        asset.assetPrice,
+        asset.rewardApr,
+        asset.dueDate
+      )
+    ).to.revertedWith("Asset: Already minted");
+  });
+
   it("Should revert on passing invalid asset collection Address", async function () {
     await expect(
       (
@@ -154,14 +322,14 @@ describe("Marketplace", function () {
     await expect(await marketplaceContract.setInitialFee(1000)).not.to.be
       .reverted;
 
-    expect(await marketplaceContract.initialFee()).to.eq(1000);
+    expect(await marketplaceContract.getInitialFee()).to.eq(1000);
   });
 
   it("Should set a new buying fee (10.00%) percentage for all buys", async function () {
     await expect(await marketplaceContract.setBuyingFee(1000)).not.to.be
       .reverted;
 
-    expect(await marketplaceContract.buyingFee()).to.eq(1000);
+    expect(await marketplaceContract.getBuyingFee()).to.eq(1000);
   });
 
   it("Should set a new treasury wallet address while calling setTreasuryWallet()", async function () {
@@ -185,6 +353,25 @@ describe("Marketplace", function () {
   it("Should revert to set initial fee without admin role", async function () {
     await expect(
       marketplaceContract.connect(user1).setInitialFee(1000)
+    ).to.be.revertedWith(
+      `AccessControl: account ${user1.address.toLowerCase()} is missing role ${ethers.utils.hexZeroPad(
+        ethers.utils.hexlify(0),
+        32
+      )}`
+    );
+  });
+
+  it("Should revert to create asset without admin role", async function () {
+    await expect(
+      marketplaceContract
+        .connect(user1)
+        .createAsset(
+          user1.address,
+          1,
+          asset.assetPrice,
+          asset.rewardApr,
+          asset.dueDate
+        )
     ).to.be.revertedWith(
       `AccessControl: account ${user1.address.toLowerCase()} is missing role ${ethers.utils.hexZeroPad(
         ethers.utils.hexlify(0),
@@ -243,7 +430,7 @@ describe("Marketplace", function () {
     );
 
     expect(
-      await assetContract.createAsset(
+      await marketplaceContract.createAsset(
         user1.address,
         1,
         asset.assetPrice,
@@ -253,10 +440,6 @@ describe("Marketplace", function () {
     )
       .to.emit(assetContract, "AssetCreated")
       .withArgs(user1.address, user1.address, 1);
-
-    await assetContract
-      .connect(user1)
-      .approve(marketplaceContract.address, 1, 1, 1);
 
     await stableTokenContract
       .connect(buyer)
@@ -282,17 +465,13 @@ describe("Marketplace", function () {
       MarketplaceAccess,
       marketplaceContract.address
     );
-    await assetContract.createAsset(
+    await marketplaceContract.createAsset(
       user1.address,
       1,
       asset.assetPrice,
       asset.rewardApr,
       asset.dueDate
     );
-
-    await assetContract
-      .connect(user1)
-      .approve(marketplaceContract.address, 1, 1, 1);
 
     await stableTokenContract
       .connect(buyer)
@@ -310,17 +489,13 @@ describe("Marketplace", function () {
       MarketplaceAccess,
       marketplaceContract.address
     );
-    await assetContract.createAsset(
+    await marketplaceContract.createAsset(
       user1.address,
       1,
       asset.assetPrice,
       asset.rewardApr,
       asset.dueDate
     );
-
-    await assetContract
-      .connect(user1)
-      .approve(marketplaceContract.address, 1, 1, 1);
 
     await stableTokenContract
       .connect(buyer)
@@ -341,17 +516,13 @@ describe("Marketplace", function () {
       MarketplaceAccess,
       marketplaceContract.address
     );
-    await assetContract.createAsset(
+    await marketplaceContract.createAsset(
       user1.address,
       1,
       asset.assetPrice,
       asset.rewardApr,
       asset.dueDate
     );
-
-    await assetContract
-      .connect(user1)
-      .approve(marketplaceContract.address, 1, 1, 1);
 
     await stableTokenContract
       .connect(buyer)
@@ -389,17 +560,13 @@ describe("Marketplace", function () {
       marketplaceContract.address
     );
 
-    await assetContract.createAsset(
+    await marketplaceContract.createAsset(
       user1.address,
       1,
       asset.assetPrice,
       asset.rewardApr,
       asset.dueDate
     );
-
-    await assetContract
-      .connect(user1)
-      .approve(marketplaceContract.address, 1, 1, 1);
 
     await stableTokenContract
       .connect(buyer)
@@ -439,7 +606,7 @@ describe("Marketplace", function () {
     );
 
     expect(
-      await assetContract.createAsset(
+      await marketplaceContract.createAsset(
         user1.address,
         1,
         asset.assetPrice,
@@ -449,10 +616,6 @@ describe("Marketplace", function () {
     )
       .to.emit(assetContract, "AssetCreated")
       .withArgs(user1.address, user1.address, 1);
-
-    await assetContract
-      .connect(user1)
-      .approve(marketplaceContract.address, 1, 1, 1);
 
     await stableTokenContract
       .connect(buyer)
@@ -479,8 +642,13 @@ describe("Marketplace", function () {
   });
 
   it("Should get remaining zero reward after due date", async function () {
+    await assetContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+
     expect(
-      await assetContract.createAsset(
+      await marketplaceContract.createAsset(
         user1.address,
         1,
         asset.assetPrice,
@@ -505,7 +673,7 @@ describe("Marketplace", function () {
       MarketplaceAccess,
       marketplaceContract.address
     );
-    await assetContract.createAsset(
+    await marketplaceContract.createAsset(
       user1.address,
       1,
       asset.assetPrice,
@@ -515,10 +683,6 @@ describe("Marketplace", function () {
 
     await marketplaceContract.setBuyingFee(1000);
     await marketplaceContract.setInitialFee(2000);
-
-    await assetContract
-      .connect(user1)
-      .approve(marketplaceContract.address, 1, 1, 1);
 
     await stableTokenContract
       .connect(buyer)
@@ -572,7 +736,7 @@ describe("Marketplace", function () {
       MarketplaceAccess,
       marketplaceContract.address
     );
-    await assetContract.createAsset(
+    await marketplaceContract.createAsset(
       user1.address,
       1,
       asset.assetPrice,
@@ -580,22 +744,13 @@ describe("Marketplace", function () {
       asset.dueDate
     );
 
-    await assetContract.createAsset(
+    await marketplaceContract.createAsset(
       user1.address,
       2,
       asset.assetPrice,
       asset.rewardApr,
       asset.dueDate
     );
-
-    // user1 approves the amount he wants to sell
-    await assetContract
-      .connect(user1)
-      .approve(marketplaceContract.address, 1, 1, 1);
-
-    await assetContract
-      .connect(user1)
-      .approve(marketplaceContract.address, 2, 1, 1);
 
     const totalStableTokenAmount = asset.assetPrice.add(asset.assetPrice);
 
@@ -620,18 +775,13 @@ describe("Marketplace", function () {
       marketplaceContract.address
     );
 
-    await assetContract.createAsset(
+    await marketplaceContract.createAsset(
       user1.address,
       1,
       asset.assetPrice,
       asset.rewardApr,
       asset.dueDate
     );
-
-    // user1 approves the amount he wants to sell
-    await assetContract
-      .connect(user1)
-      .approve(marketplaceContract.address, 1, 1, 1);
 
     await stableTokenContract
       .connect(buyer)
