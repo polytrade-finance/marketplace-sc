@@ -244,7 +244,7 @@ contract Asset is Context, ERC165, IAsset, DLT, AccessControl {
         uint256 apr
     ) private {
         require(owner != address(0), "Invalid owner address");
-        require(mainTotalSupply(mainId) == 0, "Asset: Already minted");
+        require(mainTotalSupply(mainId) == 0, "Already minted");
         _assets[mainId] = AssetInfo(owner, price, price, apr, dueDate, 0);
         _mint(owner, mainId, 1, 1);
 
