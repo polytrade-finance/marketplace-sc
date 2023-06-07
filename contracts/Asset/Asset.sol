@@ -124,19 +124,6 @@ contract Asset is Context, ERC165, IAsset, DLT, AccessControl {
     }
 
     /**
-     * @dev See {IAsset-changeOwner}.
-     */
-    function changeOwner(
-        address newOwner,
-        uint256 mainId
-    ) external onlyRole(MARKETPLACE_ROLE) isValidInterface {
-        AssetInfo storage asset = _assets[mainId];
-
-        asset.salePrice = 0;
-        asset.owner = newOwner;
-    }
-
-    /**
      * @dev See {IAsset-updateClaim}.
      */
     function updateClaim(
@@ -225,6 +212,28 @@ contract Asset is Context, ERC165, IAsset, DLT, AccessControl {
         return
             interfaceId == type(IAsset).interfaceId ||
             super.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @dev Override transfer function to change the owner
+     * @param sender, Address of sender
+     * @param recipient, Address of recipient
+     * @param mainId, main Id of asset
+     * @param subId, sub Id of asset
+     * @param amount, amount of sub id to transfer
+     */
+    function _transfer(
+        address sender,
+        address recipient,
+        uint256 mainId,
+        uint256 subId,
+        uint256 amount
+    ) internal override(DLT) {
+        super._transfer(sender, recipient, mainId, subId, amount);
+        AssetInfo storage asset = _assets[mainId];
+
+        asset.salePrice = 0;
+        asset.owner = recipient;
     }
 
     /**

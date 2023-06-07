@@ -266,8 +266,6 @@ contract Marketplace is Context, ERC165, AccessControl, IMarketplace {
 
         _claimReward(assetId);
 
-        _assetCollection.changeOwner(_msgSender(), assetId);
-
         _assetCollection.safeTransferFrom(
             owner,
             _msgSender(),

@@ -110,14 +110,6 @@ interface IAsset is IDLT {
     function updateClaim(uint256 mainId) external returns (uint256 reward);
 
     /**
-     * @dev Changes the owner of asset by marketplace
-     * @param newOwner, address of the new owner
-     * @param mainId, unique identifier of asset
-     * @dev Needs marketplace access to change the owner
-     */
-    function changeOwner(address newOwner, uint256 mainId) external;
-
-    /**
      * @dev Calculates the remaning reward
      * @param mainId, unique identifier of asset
      * @return reward the rewards Amount

@@ -99,22 +99,6 @@ describe("Asset", function () {
     );
   });
 
-  it("Should revert on calling `changeOwner` without interface support", async function () {
-    await assetContract.grantRole(MarketplaceAccess, deployer.address);
-
-    await expect(
-      assetContract.changeOwner(user1.address, 1)
-    ).to.be.revertedWithCustomError(assetContract, "UnsupportedInterface");
-  });
-
-  it("Should revert on calling `relist` without interface support", async function () {
-    await assetContract.grantRole(MarketplaceAccess, deployer.address);
-
-    await expect(
-      assetContract.changeOwner(user1.address, 1)
-    ).to.be.revertedWithCustomError(assetContract, "UnsupportedInterface");
-  });
-
   it("Should revert to relist asset without marketplace role", async function () {
     await expect(
       assetContract.connect(deployer).relist(1, asset.assetPrice)
@@ -140,14 +124,6 @@ describe("Asset", function () {
   it("Should revert to update claim status without `MarketplaceAccess` role", async function () {
     await expect(
       assetContract.connect(user1).updateClaim(1)
-    ).to.be.revertedWith(
-      `AccessControl: account ${user1.address.toLowerCase()} is missing role ${MarketplaceAccess}`
-    );
-  });
-
-  it("Should revert to change owner without `MarketplaceAccess` role", async function () {
-    await expect(
-      assetContract.connect(user1).changeOwner(user1.address, 1)
     ).to.be.revertedWith(
       `AccessControl: account ${user1.address.toLowerCase()} is missing role ${MarketplaceAccess}`
     );
