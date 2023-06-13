@@ -540,6 +540,36 @@ import "contracts/Asset/interface/IAsset.sol";
     }
 
     /**
+     * @dev Called in createAsset and batchCreateAsset functions
+     * @dev Calls _listAsset to store parameters
+     * @param owner, initial owner of asset
+     * @param assetId, unique identifier of asset
+     * @param price, asset price to sell
+     * @param apr, annual percentage rate for calculating rewards
+     * @param dueDate, end date for calculating rewards
+     */
+    function _createAsset(
+        address owner,
+        uint256 assetId,
+        uint256 price,
+        uint256 apr,
+        uint256 dueDate
+    ) private {
+        require(
+            _assetCollection.totalMainSupply(assetId) == 0,
+            "Asset already created"
+        );
+        _assetCollection.createAsset(owner, assetId);
+        _listAsset(
+            address(_assetCollection),
+            owner,
+            assetId,
+            price,
+            apr,
+            dueDate
+        );
+    }
+    /**
      * @dev Allows to set a new treasury wallet address where funds will be allocated.
      * @dev Wallet can be EOA or multisig
      * @param newTreasuryWallet, Address of the new treasury wallet
