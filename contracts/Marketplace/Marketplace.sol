@@ -2,10 +2,16 @@
 pragma solidity =0.8.17;
 
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import "dual-layer-token/contracts/DLT/interfaces/IDLTReceiver.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "contracts/Marketplace/interface/IMarketplace.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
@@ -17,7 +23,15 @@ import "contracts/Asset/interface/IAsset.sol";
  * @author Polytrade.Finance
  * @dev Implementation of all assets trading operations
  */
-contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace {
+    Context,
+    ERC165,
+    EIP712,
+    AccessControl,
+    IMarketplace,
+    IERC721Receiver,
+    IERC1155Receiver,
+    IDLTReceiver
+{
     using SafeERC20 for IToken;
     using ERC165Checker for address;
 
