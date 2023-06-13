@@ -457,11 +457,73 @@ import "contracts/Asset/interface/IAsset.sol";
     }
 
     /**
+     * @dev See {IERC721Receiver-onERC721Received}.
+     *
+     * Always returns `IERC721Receiver.onERC721Received.selector`.
+     */
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes memory
+    ) public virtual override returns (bytes4) {
+        return this.onERC721Received.selector;
+    }
+
+    function onERC1155Received(
+        address,
+        address,
+        uint256,
+        uint256,
+        bytes memory
+    ) public virtual override returns (bytes4) {
+        return this.onERC1155Received.selector;
+    }
+
+    function onERC1155BatchReceived(
+        address,
+        address,
+        uint256[] memory,
+        uint256[] memory,
+        bytes memory
+    ) public virtual override returns (bytes4) {
+        return this.onERC1155BatchReceived.selector;
+    }
+
+    function onDLTReceived(
+        address,
+        address,
+        uint256,
+        uint256,
+        uint256,
+        bytes calldata
+    ) public virtual override returns (bytes4) {
+        return this.onDLTReceived.selector;
+    }
+
+    function onDLTBatchReceived(
+        address,
+        address,
+        uint256[] memory,
+        uint256[] memory,
+        uint256[] memory,
+        bytes calldata
+    ) public virtual override returns (bytes4) {
+        return this.onDLTBatchReceived.selector;
+    }
+
+    /**
      * @dev See {IERC165-supportsInterface}.
      */
     function supportsInterface(
         bytes4 interfaceId
-    ) public view virtual override(ERC165, AccessControl) returns (bool) {
+    )
+        public
+        view
+        virtual
+        override(ERC165, AccessControl, IERC165)
+        returns (bool)
+    {
         return
             interfaceId == type(IMarketplace).interfaceId ||
             super.supportsInterface(interfaceId);
