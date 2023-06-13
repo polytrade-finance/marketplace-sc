@@ -279,18 +279,23 @@ import "contracts/Asset/interface/IAsset.sol";
     /**
      * @dev See {IMarketplace-buy}.
      */
-    function buy(uint256 assetId) external {
-        _buy(assetId, _assetCollection.getAssetInfo(assetId).salePrice);
+    function buy(address collection, uint256 assetId) external {
+        _buy(collection, assetId, _assets[collection][assetId].salePrice);
     }
 
     /**
      * @dev See {IMarketplace-batchBuy}.
      */
-    function batchBuy(uint256[] calldata assetIds) external {
+    function batchBuy(
+        address[] calldata collections,
+        uint256[] calldata assetIds
+    ) external {
+        require(collections.length == assetIds.length, "No array parity");
         for (uint256 i = 0; i < assetIds.length; ) {
             _buy(
+                collections[i],
                 assetIds[i],
-                _assetCollection.getAssetInfo(assetIds[i]).salePrice
+                _assets[collections[i]][assetIds[i]].salePrice
             );
 
             unchecked {
