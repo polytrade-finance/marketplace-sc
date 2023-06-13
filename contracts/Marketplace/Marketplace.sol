@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity =0.8.17;
+pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
@@ -7,7 +7,6 @@ import "dual-layer-token/contracts/DLT/interfaces/IDLTReceiver.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
@@ -23,6 +22,7 @@ import "contracts/Asset/interface/IAsset.sol";
  * @author Polytrade.Finance
  * @dev Implementation of all assets trading operations
  */
+contract Marketplace is
     Context,
     ERC165,
     EIP712,
@@ -171,23 +171,23 @@ import "contracts/Asset/interface/IAsset.sol";
      */
     function batchCreateAsset(
         address[] calldata owners,
-        uint256[] calldata mainIds,
+        uint256[] calldata assetIds,
         uint256[] calldata prices,
         uint256[] calldata aprs,
         uint256[] calldata dueDates
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(
-            owners.length == mainIds.length &&
+            owners.length == assetIds.length &&
                 owners.length == prices.length &&
                 owners.length == dueDates.length &&
                 owners.length == aprs.length,
             "No array parity"
         );
 
-        for (uint256 i = 0; i < mainIds.length; ) {
-            _assetCollection.createAsset(
+        for (uint256 i = 0; i < assetIds.length; ) {
+            _createAsset(
                 owners[i],
-                mainIds[i],
+                assetIds[i],
                 prices[i],
                 aprs[i],
                 dueDates[i]
@@ -631,50 +631,57 @@ import "contracts/Asset/interface/IAsset.sol";
     }
 
     /**
-     * @dev Transfers asset to buyer and transfer the price to treasury wallet
+     * @dev Transfers rewards to owner and updates lastClaimDate
+     * @param collection, Address of the asset collection
      * @param assetId, unique identifier of the asset
      */
-    function _claimReward(uint256 assetId) private {
-        address owner = _assetCollection.getAssetInfo(assetId).owner;
-        uint256 reward = _assetCollection.updateClaim(assetId);
+    function _claimReward(address collection, uint256 assetId) private {
+        AssetInfo memory asset = _assets[collection][assetId];
 
-        _stableToken.safeTransferFrom(_treasuryWallet, owner, reward);
+        uint256 reward = _getAvailableReward(collection, assetId);
+        _assets[collection][assetId].lastClaimDate = (
+            block.timestamp > asset.dueDate ? asset.dueDate : block.timestamp
+        );
 
-        emit RewardsClaimed(owner, reward);
+        _stableToken.safeTransferFrom(_treasuryWallet, asset.owner, reward);
+
+        emit RewardsClaimed(asset.owner, reward);
     }
 
     /**
-     * @dev Safe transfer asset to buyer and transfer the price to treasury wallet
+     * @dev Safe transfer asset to marketplace and transfer the price to treasury wallet if it is the first buy
+     * @dev Transfer the price to previous owner if it is not the first buy
      * @dev Transfer buying fee or initial fee to fee wallet based on asset status
+     * @param collection, Address of the asset collection
      * @param assetId, unique identifier of the asset
+     * @param salePrice, unique identifier of the asset
      */
-    function _buy(uint256 assetId, uint256 salePrice) private {
-        require(
-            _assetCollection.getAssetInfo(assetId).salePrice != 0,
-            "Asset is not listed"
-        );
-        uint256 lastClaimDate = _assetCollection
-            .getAssetInfo(assetId)
-            .lastClaimDate;
-        address owner = _assetCollection.getAssetInfo(assetId).owner;
-        uint256 fee = lastClaimDate != 0 ? _buyingFee : _initialFee;
-        address receiver = lastClaimDate != 0 ? owner : _treasuryWallet;
-
+    function _buy(
+        address collection,
+        uint256 assetId,
+        uint256 salePrice
+    ) private {
+        AssetInfo memory asset = _assets[collection][assetId];
+        require(asset.salePrice != 0, "Asset is not relisted");
+        require(asset.dueDate > block.timestamp, "Due date has passed");
+        uint256 fee = asset.lastClaimDate != 0 ? _buyingFee : _initialFee;
+        address receiver = asset.lastClaimDate != 0
+            ? asset.owner
+            : _treasuryWallet;
         fee = (salePrice * fee) / 1e4;
 
-        if (lastClaimDate == 0) _assetCollection.updateClaim(assetId);
-
-        _assetCollection.safeTransferFrom(
-            owner,
-            _msgSender(),
-            assetId,
-            1,
-            1,
-            ""
-        );
+        if (asset.lastClaimDate == 0) {
+            _assets[collection][assetId].lastClaimDate = block.timestamp;
+            _transferAsset(collection, asset.owner, address(this), assetId);
+        }
+        _assets[collection][assetId].owner = _msgSender();
+        _assets[collection][assetId].salePrice = 0;
 
         _stableToken.safeTransferFrom(_msgSender(), receiver, salePrice);
         _stableToken.safeTransferFrom(_msgSender(), _feeWallet, fee);
+        emit AssetBought(collection, asset.owner, _msgSender(), assetId);
+    }
+
 
         emit AssetBought(owner, _msgSender(), assetId);
     }
