@@ -225,15 +225,16 @@ import "contracts/Asset/interface/IAsset.sol";
     /**
      * @dev See {IMarketplace-relist}.
      */
-    function relist(uint256 assetId, uint256 salePrice) external {
-        require(
-            _assetCollection.getAssetInfo(assetId).owner == _msgSender(),
-            "You are not the owner"
-        );
+    function relist(
+        address collection,
+        uint256 assetId,
+        uint256 salePrice
+    ) external {
+        AssetInfo storage asset = _assets[collection][assetId];
+        require(asset.owner == _msgSender(), "You are not the owner");
+        asset.salePrice = salePrice;
 
-        _assetCollection.relist(assetId, salePrice);
-
-        emit AssetRelisted(assetId, salePrice);
+        emit AssetRelisted(collection, assetId, salePrice);
     }
 
     /**
@@ -251,7 +252,7 @@ import "contracts/Asset/interface/IAsset.sol";
     ) external {
         require(block.timestamp <= deadline, "Offer expired");
         require(
-            owner == _assetCollection.getAssetInfo(assetId).owner,
+            owner == _assets[address(_assetCollection)][assetId].owner,
             "Signer is not the owner"
         );
         require(offeror == _msgSender(), "You are not the offeror");
@@ -272,7 +273,7 @@ import "contracts/Asset/interface/IAsset.sol";
         address signer = ECDSA.recover(hash, v, r, s);
 
         require(signer == owner, "Invalid signature");
-        _buy(assetId, offerPrice);
+        _buy(address(_assetCollection), assetId, offerPrice);
     }
 
     /**
