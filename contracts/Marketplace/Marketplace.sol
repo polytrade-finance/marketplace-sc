@@ -569,6 +569,39 @@ import "contracts/Asset/interface/IAsset.sol";
             dueDate
         );
     }
+
+    /**
+     * @dev Called when asset creates or and erc721 or erc1155 is listed
+     * @param collection, address of asset collection
+     * @param owner, address of asset owner
+     * @param assetId, unique identifier of asset
+     * @param price, asset price to sell and settle
+     * @param apr, annual percentage rate for calculating rewards
+     * @param dueDate, end date for calculating rewards
+     */
+    function _listAsset(
+        address collection,
+        address owner,
+        uint256 assetId,
+        uint256 price,
+        uint256 apr,
+        uint256 dueDate
+    ) private {
+        require(
+            _assets[collection][assetId].owner == address(0),
+            "Asset already listed"
+        );
+        _assets[collection][assetId] = AssetInfo(
+            owner,
+            price,
+            price,
+            apr,
+            dueDate,
+            0
+        );
+        emit AssetListed(collection, owner, assetId);
+    }
+
     /**
      * @dev Allows to set a new treasury wallet address where funds will be allocated.
      * @dev Wallet can be EOA or multisig
