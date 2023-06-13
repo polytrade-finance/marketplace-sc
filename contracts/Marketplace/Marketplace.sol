@@ -307,16 +307,10 @@ import "contracts/Asset/interface/IAsset.sol";
     /**
      * @dev See {IMarketplace-claimReward}.
      */
-    function claimReward(uint256 assetId) external {
-        require(
-            _assetCollection.getAssetInfo(assetId).lastClaimDate != 0,
-            "Asset not bought yet"
-        );
-        require(
-            _assetCollection.getAssetInfo(assetId).owner == _msgSender(),
-            "You are not the owner"
-        );
-        _claimReward(assetId);
+    function claimReward(address collection, uint256 assetId) external {
+        AssetInfo memory asset = _assets[collection][assetId];
+        require(asset.owner == _msgSender(), "You are not the owner");
+        _claimReward(collection, assetId);
     }
 
     /**
@@ -404,6 +398,9 @@ import "contracts/Asset/interface/IAsset.sol";
         return _currentNonce[owner];
     }
 
+    /**
+     * @dev See {IMarketplace-getInitialFee}.
+     */
     function getInitialFee() external view returns (uint256) {
         return _initialFee;
     }
