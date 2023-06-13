@@ -35,6 +35,8 @@ import "contracts/Asset/interface/IAsset.sol";
     using SafeERC20 for IToken;
     using ERC165Checker for address;
 
+    uint256 private constant _YEAR = 365 days;
+
     uint256 private _initialFee;
     uint256 private _buyingFee;
 
@@ -44,6 +46,10 @@ import "contracts/Asset/interface/IAsset.sol";
     address private _treasuryWallet;
     address private _feeWallet;
 
+    /**
+     * @dev Mapping will be indexing the AssetInfo for each asset collection by its id
+     */
+    mapping(address => mapping(uint256 => AssetInfo)) private _assets;
     mapping(address => uint256) private _currentNonce;
 
     // solhint-disable-next-line var-name-mixedcase
@@ -61,10 +67,12 @@ import "contracts/Asset/interface/IAsset.sol";
             )
         );
     bytes4 private constant _ASSET_INTERFACE_ID = type(IAsset).interfaceId;
+    bytes4 private constant _ERC721_INTERFACE_ID = type(IERC721).interfaceId;
+    bytes4 private constant _ERC1155_INTERFACE_ID = type(IERC1155).interfaceId;
 
     /**
      * @dev Constructor for the main Marketplace
-     * @param assetCollection_, Address of the asset Collection used in the marketplace
+     * @param assetCollection_, Address of the asset collection used in the marketplace
      * @param tokenAddress_, Address of the ERC20 token address
      * @param treasuryWallet_, Address of the treasury wallet
      * @param feeWallet_, Address of the fee wallet
@@ -87,6 +95,52 @@ import "contracts/Asset/interface/IAsset.sol";
         _setFeeWallet(feeWallet_);
 
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
+    }
+
+    /**
+     * @dev See {IMarketplace-list721Asset}.
+     */
+    function list721Asset(
+        address collection,
+        address owner,
+        uint256 assetId,
+        uint256 price,
+        uint256 apr,
+        uint256 dueDate
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (!collection.supportsInterface(_ERC721_INTERFACE_ID)) {
+            revert UnsupportedInterface();
+        }
+        require(
+            IERC721(collection).ownerOf(assetId) == owner,
+            "owner does not own the asset"
+        );
+        require(owner != address(0), "Invalid owner address");
+
+        _listAsset(collection, owner, assetId, price, apr, dueDate);
+    }
+
+    /**
+     * @dev See {IMarketplace-list1155Asset}.
+     */
+    function list1155Asset(
+        address collection,
+        address owner,
+        uint256 assetId,
+        uint256 price,
+        uint256 apr,
+        uint256 dueDate
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (!collection.supportsInterface(_ERC1155_INTERFACE_ID)) {
+            revert UnsupportedInterface();
+        }
+        require(
+            IERC1155(collection).balanceOf(owner, assetId) != 0,
+            "owner does not own the asset"
+        );
+        require(owner != address(0), "Invalid owner address");
+
+        _listAsset(collection, owner, assetId, price, apr, dueDate);
     }
 
     /**
