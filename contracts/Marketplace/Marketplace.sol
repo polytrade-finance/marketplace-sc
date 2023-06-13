@@ -413,6 +413,50 @@ import "contracts/Asset/interface/IAsset.sol";
     }
 
     /**
+     * @dev See {IMarketplace-getAssetInfo}.
+     */
+    function getAssetInfo(
+        address collection,
+        uint256 assetId
+    ) external view returns (AssetInfo memory) {
+        return _assets[collection][assetId];
+    }
+
+    /**
+     * @dev See {IMarketplace-getRemainingReward}.
+     */
+    function getRemainingReward(
+        address collection,
+        uint256 assetId
+    ) external view returns (uint256 reward) {
+        AssetInfo memory asset = _assets[collection][assetId];
+        uint256 tenure;
+
+        if (asset.lastClaimDate != 0) {
+            tenure = asset.dueDate - asset.lastClaimDate;
+        } else if (asset.price != 0) {
+            tenure =
+                asset.dueDate -
+                (
+                    block.timestamp > asset.dueDate
+                        ? asset.dueDate
+                        : block.timestamp
+                );
+        }
+        reward = _calculateFormula(asset.price, tenure, asset.rewardApr);
+    }
+
+    /**
+     * @dev See {IMarketplace-getAvailableReward}.
+     */
+    function getAvailableReward(
+        address collection,
+        uint256 assetId
+    ) external view returns (uint256) {
+        return _getAvailableReward(collection, assetId);
+    }
+
+    /**
      * @dev See {IERC165-supportsInterface}.
      */
     function supportsInterface(
