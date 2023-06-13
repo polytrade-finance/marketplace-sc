@@ -148,12 +148,22 @@ import "contracts/Asset/interface/IAsset.sol";
      */
     function createAsset(
         address owner,
-        uint256 mainId,
+        uint256 assetId,
         uint256 price,
         uint256 apr,
         uint256 dueDate
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _assetCollection.createAsset(owner, mainId, price, apr, dueDate);
+        _createAsset(owner, assetId, price, apr, dueDate);
+    }
+
+    /**
+     * @dev See {IMarketplace-createAsset}.
+     */
+    function burnAsset(
+        address owner,
+        uint256 assetId
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _assetCollection.burnAsset(owner, assetId);
     }
 
     /**
@@ -193,19 +203,23 @@ import "contracts/Asset/interface/IAsset.sol";
      * @dev See {IMarketplace-settleAsset}.
      */
     function settleAsset(
+        address collection,
         uint256 assetId
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        address owner = _assetCollection.getAssetInfo(assetId).owner;
-        require(owner != address(0), "Invalid asset id");
-        _claimReward(assetId);
+        AssetInfo memory asset = _assets[collection][assetId];
+        require(asset.owner != address(0), "Invalid asset id");
+        require(block.timestamp > asset.dueDate, "Due date not passed");
 
+        _claimReward(collection, assetId);
         _stableToken.safeTransferFrom(
             _treasuryWallet,
-            owner,
-            _assetCollection.settleAsset(assetId)
+            asset.owner,
+            asset.price
         );
+        _transferAsset(collection, address(this), asset.owner, assetId);
+        delete _assets[address(_assetCollection)][assetId];
 
-        emit AssetSettled(owner, assetId);
+        emit AssetSettled(collection, asset.owner, assetId);
     }
 
     /**
