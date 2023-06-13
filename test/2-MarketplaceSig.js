@@ -64,7 +64,7 @@ describe("Marketplace Signatures", function () {
       1,
       asset.assetPrice,
       asset.rewardApr,
-      asset.dueDate
+      (await now()) + 100
     );
 
     await stableTokenContract
