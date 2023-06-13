@@ -682,7 +682,66 @@ contract Marketplace is
         emit AssetBought(collection, asset.owner, _msgSender(), assetId);
     }
 
+    /**
+     * @dev Safe transfer asset from `from` address to `to` address
+     * @dev Transfer the price to previous owner if it is not the first buy
+     * @dev Transfer buying fee or initial fee to fee wallet based on asset status
+     * @param collection, Address of the asset collection
+     * @param from, address of asset sender
+     * @param to, address of asset receiver
+     * @param assetId, unique identifier of the asset
+     */
+    function _transferAsset(
+        address collection,
+        address from,
+        address to,
+        uint256 assetId
+    ) private {
+        if (collection == address(_assetCollection)) {
+            _assetCollection.safeTransferFrom(from, to, assetId, 1, 1, "");
+        } else if (collection.supportsInterface(_ERC721_INTERFACE_ID)) {
+            IERC721(collection).safeTransferFrom(from, to, assetId, "");
+        } else if (collection.supportsInterface(_ERC1155_INTERFACE_ID)) {
+            IERC1155(collection).safeTransferFrom(from, to, assetId, 1, "");
+        } else {
+            revert UnsupportedInterface();
+        }
+    }
 
-        emit AssetBought(owner, _msgSender(), assetId);
+    /**
+     * @dev Calculates accumulated rewards based on rewardApr if the asset has an owner
+     * @param collection, Address of the asset collection
+     * @param assetId, unique identifier of asset
+     * @return reward , accumulated rewards for the current owner
+     */
+    function _getAvailableReward(
+        address collection,
+        uint256 assetId
+    ) private view returns (uint256 reward) {
+        AssetInfo memory asset = _assets[collection][assetId];
+
+        if (asset.lastClaimDate != 0) {
+            uint256 tenure = (
+                block.timestamp > asset.dueDate
+                    ? asset.dueDate
+                    : block.timestamp
+            ) - asset.lastClaimDate;
+
+            reward = _calculateFormula(asset.price, tenure, asset.rewardApr);
+        }
+    }
+
+    /**
+     * @dev Calculates the rewards for a given asset
+     * @param price is the price of asset
+     * @param tenure is the duration from last updated rewards
+     * @param apr is the annual percentage rate of rewards for assets
+     */
+    function _calculateFormula(
+        uint256 price,
+        uint256 tenure,
+        uint256 apr
+    ) private pure returns (uint256) {
+        return ((price * tenure * apr) / 1e4) / _YEAR;
     }
 }
