@@ -6,6 +6,8 @@ const { now } = require("./helpers");
 
 describe("Marketplace", function () {
   let assetContract;
+  let asset721Contract;
+  let asset1155Contract;
   let stableTokenContract;
   let marketplaceContract;
   let user1;
@@ -35,8 +37,18 @@ describe("Marketplace", function () {
 
     await assetContract.deployed();
 
+    const Asset721Factory = await ethers.getContractFactory("ERC721Token");
+    asset721Contract = await Asset721Factory.deploy();
+
+    await asset721Contract.deployed();
+
+    const Asset1155Factory = await ethers.getContractFactory("ERC1155Token");
+    asset1155Contract = await Asset1155Factory.deploy();
+
+    await assetContract.deployed();
+
     stableTokenContract = await (
-      await ethers.getContractFactory("Token")
+      await ethers.getContractFactory("ERC20Token")
     ).deploy("USD Dollar", "USDC", 18, buyer.address, 200000);
 
     await stableTokenContract.decimals();
@@ -72,6 +84,195 @@ describe("Marketplace", function () {
     expect(await assetContract.subIdBalanceOf(user1.address, 1)).to.eq(1);
 
     expect(await assetContract.tokenURI(1)).to.eq(`https://ipfs.io/ipfs${1}`);
+  });
+
+  it("Should revert to set list erc721 asset without admin role", async function () {
+    await expect(
+      marketplaceContract
+        .connect(user1)
+        .list721Asset(
+          asset721Contract.address,
+          user1.address,
+          0,
+          asset.assetPrice,
+          asset.rewardApr,
+          asset.dueDate
+        )
+    ).to.be.revertedWith(
+      `AccessControl: account ${user1.address.toLowerCase()} is missing role ${ethers.utils.hexZeroPad(
+        ethers.utils.hexlify(0),
+        32
+      )}`
+    );
+  });
+
+  it("Should revert to set list erc1155 asset without admin role", async function () {
+    await expect(
+      marketplaceContract
+        .connect(user1)
+        .list1155Asset(
+          asset1155Contract.address,
+          user1.address,
+          0,
+          asset.assetPrice,
+          asset.rewardApr,
+          asset.dueDate
+        )
+    ).to.be.revertedWith(
+      `AccessControl: account ${user1.address.toLowerCase()} is missing role ${ethers.utils.hexZeroPad(
+        ethers.utils.hexlify(0),
+        32
+      )}`
+    );
+  });
+
+  it("Should list erc721 asset successfully", async function () {
+    await assetContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+
+    await asset721Contract.safeMint(user1.address);
+
+    expect(
+      await marketplaceContract.list721Asset(
+        asset721Contract.address,
+        user1.address,
+        0,
+        asset.assetPrice,
+        asset.rewardApr,
+        asset.dueDate
+      )
+    )
+      .to.emit(assetContract, "AssetListed")
+      .withArgs(asset721Contract, user1.address, 1);
+  });
+
+  it("Should revert to list asset for second time", async function () {
+    await assetContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+
+    await asset721Contract.safeMint(user1.address);
+
+    expect(
+      await marketplaceContract.list721Asset(
+        asset721Contract.address,
+        user1.address,
+        0,
+        asset.assetPrice,
+        asset.rewardApr,
+        asset.dueDate
+      )
+    )
+      .to.emit(assetContract, "AssetListed")
+      .withArgs(asset721Contract, user1.address, 1);
+
+    await expect(
+      marketplaceContract.list721Asset(
+        asset721Contract.address,
+        user1.address,
+        0,
+        asset.assetPrice,
+        asset.rewardApr,
+        asset.dueDate
+      )
+    ).to.revertedWith("Asset already listed");
+  });
+
+  it("Should revert to list erc721 asset if owner is wrong", async function () {
+    await assetContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+
+    await asset721Contract.safeMint(user1.address);
+
+    await expect(
+      marketplaceContract.list721Asset(
+        asset721Contract.address,
+        buyer.address,
+        0,
+        asset.assetPrice,
+        asset.rewardApr,
+        asset.dueDate
+      )
+    ).to.revertedWith("owner does not own the asset");
+  });
+
+  it("Should revert on passing invalid erc721 asset collection Address", async function () {
+    await expect(
+      marketplaceContract.list721Asset(
+        assetContract.address,
+        buyer.address,
+        0,
+        asset.assetPrice,
+        asset.rewardApr,
+        asset.dueDate
+      )
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "UnsupportedInterface"
+    );
+  });
+
+  it("Should list erc1155 asset successfully", async function () {
+    await assetContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+
+    await asset1155Contract.mint(user1.address, 1, 1);
+
+    expect(
+      await marketplaceContract.list1155Asset(
+        asset1155Contract.address,
+        user1.address,
+        1,
+        asset.assetPrice,
+        asset.rewardApr,
+        asset.dueDate
+      )
+    )
+      .to.emit(assetContract, "AssetListed")
+      .withArgs(asset1155Contract, user1.address, 1);
+  });
+
+  it("Should revert to list erc1155 asset if owner is wrong", async function () {
+    await assetContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+
+    await asset1155Contract.mint(user1.address, 1, 1);
+
+    await expect(
+      marketplaceContract.list1155Asset(
+        asset1155Contract.address,
+        buyer.address,
+        1,
+        asset.assetPrice,
+        asset.rewardApr,
+        asset.dueDate
+      )
+    ).to.revertedWith("owner does not own the asset");
+  });
+
+  it("Should revert on passing invalid erc1155 asset collection Address", async function () {
+    await expect(
+      marketplaceContract.list1155Asset(
+        asset721Contract.address,
+        user1.address,
+        1,
+        asset.assetPrice,
+        asset.rewardApr,
+        asset.dueDate
+      )
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "UnsupportedInterface"
+    );
   });
 
   it("Should burn asset successfully", async function () {
@@ -328,6 +529,35 @@ describe("Marketplace", function () {
     ).to.revertedWith("Invalid wallet address");
   });
 
+  it("Should return the asset info struct", async function () {
+    await assetContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+
+    expect(
+      await marketplaceContract.createAsset(
+        user1.address,
+        1,
+        asset.assetPrice,
+        asset.rewardApr,
+        asset.dueDate
+      )
+    )
+      .to.emit(assetContract, "AssetCreated")
+      .withArgs(user1.address, 1);
+
+    const info = await marketplaceContract.getAssetInfo(
+      assetContract.address,
+      1
+    );
+
+    expect(info.owner).to.eq(user1.address);
+    expect(info.price).to.eq(asset.assetPrice);
+    expect(info.rewardApr).to.eq(asset.rewardApr);
+    expect(info.dueDate).to.eq(asset.dueDate);
+  });
+
   it("Should return the asset contract address while calling getAssetCollection()", async function () {
     expect(await marketplaceContract.getAssetCollection()).to.eq(
       assetContract.address
@@ -404,6 +634,17 @@ describe("Marketplace", function () {
           asset.rewardApr,
           asset.dueDate
         )
+    ).to.be.revertedWith(
+      `AccessControl: account ${user1.address.toLowerCase()} is missing role ${ethers.utils.hexZeroPad(
+        ethers.utils.hexlify(0),
+        32
+      )}`
+    );
+  });
+
+  it("Should revert to burn asset without admin role", async function () {
+    await expect(
+      marketplaceContract.connect(user1).burnAsset(user1.address, 1)
     ).to.be.revertedWith(
       `AccessControl: account ${user1.address.toLowerCase()} is missing role ${ethers.utils.hexZeroPad(
         ethers.utils.hexlify(0),
@@ -546,6 +787,78 @@ describe("Marketplace", function () {
     ).to.eq(1);
   });
 
+  it("Should list erc721 asset and selling it to buyer through Marketplace", async function () {
+    await assetContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+
+    await asset721Contract.safeMint(user1.address);
+
+    expect(
+      await marketplaceContract.list721Asset(
+        asset721Contract.address,
+        user1.address,
+        0,
+        asset.assetPrice,
+        asset.rewardApr,
+        asset.dueDate
+      )
+    )
+      .to.emit(assetContract, "AssetListed")
+      .withArgs(asset721Contract, user1.address, 1);
+
+    await stableTokenContract
+      .connect(buyer)
+      .approve(marketplaceContract.address, asset.assetPrice);
+
+    await asset721Contract
+      .connect(user1)
+      .setApprovalForAll(marketplaceContract.address, true);
+
+    await marketplaceContract.connect(buyer).buy(asset721Contract.address, 0);
+
+    expect(await asset721Contract.ownerOf(0)).to.eq(
+      marketplaceContract.address
+    );
+  });
+
+  it("Should list erc1155 asset and selling it to buyer through Marketplace", async function () {
+    await assetContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+
+    await asset1155Contract.mint(user1.address, 1, 1);
+
+    expect(
+      await marketplaceContract.list1155Asset(
+        asset1155Contract.address,
+        user1.address,
+        1,
+        asset.assetPrice,
+        asset.rewardApr,
+        asset.dueDate
+      )
+    )
+      .to.emit(assetContract, "AssetListed")
+      .withArgs(asset1155Contract, user1.address, 1);
+
+    await stableTokenContract
+      .connect(buyer)
+      .approve(marketplaceContract.address, asset.assetPrice);
+
+    await asset1155Contract
+      .connect(user1)
+      .setApprovalForAll(marketplaceContract.address, true);
+
+    await marketplaceContract.connect(buyer).buy(asset1155Contract.address, 1);
+
+    expect(
+      await asset1155Contract.balanceOf(marketplaceContract.address, 1)
+    ).to.eq(1);
+  });
+
   it("Should create asset and selling it to buyer then claim rewards(before due date)", async function () {
     await assetContract.grantRole(
       MarketplaceAccess,
@@ -566,6 +879,10 @@ describe("Marketplace", function () {
     await stableTokenContract
       .connect(treasuryWallet)
       .approve(marketplaceContract.address, asset.assetPrice);
+
+    expect(
+      await marketplaceContract.getAvailableReward(assetContract.address, 1)
+    ).to.eq(0);
 
     await marketplaceContract.connect(buyer).buy(assetContract.address, 1);
 
@@ -645,6 +962,28 @@ describe("Marketplace", function () {
 
     expect(afterClaim.sub(beforeClaim)).to.eq(actualReward);
     expect(remainingReward).to.eq(0);
+  });
+
+  it("Should revert to buy an asset after due date", async function () {
+    await assetContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+    await marketplaceContract.createAsset(
+      user1.address,
+      1,
+      asset.assetPrice,
+      asset.rewardApr,
+      asset.dueDate
+    );
+
+    await stableTokenContract
+      .connect(buyer)
+      .approve(marketplaceContract.address, asset.assetPrice);
+
+    await expect(
+      marketplaceContract.connect(buyer).buy(assetContract.address, 1)
+    ).to.revertedWith("Due date has passed");
   });
 
   it("Should create an asset settle the asset after due date", async function () {
@@ -832,6 +1171,14 @@ describe("Marketplace", function () {
     ).to.eq(1);
   });
 
+  it("Should revert batch buy without array parity", async function () {
+    await expect(
+      marketplaceContract
+        .connect(buyer)
+        .batchBuy([assetContract.address], [1, 2])
+    ).to.be.revertedWith("No array parity");
+  });
+
   it("Should revert when asset is not relisted", async function () {
     await assetContract.grantRole(
       MarketplaceAccess,
@@ -855,5 +1202,43 @@ describe("Marketplace", function () {
     await expect(
       marketplaceContract.connect(user1).buy(assetContract.address, 1)
     ).to.be.revertedWith("Asset is not relisted");
+  });
+
+  it("Should receive batch create4d assets and erc1155 tokens", async function () {
+    await assetContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+
+    await marketplaceContract.batchCreateAsset(
+      [user1.address, user1.address, user1.address],
+      [1, 2, 3],
+      [asset.assetPrice, asset.assetPrice, asset.assetPrice],
+      [asset.rewardApr, asset.rewardApr, asset.rewardApr],
+      [asset.dueDate, asset.dueDate, asset.dueDate]
+    );
+
+    await asset1155Contract.mintBatch(user1.address, [1, 2, 3], [1, 1, 1]);
+
+    await assetContract
+      .connect(user1)
+      .safeBatchTransferFrom(
+        user1.address,
+        marketplaceContract.address,
+        [1, 2, 3],
+        [1, 1, 1],
+        [1, 1, 1],
+        "0x"
+      );
+
+    await asset1155Contract
+      .connect(user1)
+      .safeBatchTransferFrom(
+        user1.address,
+        marketplaceContract.address,
+        [1, 2, 3],
+        [1, 1, 1],
+        "0x"
+      );
   });
 });

@@ -43,7 +43,7 @@ describe("Marketplace Signatures", function () {
     await assetContract.deployed();
 
     stableTokenContract = await (
-      await ethers.getContractFactory("Token")
+      await ethers.getContractFactory("ERC20Token")
     ).deploy("USD Dollar", "USDC", 18, offeror.address, 200000);
 
     marketplaceContract = await (

@@ -115,7 +115,6 @@ contract Marketplace is
             IERC721(collection).ownerOf(assetId) == owner,
             "owner does not own the asset"
         );
-        require(owner != address(0), "Invalid owner address");
 
         _listAsset(collection, owner, assetId, price, apr, dueDate);
     }
@@ -138,7 +137,6 @@ contract Marketplace is
             IERC1155(collection).balanceOf(owner, assetId) != 0,
             "owner does not own the asset"
         );
-        require(owner != address(0), "Invalid owner address");
 
         _listAsset(collection, owner, assetId, price, apr, dueDate);
     }
@@ -164,6 +162,7 @@ contract Marketplace is
         uint256 assetId
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _assetCollection.burnAsset(owner, assetId);
+        delete _assets[address(_assetCollection)][assetId];
     }
 
     /**
@@ -701,10 +700,8 @@ contract Marketplace is
             _assetCollection.safeTransferFrom(from, to, assetId, 1, 1, "");
         } else if (collection.supportsInterface(_ERC721_INTERFACE_ID)) {
             IERC721(collection).safeTransferFrom(from, to, assetId, "");
-        } else if (collection.supportsInterface(_ERC1155_INTERFACE_ID)) {
-            IERC1155(collection).safeTransferFrom(from, to, assetId, 1, "");
         } else {
-            revert UnsupportedInterface();
+            IERC1155(collection).safeTransferFrom(from, to, assetId, 1, "");
         }
     }
 
