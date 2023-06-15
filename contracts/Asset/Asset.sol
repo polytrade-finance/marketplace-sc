@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "dual-layer-token/contracts/DLT/extensions/DLTEnumerable.sol";
+import "dual-layer-token/contracts/DLT/extensions/DLTPermit.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "contracts/Marketplace/interface/IMarketplace.sol";
@@ -16,7 +17,15 @@ import "contracts/Asset/interface/IAsset.sol";
  * @author Polytrade.Finance
  * @dev Manages creation of asset and rewards distribution
  */
-contract Asset is Context, ERC165, DLT, DLTEnumerable, AccessControl, IAsset {
+contract Asset is
+    Context,
+    ERC165,
+    DLT,
+    DLTEnumerable,
+    DLTPermit,
+    AccessControl,
+    IAsset
+{
     using ERC165Checker for address;
 
     // Create a new role identifier for the marketplace role
@@ -31,8 +40,9 @@ contract Asset is Context, ERC165, DLT, DLTEnumerable, AccessControl, IAsset {
     constructor(
         string memory name,
         string memory symbol,
+        string memory version,
         string memory baseURI_
-    ) DLT(name, symbol) {
+    ) DLT(name, symbol) DLTPermit(name, version) {
         _setBaseURI(baseURI_);
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }

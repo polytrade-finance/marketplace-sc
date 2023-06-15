@@ -3,8 +3,9 @@ pragma solidity 0.8.17;
 
 import "dual-layer-token/contracts/DLT/interfaces/IDLT.sol";
 import "dual-layer-token/contracts/DLT/interfaces/IDLTEnumerable.sol";
+import "dual-layer-token/contracts/DLT/interfaces/IDLTPermit.sol";
 
-interface IAsset is IDLT, IDLTEnumerable {
+interface IAsset is IDLT, IDLTEnumerable, IDLTPermit {
     /**
      * @dev Emitted when `newURI` is set to the assets instead of `oldURI`
      * @param oldBaseURI, Old base URI for the assets

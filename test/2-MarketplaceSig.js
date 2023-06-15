@@ -37,6 +37,7 @@ describe("Marketplace Signatures", function () {
     assetContract = await AssetFactory.deploy(
       "Polytrade Asset Collection",
       "PIC",
+      "2.1",
       "https://ipfs.io/ipfs"
     );
 
