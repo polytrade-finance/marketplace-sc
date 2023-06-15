@@ -8,18 +8,24 @@ pragma solidity =0.8.17;
  */
 interface IMarketplace {
     /**
-     * @dev Emitted when new `newInvoiceCollection` contract has been set instead of `OldInvoiceCollection`
-     * @param oldInvoiceCollection, Old address of Invoice Collection contract token
-     * @param newInvoiceCollection, New address of Invoice Collection contract token
+     * @dev Emitted when new `Treasury Wallet` has been set
+     * @param oldTreasuryWallet, Address of the old treasury wallet
+     * @param newTreasuryWallet, Address of the new treasury wallet
      */
-    event InvoiceCollectionSet(
-        address oldInvoiceCollection,
-        address newInvoiceCollection
+    event TreasuryWalletSet(
+        address oldTreasuryWallet,
+        address newTreasuryWallet
     );
 
     /**
-     * @dev Emitted when new `stableToken` contract has been set
-     * @param stableToken, Address of ERC20 contract token
+     * @dev Emitted when new `Fee Wallet` has been set
+     * @param oldFeeWallet, Address of the old fee wallet
+     * @param newFeeWallet, Address of the new fee wallet
      */
-    event StableTokenSet(address stableToken);
+    event FeeWalletSet(address oldFeeWallet, address newFeeWallet);
+
+    /**
+     * @dev Reverted on unsupported interface detection
+     */
+    error UnsupportedInterface();
 }
