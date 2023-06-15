@@ -80,15 +80,16 @@ contract Marketplace is Context, ERC165, AccessControl, IMarketplace {
         uint256[] calldata aprs,
         uint256[] calldata dueDates
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        uint256 length = mainIds.length;
         require(
-            owners.length == mainIds.length &&
-                owners.length == prices.length &&
-                owners.length == dueDates.length &&
-                owners.length == aprs.length,
+            owners.length == length &&
+                length == prices.length &&
+                length == dueDates.length &&
+                length == aprs.length,
             "No array parity"
         );
 
-        for (uint256 i = 0; i < mainIds.length; ) {
+        for (uint256 i = 0; i < length; ) {
             _assetCollection.createAsset(
                 owners[i],
                 mainIds[i],
@@ -147,7 +148,8 @@ contract Marketplace is Context, ERC165, AccessControl, IMarketplace {
      * @dev See {IMarketplace-batchBuy}.
      */
     function batchBuy(uint256[] calldata assetIds) external {
-        for (uint256 i = 0; i < assetIds.length; ) {
+        uint256 length = assetIds.length;
+        for (uint256 i = 0; i < length; ) {
             _buy(assetIds[i]);
 
             unchecked {
