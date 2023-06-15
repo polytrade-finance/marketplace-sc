@@ -5,7 +5,7 @@ require("dotenv").config();
 require("@nomiclabs/hardhat-ethers");
 require("@nomiclabs/hardhat-etherscan");
 
-const { PRIVATE_KEY, ARCHIVAL_RPC } = process.env;
+const { PRIVATE_KEY, TESTNET_ARCHIVAL_RPC } = process.env;
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -20,7 +20,7 @@ module.exports = {
   },
   networks: {
     mumbai: {
-      url: `${ARCHIVAL_RPC}`,
+      url: `${TESTNET_ARCHIVAL_RPC}`,
       accounts: [
         `${
           PRIVATE_KEY ||
