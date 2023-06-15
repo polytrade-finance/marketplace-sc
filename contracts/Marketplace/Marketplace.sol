@@ -175,18 +175,16 @@ contract Marketplace is
         uint256[] calldata aprs,
         uint256[] calldata dueDates
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        uint256 length = mainIds.length;
+        uint256 length = assetIds.length;
         require(
-            owners.length == mainIds.length &&
-                owners.length == prices.length &&
-                owners.length == dueDates.length &&
-                owners.length == aprs.length,
+            owners.length == length &&
+                length == prices.length &&
+                length == dueDates.length &&
+                length == aprs.length,
             "No array parity"
         );
 
         for (uint256 i = 0; i < length; ) {
-            _assetCollection.createAsset(
-        for (uint256 i = 0; i < assetIds.length; ) {
             _createAsset(
                 owners[i],
                 assetIds[i],
@@ -288,8 +286,13 @@ contract Marketplace is
     /**
      * @dev See {IMarketplace-batchBuy}.
      */
-    function batchBuy(uint256[] calldata assetIds) external {
-        for (uint256 i = 0; i < assetIds.length; ) {
+    function batchBuy(
+        address[] calldata collections,
+        uint256[] calldata assetIds
+    ) external {
+        uint256 length = assetIds.length;
+        require(collections.length == length, "No array parity");
+        for (uint256 i = 0; i < length; ) {
             _buy(
                 collections[i],
                 assetIds[i],
