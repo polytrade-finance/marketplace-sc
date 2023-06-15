@@ -59,6 +59,7 @@ contract Marketplace is
                 "CounterOffer(",
                 "address owner,",
                 "address offeror,",
+                "address collection,",
                 "uint256 offerPrice,",
                 "uint256 assetId,",
                 "uint256 nonce,",
@@ -243,6 +244,7 @@ contract Marketplace is
     function counterOffer(
         address owner,
         address offeror,
+        address collection,
         uint256 offerPrice,
         uint256 assetId,
         uint256 deadline,
@@ -252,19 +254,20 @@ contract Marketplace is
     ) external {
         require(block.timestamp <= deadline, "Offer expired");
         require(
-            owner == _assets[address(_assetCollection)][assetId].owner,
+            owner == _assets[collection][assetId].owner,
             "Signer is not the owner"
         );
         require(offeror == _msgSender(), "You are not the offeror");
-
+        uint256 nonce = _useNonce(owner);
         bytes32 offerHash = keccak256(
             abi.encode(
                 _OFFER_TYPEHASH,
                 owner,
                 offeror,
+                collection,
                 offerPrice,
                 assetId,
-                _useNonce(owner),
+                nonce,
                 deadline
             )
         );
@@ -273,7 +276,7 @@ contract Marketplace is
         address signer = ECDSA.recover(hash, v, r, s);
 
         require(signer == owner, "Invalid signature");
-        _buy(address(_assetCollection), assetId, offerPrice);
+        _buy(collection, assetId, offerPrice);
     }
 
     /**

@@ -277,6 +277,7 @@ interface IMarketplace {
      * @dev Allows to buy asset with a signed message by owner with agreed sale price
      * @param owner, Address of the owner of asset
      * @param offeror, Address of the offeror
+     * @param collection, Address of the asset collection
      * @param offerPrice, offered price for buying asset
      * @param assetId, asset id to buy
      * @param deadline, The expiration date of this agreement
@@ -292,6 +293,7 @@ interface IMarketplace {
     function counterOffer(
         address owner,
         address offeror,
+        address collection,
         uint256 offerPrice,
         uint256 assetId,
         uint256 deadline,
