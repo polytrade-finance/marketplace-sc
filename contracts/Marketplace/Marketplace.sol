@@ -14,7 +14,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "contracts/Marketplace/interface/IMarketplace.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
-import "contracts/Token//interface/IToken.sol";
+import "contracts/Token/interface/IToken.sol";
 import "contracts/Asset/interface/IAsset.sol";
 
 /**
@@ -35,7 +35,7 @@ contract Marketplace is
     using SafeERC20 for IToken;
     using ERC165Checker for address;
 
-    uint256 private constant _YEAR = 365 days;
+    uint256 private constant _YEAR = 360 days;
 
     uint256 private _initialFee;
     uint256 private _buyingFee;
