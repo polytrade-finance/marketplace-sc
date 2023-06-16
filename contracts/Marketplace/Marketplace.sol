@@ -1,24 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity =0.8.17;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./interface/IMarketplace.sol";
-import "../Asset/interface/IAsset.sol";
-import "../Token/Token.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import "contracts/Marketplace/interface/IMarketplace.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/utils/Context.sol";
+import "contracts/Token//interface/IToken.sol";
+import "contracts/Asset/interface/IAsset.sol";
 
 /**
  * @title The common marketplace for the assets
  * @author Polytrade.Finance
  * @dev Implementation of all assets trading operations
  */
-contract Marketplace is AccessControl, IMarketplace {
-    using SafeERC20 for Token;
+contract Marketplace is Context, ERC165, AccessControl, IMarketplace {
+    using SafeERC20 for IToken;
     using ERC165Checker for address;
 
-    IAsset private _assetCollection;
-    Token private _stableToken;
+    uint256 private _initialFee;
+    uint256 private _buyingFee;
+
+    IAsset private immutable _assetCollection;
+    IToken private immutable _stableToken;
 
     address private _treasuryWallet;
     address private _feeWallet;
@@ -27,55 +32,71 @@ contract Marketplace is AccessControl, IMarketplace {
 
     /**
      * @dev Constructor for the main Marketplace
-     * @param assetCollection, Address of the asset collection used in the marketplace
-     * @param stableToken, Address of the stableToken (ERC20) contract
-     * @param treasuryWallet, Address of the treasury wallet
-     * @param feeWallet, Address of the fee wallet
+     * @param assetCollection_, Address of the asset Collection used in the marketplace
+     * @param tokenAddress_, Address of the ERC20 token address
+     * @param treasuryWallet_, Address of the treasury wallet
+     * @param feeWallet_, Address of the fee wallet
      */
     constructor(
-        address assetCollection,
-        address stableToken,
-        address treasuryWallet,
-        address feeWallet
+        address assetCollection_,
+        address tokenAddress_,
+        address treasuryWallet_,
+        address feeWallet_
     ) {
-        if (!assetCollection.supportsInterface(_ASSET_INTERFACE_ID)) {
+        if (!assetCollection_.supportsInterface(_ASSET_INTERFACE_ID)) {
             revert UnsupportedInterface();
         }
-        require(stableToken != address(0), "Invalid address");
-        _assetCollection = IAsset(assetCollection);
-        _stableToken = Token(stableToken);
+        require(tokenAddress_ != address(0), "Invalid address");
 
-        _setTreasuryWallet(treasuryWallet);
-        _setFeeWallet(feeWallet);
+        _assetCollection = IAsset(assetCollection_);
+        _stableToken = IToken(tokenAddress_);
 
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _setTreasuryWallet(treasuryWallet_);
+        _setFeeWallet(feeWallet_);
+
+        _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
     /**
-     * @dev Buys
-     * @param owner, address of the asset owner
-     * @param assetId, unique number of the asset
+     * @dev See {IMarketplace-createAsset}.
      */
-    function buy(address owner, uint assetId) external {
-        _buy(owner, assetId);
+    function createAsset(
+        address owner,
+        uint256 mainId,
+        uint256 price,
+        uint256 apr,
+        uint256 dueDate
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _assetCollection.createAsset(owner, mainId, price, apr, dueDate);
     }
 
     /**
-     * @dev Batch buy assets from owners
-     * @param owners, addresses of the asset owners
-     * @param assetIds, unique identifiers of the assets
+     * @dev See {IMarketplace-batchCreateAsset}.
      */
-    function batchBuy(
+    function batchCreateAsset(
         address[] calldata owners,
-        uint[] calldata assetIds
-    ) external {
+        uint256[] calldata mainIds,
+        uint256[] calldata prices,
+        uint256[] calldata aprs,
+        uint256[] calldata dueDates
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        uint256 length = mainIds.length;
         require(
-            owners.length == assetIds.length,
-            "Marketplace: No array parity"
+            owners.length == length &&
+                length == prices.length &&
+                length == dueDates.length &&
+                length == aprs.length,
+            "No array parity"
         );
 
-        for (uint i = 0; i < assetIds.length; ) {
-            _buy(owners[i], assetIds[i]);
+        for (uint256 i = 0; i < length; ) {
+            _assetCollection.createAsset(
+                owners[i],
+                mainIds[i],
+                prices[i],
+                aprs[i],
+                dueDates[i]
+            );
 
             unchecked {
                 ++i;
@@ -84,10 +105,100 @@ contract Marketplace is AccessControl, IMarketplace {
     }
 
     /**
-     * @notice External method for _setTreasuryWallet implementation.
-     * @dev This function allows to set a new treasury wallet address where funds will be allocated.
-     * @dev Implementation of a setter for the treasury wallet
-     * @param newTreasuryWallet, Address of the new treasury wallet
+     * @dev See {IMarketplace-settleAsset}.
+     */
+    function settleAsset(
+        uint256 assetId
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        address owner = _assetCollection.getAssetInfo(assetId).owner;
+        require(owner != address(0), "Invalid asset id");
+        _claimReward(assetId);
+
+        _stableToken.safeTransferFrom(
+            _treasuryWallet,
+            owner,
+            _assetCollection.settleAsset(assetId)
+        );
+
+        emit AssetSettled(owner, assetId);
+    }
+
+    /**
+     * @dev See {IMarketplace-relist}.
+     */
+    function relist(uint256 assetId, uint256 salePrice) external {
+        require(
+            _assetCollection.getAssetInfo(assetId).owner == _msgSender(),
+            "You are not the owner"
+        );
+
+        _assetCollection.relist(assetId, salePrice);
+
+        emit AssetRelisted(assetId, salePrice);
+    }
+
+    /**
+     * @dev See {IMarketplace-buy}.
+     */
+    function buy(uint256 assetId) external {
+        _buy(assetId);
+    }
+
+    /**
+     * @dev See {IMarketplace-batchBuy}.
+     */
+    function batchBuy(uint256[] calldata assetIds) external {
+        uint256 length = assetIds.length;
+        for (uint256 i = 0; i < length; ) {
+            _buy(assetIds[i]);
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /**
+     * @dev See {IMarketplace-claimReward}.
+     */
+    function claimReward(uint256 assetId) external {
+        require(
+            _assetCollection.getAssetInfo(assetId).lastClaimDate != 0,
+            "Asset not bought yet"
+        );
+        require(
+            _assetCollection.getAssetInfo(assetId).owner == _msgSender(),
+            "You are not the owner"
+        );
+        _claimReward(assetId);
+    }
+
+    /**
+     * @dev See {IMarketplace-setInitialFee}.
+     */
+    function setInitialFee(
+        uint256 initialFee_
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        uint256 oldFee = _initialFee;
+        _initialFee = initialFee_;
+
+        emit InitialFeeSet(oldFee, _initialFee);
+    }
+
+    /**
+     * @dev See {IMarketplace-setBuyingFee}.
+     */
+    function setBuyingFee(
+        uint256 buyingFee_
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        uint256 oldFee = _buyingFee;
+        _buyingFee = buyingFee_;
+
+        emit BuyingFeeSet(oldFee, _buyingFee);
+    }
+
+    /**
+     * @dev See {IMarketplace-setTreasuryWallet}.
      */
     function setTreasuryWallet(
         address newTreasuryWallet
@@ -96,10 +207,7 @@ contract Marketplace is AccessControl, IMarketplace {
     }
 
     /**
-     * @notice External method for setFeeWallet implementation.
-     * @dev This function allows to set a new treasury wallet address where funds will be allocated.
-     * @dev Implementation of a setter for the treasury wallet
-     * @param newFeeWallet, Address of the new treasury wallet
+     * @dev See {IMarketplace-setFeeWallet}.
      */
     function setFeeWallet(
         address newFeeWallet
@@ -108,48 +216,65 @@ contract Marketplace is AccessControl, IMarketplace {
     }
 
     /**
-     * @dev Implementation of a getter for the Invocie Collection contract
-     * @return address Address of the Invocie Collection contract
+     * @dev See {IMarketplace-getAssetCollection}.
      */
     function getAssetCollection() external view returns (address) {
         return address(_assetCollection);
     }
 
     /**
-     * @dev Implementation of a getter for the stable coin contract
-     * @return address Address of the stable coin contract
+     * @dev See {IMarketplace-getStableToken}.
      */
-    function getStableCoin() external view returns (address) {
+    function getStableToken() external view returns (address) {
         return address(_stableToken);
     }
 
     /**
-     * @dev Implementation of a getter for the treasury wallet
-     * @return address Address of the treasury wallet
+     * @dev See {IMarketplace-getTreasuryWallet}.
      */
     function getTreasuryWallet() external view returns (address) {
         return address(_treasuryWallet);
     }
 
     /**
-     * @dev Implementation of a getter for the fee wallet
-     * @return address Address of the fee wallet
+     * @dev See {IMarketplace-getFeeWallet}.
      */
     function getFeeWallet() external view returns (address) {
         return address(_feeWallet);
     }
 
     /**
-     * @notice Updates the treasury wallet address used for funds allocation.
-     * @dev This function allows to set a new treasury wallet address where funds will be allocated.
-     * @dev Implementation of a setter for the treasury wallet
+     * @dev See {IMarketplace-getInitialFee}.
+     */
+    function getInitialFee() external view returns (uint256) {
+        return _initialFee;
+    }
+
+    /**
+     * @dev See {IMarketplace-getBuyingFee}.
+     */
+    function getBuyingFee() external view returns (uint256) {
+        return _buyingFee;
+    }
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(ERC165, AccessControl) returns (bool) {
+        return
+            interfaceId == type(IMarketplace).interfaceId ||
+            super.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @dev Allows to set a new treasury wallet address where funds will be allocated.
+     * @dev Wallet can be EOA or multisig
      * @param newTreasuryWallet, Address of the new treasury wallet
      */
     function _setTreasuryWallet(address newTreasuryWallet) private {
-        require(
-            newTreasuryWallet != address(0),
-            "Marketplace: Invalid treasury wallet address"
-        );
+        require(newTreasuryWallet != address(0), "Invalid wallet address");
 
         address oldTreasuryWallet = address(_treasuryWallet);
         _treasuryWallet = newTreasuryWallet;
@@ -158,16 +283,12 @@ contract Marketplace is AccessControl, IMarketplace {
     }
 
     /**
-     * @notice This function allows to set a new address for the fee wallet.
-     * @notice The fee wallet is responsible for collecting transaction fees.
-     * @dev Implementation of a setter for the fee wallet
+     * @notice Allows to set a new address for the fee wallet.
+     * @dev Wallet can be EOA or multisig
      * @param newFeeWallet, Address of the new fee wallet
      */
     function _setFeeWallet(address newFeeWallet) private {
-        require(
-            newFeeWallet != address(0),
-            "Marketplace: Invalid fee wallet address"
-        );
+        require(newFeeWallet != address(0), "Invalid wallet address");
 
         address oldFeeWallet = address(_feeWallet);
         _feeWallet = newFeeWallet;
@@ -176,15 +297,48 @@ contract Marketplace is AccessControl, IMarketplace {
     }
 
     /**
-     * @dev Safe transfer asset to buyer and transfer the price to treasury wallet
-     * @param owner, address of the asset owner's
+     * @dev Transfers asset to buyer and transfer the price to treasury wallet
      * @param assetId, unique identifier of the asset
      */
-    function _buy(address owner, uint assetId) private {
-        _assetCollection.safeTransferFrom(owner, msg.sender, assetId, 1, 1, "");
+    function _claimReward(uint256 assetId) private {
+        address owner = _assetCollection.getAssetInfo(assetId).owner;
+        uint256 reward = _assetCollection.updateClaim(assetId);
 
-        uint256 price = _assetCollection.getAssetInfo(assetId).price;
+        _stableToken.safeTransferFrom(_treasuryWallet, owner, reward);
 
-        _stableToken.safeTransferFrom(msg.sender, _treasuryWallet, price);
+        emit RewardsClaimed(owner, reward);
+    }
+
+    /**
+     * @dev Safe transfer asset to buyer and transfer the price to treasury wallet
+     * @dev Transfer buying fee or initial fee to fee wallet based on asset status
+     * @param assetId, unique identifier of the asset
+     */
+    function _buy(uint256 assetId) private {
+        uint256 price = _assetCollection.getAssetInfo(assetId).salePrice;
+        require(price != 0, "Asset is not listed");
+        uint256 lastClaimDate = _assetCollection
+            .getAssetInfo(assetId)
+            .lastClaimDate;
+        address owner = _assetCollection.getAssetInfo(assetId).owner;
+        uint256 fee = lastClaimDate != 0 ? _buyingFee : _initialFee;
+        address receiver = lastClaimDate != 0 ? owner : _treasuryWallet;
+        fee = (price * fee) / 1e4;
+
+        if (lastClaimDate == 0) _assetCollection.updateClaim(assetId);
+
+        _assetCollection.safeTransferFrom(
+            owner,
+            _msgSender(),
+            assetId,
+            1,
+            1,
+            ""
+        );
+
+        _stableToken.safeTransferFrom(_msgSender(), receiver, price);
+        _stableToken.safeTransferFrom(_msgSender(), _feeWallet, fee);
+
+        emit AssetBought(owner, _msgSender(), assetId);
     }
 }

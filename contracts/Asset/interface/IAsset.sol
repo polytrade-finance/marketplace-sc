@@ -12,7 +12,9 @@ interface IAsset is IDLT {
      * @param lastClaimDate, is the date of last claim rewards
      */
     struct AssetInfo {
+        address owner;
         uint256 price;
+        uint256 salePrice;
         uint256 rewardApr;
         uint256 dueDate;
         uint256 lastClaimDate;
@@ -38,13 +40,26 @@ interface IAsset is IDLT {
     );
 
     /**
+     * @dev Reverted on unsupported interface detection
+     */
+    error UnsupportedInterface();
+
+    /**
+     * @dev Settles asset for owner and burn the asset
+     * @param mainId, unique identifier of asset
+     * @dev Needs marketplace access to settle an asset
+     * @return the asset price
+     */
+    function settleAsset(uint256 mainId) external returns (uint256);
+
+    /**
      * @dev Creates an asset with its parameters
      * @param owner, initial owner of asset
      * @param mainId, unique identifier of asset
      * @param price, asset price to sell
      * @param dueDate, end date for calculating rewards
      * @param apr, annual percentage rate for calculating rewards
-     * @dev Needs admin access to create an asset
+     * @dev Needs marketplace access to create an asset
      */
     function createAsset(
         address owner,
@@ -55,21 +70,12 @@ interface IAsset is IDLT {
     ) external;
 
     /**
-     * @dev Creates batch asset with their parameters
-     * @param owners, initial owners of assets
-     * @param mainIds, unique identifiers of assets
-     * @param prices, assets price to sell
-     * @param dueDates, end dates for calculating rewards
-     * @param aprs, annual percentage rates for calculating rewards
-     * @dev Needs admin access to create an asset
+     * @dev Relist an asset by marketplace
+     * @param mainId, unique identifier of asset
+     * @param salePrice, New price for sale
+     * @dev Needs marketplace access to relist an asset
      */
-    function batchCreateAsset(
-        address[] calldata owners,
-        uint256[] calldata mainIds,
-        uint256[] calldata prices,
-        uint256[] calldata dueDates,
-        uint256[] calldata aprs
-    ) external;
+    function relist(uint256 mainId, uint256 salePrice) external;
 
     /**
      * @dev Set a new baseURI for assets
@@ -79,13 +85,30 @@ interface IAsset is IDLT {
     function setBaseURI(string calldata newBaseURI) external;
 
     /**
+     * @dev Updates lastClaimDate whenever a buy or claimReward happens from marketplace
+     * @dev Needs marketplace access to claim
+     * @param mainId, unique identifier of asset
+     * @return reward , accumulated rewards for the current owner
+     */
+    function updateClaim(uint256 mainId) external returns (uint256 reward);
+
+    /**
      * @dev Calculates the remaning reward
      * @param mainId, unique identifier of asset
-     * @return result the rewards Amount
+     * @return reward the rewards Amount
      */
     function getRemainingReward(
         uint256 mainId
-    ) external view returns (uint256 result);
+    ) external view returns (uint256 reward);
+
+    /**
+     * @dev Calculates available rewards to claim
+     * @param mainId, unique identifier of asset
+     * @return reward the accumulated rewards amount for the current owner
+     */
+    function getAvailableReward(
+        uint256 mainId
+    ) external view returns (uint256 reward);
 
     /**
      * @dev Gets the asset information
