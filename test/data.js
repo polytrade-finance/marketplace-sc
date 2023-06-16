@@ -11,7 +11,7 @@ const MarketplaceAccess = ethers.utils.keccak256(
 );
 
 const DAY = 24 * 60 * 60;
-const YEAR = 365 * DAY;
+const YEAR = 360 * DAY;
 
 const asset = {
   assetPrice: ethers.utils.parseUnits("10", DECIMALS.SIX),
