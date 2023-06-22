@@ -97,7 +97,6 @@ contract Marketplace is
         _setFeeWallet(feeWallet_);
 
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
-
     }
 
     /**
@@ -453,10 +452,16 @@ contract Marketplace is
         _currentNonce[owner]++;
     }
 
+    /**
+     * @dev See {ERC2771Context}.
+     */
     function _msgSender() internal view override(Context, ERC2771Context) returns (address sender) {
         sender = ERC2771Context._msgSender();
     }
 
+    /**
+     * @dev See {ERC2771Context}.
+     */
     function _msgData() internal view override(Context, ERC2771Context) returns (bytes calldata) {
         return ERC2771Context._msgData();
     }
