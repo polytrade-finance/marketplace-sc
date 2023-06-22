@@ -134,7 +134,7 @@ interface IMarketplace {
      * @dev Loop through arrays and calls the buy function
      * @param assetIds, unique identifiers of the assets
      */
-    function batchBuy(uint[] calldata assetIds) external;
+    function batchBuy(uint256[] calldata assetIds) external;
 
     /**
      * @dev Relist an asset by current owner
@@ -180,6 +180,33 @@ interface IMarketplace {
     function setFeeWallet(address newFeeWallet) external;
 
     /**
+     * @dev Allows to set a new fee wallet address where buying fees will be allocated.
+     * @param owner, Address of the owner of asset
+     * @param offeror, Address of the offeror
+     * @param offerPrice, offered price for buying asset
+     * @param assetId, asset id to buy
+     * @param deadline, The expiration date of this agreement
+     * Requirements:
+     *
+     * - `offeror` must be the msg.sender.
+     * - `owner` should own the asset id.
+     * - `deadline` must be a timestamp in the future.
+     * - `v`, `r` and `s` must be a valid `secp256k1` signature from `owner`
+     * over the EIP712-formatted function arguments.
+     * - the signature must use ``owner``'s current nonce
+     */
+    function counterOffer(
+        address owner,
+        address offeror,
+        uint256 offerPrice,
+        uint256 assetId,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
+
+    /**
      * @dev Gets current asset collection address
      * @return address, Address of the invocie collection contract
      */
@@ -202,6 +229,22 @@ interface IMarketplace {
      * @return address Address of the fee wallet
      */
     function getFeeWallet() external view returns (address);
+
+    /**
+     * @dev Returns the current nonce for `owner`. This value must be
+     * included whenever a signature is generated for {counterOffer}.
+     *
+     * Every successful call to {counterOffer} increases ``owner``'s nonce by one. This
+     * prevents a signature from being used multiple times
+     */
+    function nonces(address owner) external view returns (uint256);
+
+    /**
+     * @dev Gets the domain separator used in the encoding of the signature for {counterOffer}, as defined by {EIP712}.
+     * @return bytes32 of the domain separator
+     */
+    // solhint-disable-next-line func-name-mixedcase
+    function DOMAIN_SEPARATOR() external view returns (bytes32);
 
     /**
      * @dev Gets initial fee percentage that applies to first buyings

@@ -11,7 +11,7 @@ const MarketplaceAccess = ethers.utils.keccak256(
 );
 
 const DAY = 24 * 60 * 60;
-const YEAR = 365 * DAY;
+const YEAR = 360 * DAY;
 
 const asset = {
   assetPrice: ethers.utils.parseUnits("10", DECIMALS.SIX),
@@ -21,10 +21,16 @@ const asset = {
   lastClaim: 0,
 };
 
+const offer = {
+  offerPrice: ethers.utils.parseUnits("5", DECIMALS.SIX),
+  deadline: 3 * DAY, // in seconds
+};
+
 module.exports = {
   DAY,
   YEAR,
   asset,
+  offer,
   DECIMALS,
   MarketplaceAccess,
 };

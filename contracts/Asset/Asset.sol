@@ -23,7 +23,7 @@ contract Asset is Context, ERC165, IAsset, DLT, AccessControl {
         0x0ea61da3a8a09ad801432653699f8c1860b1ae9d2ea4a141fadfd63227717bc8;
 
     string private _assetBaseURI;
-    uint256 private constant _YEAR = 365 days;
+    uint256 private constant _YEAR = 360 days;
 
     bytes4 private constant _MARKETPLACE_INTERFACE_ID =
         type(IMarketplace).interfaceId;
