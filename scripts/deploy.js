@@ -1,4 +1,5 @@
 const { ethers } = require("hardhat");
+const hre = require("hardhat");
 const { tokenAddress, treasuryWallet, feeWallet } = require("./data");
 
 async function main() {
@@ -35,6 +36,25 @@ async function main() {
   await asset.grantRole(MarketplaceAccess, marketplace.address);
   await marketplace.setInitialFee(100);
   await marketplace.setBuyingFee(200);
+
+  await hre.run("verify:verify", {
+    address: asset.address,
+    constructorArguments: [
+      "PolytradeAssetManager",
+      "PAM",
+      "https://polytrade.finance",
+    ],
+  });
+
+  await hre.run("verify:verify", {
+    address: marketplace.address,
+    constructorArguments: [
+      asset.address,
+      token.address,
+      treasuryWallet,
+      feeWallet,
+    ],
+  });
 }
 
 // We recommend this pattern to be able to use async/await everywhere
