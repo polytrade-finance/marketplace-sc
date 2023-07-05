@@ -26,9 +26,11 @@ describe("Marketplace Signatures", function () {
   let params;
   let domainData;
   let offerType;
+  let forwarderAddress;
 
   beforeEach(async () => {
     [, user1, offeror, treasuryWallet, feeWallet] = await ethers.getSigners();
+    forwarderAddress = ethers.Wallet.createRandom().address;
 
     name = "Polytrade";
     version = "2.1";
@@ -53,7 +55,8 @@ describe("Marketplace Signatures", function () {
       assetContract.address,
       stableTokenContract.address,
       treasuryWallet.address,
-      feeWallet.address
+      feeWallet.address,
+      forwarderAddress
     );
 
     await assetContract.grantRole(

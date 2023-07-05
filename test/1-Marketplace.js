@@ -16,6 +16,7 @@ describe("Marketplace", function () {
   let feeWallet;
   let newTreasuryWallet;
   let newFeeWallet;
+  let forwarderAddress;
 
   beforeEach(async () => {
     [
@@ -28,6 +29,7 @@ describe("Marketplace", function () {
       newFeeWallet,
     ] = await ethers.getSigners();
 
+    forwarderAddress = ethers.Wallet.createRandom().address;
     const AssetFactory = await ethers.getContractFactory("Asset");
     assetContract = await AssetFactory.deploy(
       "Polytrade Asset Collection",
@@ -60,7 +62,8 @@ describe("Marketplace", function () {
       assetContract.address,
       stableTokenContract.address,
       treasuryWallet.address,
-      feeWallet.address
+      feeWallet.address,
+      forwarderAddress
     );
   });
 
@@ -459,7 +462,8 @@ describe("Marketplace", function () {
         ethers.constants.AddressZero,
         stableTokenContract.address,
         treasuryWallet.address,
-        feeWallet.address
+        feeWallet.address,
+        forwarderAddress
       )
     ).to.be.revertedWithCustomError(
       marketplaceContract,
@@ -475,7 +479,8 @@ describe("Marketplace", function () {
         stableTokenContract.address, // non compatible to asset contract
         stableTokenContract.address,
         treasuryWallet.address,
-        feeWallet.address
+        feeWallet.address,
+        forwarderAddress
       )
     ).to.be.revertedWithCustomError(
       marketplaceContract,
@@ -491,7 +496,8 @@ describe("Marketplace", function () {
         assetContract.address,
         ethers.constants.AddressZero,
         treasuryWallet.address,
-        feeWallet.address
+        feeWallet.address,
+        forwarderAddress
       )
     ).to.revertedWith("Invalid address");
   });
@@ -512,7 +518,8 @@ describe("Marketplace", function () {
         assetContract.address,
         stableTokenContract.address,
         ethers.constants.AddressZero,
-        feeWallet.address
+        feeWallet.address,
+        forwarderAddress
       )
     ).to.revertedWith("Invalid wallet address");
   });
@@ -525,7 +532,8 @@ describe("Marketplace", function () {
         assetContract.address,
         stableTokenContract.address,
         treasuryWallet.address,
-        ethers.constants.AddressZero
+        ethers.constants.AddressZero,
+        forwarderAddress
       )
     ).to.revertedWith("Invalid wallet address");
   });
