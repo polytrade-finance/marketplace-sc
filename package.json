@@ -17,6 +17,9 @@
     "lint:fix": "npm run lint:js-fix && npm run lint:sol-fix",
     "prepare": "husky install"
   },
+  "engines": {
+    "node": ">=14.0.0"
+  },
   "author": "Polytrade",
   "license": "MIT",
   "devDependencies": {
@@ -27,6 +30,11 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^4.2.1",
     "eslint-plugin-promise": "^6.1.1",
+    "@rollup/plugin-commonjs": "^17.1.0",
+    "@rollup/plugin-json": "^4.1.0",
+    "@rollup/plugin-node-resolve": "^11.1.1",
+    "rollup": "^2.38.5",
+    "builtin-modules": "^3.2.0",
     "husky": "^8.0.3",
     "prettier": "^2.8.3",
     "prettier-plugin-solidity": "^1.1.1",
@@ -41,6 +49,8 @@
     "@nomiclabs/hardhat-ethers": "^2.2.3",
     "@nomiclabs/hardhat-etherscan": "^3.1.7",
     "@openzeppelin/contracts": "^4.8.1",
+    "@openzeppelin/defender-autotask-client": "^1.46.0",
+    "@openzeppelin/defender-relay-client": "^1.46.0",
     "chai": "^4.3.7",
     "dotenv": "^16.0.3",
     "dual-layer-token": "^1.0.0",
