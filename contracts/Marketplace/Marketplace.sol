@@ -728,11 +728,24 @@ contract Marketplace is
         uint256 assetId
     ) private {
         if (collection == address(_assetCollection)) {
-            _assetCollection.safeTransferFrom(from, to, assetId, 1, 1, _msgData());
+            _assetCollection.safeTransferFrom(
+                from,
+                to,
+                assetId,
+                1,
+                1,
+                _msgData()
+            );
         } else if (collection.supportsInterface(_ERC721_INTERFACE_ID)) {
             IERC721(collection).safeTransferFrom(from, to, assetId, _msgData());
         } else {
-            IERC1155(collection).safeTransferFrom(from, to, assetId, 1, _msgData());
+            IERC1155(collection).safeTransferFrom(
+                from,
+                to,
+                assetId,
+                1,
+                _msgData()
+            );
         }
     }
 
