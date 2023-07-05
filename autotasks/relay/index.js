@@ -3,7 +3,7 @@ const { DefenderRelaySigner, DefenderRelayProvider } = require('defender-relay-c
 
 const { ForwarderAbi } = require('../../scripts/forwarder');
 const ForwarderAddress = require('../../deploy.json').MinimalForwarder;
-const MarketplaceAddress = require('../../deploy.json').Matkerplace;
+const MarketplaceAddress = require('../../deploy.json').Marketplace;
 
 async function relay(forwarder, request, signature, whitelist) {
     // Decide if we want to relay this request based on a whitelist
@@ -30,9 +30,10 @@ async function handler(event) {
     const provider = new DefenderRelayProvider(credentials);
     const signer = new DefenderRelaySigner(credentials, provider, { speed: 'fast' });
     const forwarder = new ethers.Contract(ForwarderAddress, ForwarderAbi, signer);
+    const whitelist = [MarketplaceAddress];
 
     // Relay transaction!
-    const tx = await relay(forwarder, request, signature);
+    const tx = await relay(forwarder, request, signature, whitelist);
     console.log(`Sent meta-tx: ${tx.hash}`);
     return { txHash: tx.hash };
 }

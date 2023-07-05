@@ -3,6 +3,11 @@
 var ethers = require('ethers');
 var require$$0 = require('defender-relay-client/lib/ethers');
 
+function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
+
+var ethers__default = /*#__PURE__*/_interopDefaultLegacy(ethers);
+var require$$0__default = /*#__PURE__*/_interopDefaultLegacy(require$$0);
+
 /**
  * ABI of the MinimalForwarder contract
  */
@@ -70,10 +75,11 @@ var forwarder = {
 
 var MinimalForwarder="0x3214780Ccc7325503F474b5D73F46950A5c57ee2";var Marketplace="0x23F3666f661D3Da0Fc28d0bec8cC95D8d758D9a5";var require$$2 = {MinimalForwarder:MinimalForwarder,Marketplace:Marketplace};
 
-const { DefenderRelaySigner, DefenderRelayProvider } = require$$0;
+const { DefenderRelaySigner, DefenderRelayProvider } = require$$0__default["default"];
 
 const { ForwarderAbi } = forwarder;
 const ForwarderAddress = require$$2.MinimalForwarder;
+const MarketplaceAddress = require$$2.Marketplace;
 
 async function relay(forwarder, request, signature, whitelist) {
     // Decide if we want to relay this request based on a whitelist
@@ -99,10 +105,11 @@ async function handler(event) {
     const credentials = { ...event };
     const provider = new DefenderRelayProvider(credentials);
     const signer = new DefenderRelaySigner(credentials, provider, { speed: 'fast' });
-    const forwarder = new ethers.Contract(ForwarderAddress, ForwarderAbi, signer);
+    const forwarder = new ethers__default["default"].Contract(ForwarderAddress, ForwarderAbi, signer);
+    const whitelist = [MarketplaceAddress];
 
     // Relay transaction!
-    const tx = await relay(forwarder, request, signature);
+    const tx = await relay(forwarder, request, signature, whitelist);
     console.log(`Sent meta-tx: ${tx.hash}`);
     return { txHash: tx.hash };
 }
