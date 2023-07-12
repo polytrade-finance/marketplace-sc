@@ -27,15 +27,10 @@ interface IMarketplace {
 
     /**
      * @dev Emitted when an asset is listed with it's parameters for an owner
-     * @param collection, Address of the asset collection
      * @param owner, Address of the initial onvoice owner
      * @param assetId, assetId is the unique identifier of asset
      */
-    event AssetListed(
-        address indexed collection,
-        address indexed owner,
-        uint256 assetId
-    );
+    event AssetListed(address indexed owner, uint256 assetId);
 
     /**
      * @dev Emitted when new `Treasury Wallet` has been set
@@ -63,13 +58,11 @@ interface IMarketplace {
 
     /**
      * @dev Emitted when asset owner changes
-     * @param collection, Address of the asset collection
      * @param oldOwner, Address of the previous owner
      * @param newOwner, Address of the new owner
      * @param assetId, idof the bought asset
      */
     event AssetBought(
-        address indexed collection,
         address indexed oldOwner,
         address indexed newOwner,
         uint256 assetId
@@ -93,70 +86,22 @@ interface IMarketplace {
 
     /**
      * @dev Emitted when an asset is settled
-     * @param collection, Address of the asset collection
      * @param owner, address of the asset owner
      * @param assetId, unique number of the asset
      */
-    event AssetSettled(
-        address indexed collection,
-        address indexed owner,
-        uint256 assetId
-    );
+    event AssetSettled(address indexed owner, uint256 assetId);
 
     /**
      * @dev Emitted when an asset is settled
-     * @param collection, Address of the asset collection
      * @param assetId, unique number of the asset
      * @param salePrice, unique number of the asset
      */
-    event AssetRelisted(
-        address indexed collection,
-        uint256 assetId,
-        uint256 salePrice
-    );
+    event AssetRelisted(uint256 assetId, uint256 salePrice);
 
     /**
      * @dev Reverted on unsupported interface detection
      */
     error UnsupportedInterface();
-
-    /**
-     * @dev Creates an asset with erc721 implementation
-     * @param collection, Address of the asset collection
-     * @param owner, initial owner of asset
-     * @param assetId, unique identifier of asset
-     * @param price, asset price to sell
-     * @param apr, annual percentage rate for calculating rewards
-     * @param dueDate, end date for calculating rewards
-     * @dev Needs admin access to create an asset
-     */
-    function list721Asset(
-        address collection,
-        address owner,
-        uint256 assetId,
-        uint256 price,
-        uint256 apr,
-        uint256 dueDate
-    ) external;
-
-    /**
-     * @dev Creates an asset with erc1155 implementation
-     * @param collection, Address of the asset collection
-     * @param owner, initial owner of asset
-     * @param assetId, unique identifier of asset
-     * @param price, asset price to sell
-     * @param apr, annual percentage rate for calculating rewards
-     * @param dueDate, end date for calculating rewards
-     * @dev Needs admin access to create an asset
-     */
-    function list1155Asset(
-        address collection,
-        address owner,
-        uint256 assetId,
-        uint256 price,
-        uint256 apr,
-        uint256 dueDate
-    ) external;
 
     /**
      * @dev Creates an asset with its parameters
@@ -197,10 +142,9 @@ interface IMarketplace {
      * @dev Transfer back the asset and transfers the price to current owner
      * @dev Transfer price to current owner
      * @dev Deletes the stored parameters
-     * @param collection, Address of the asset collection
      * @param assetId, unique number of the asset
      */
-    function settleAsset(address collection, uint256 assetId) external;
+    function settleAsset(uint256 assetId) external;
 
     /**
      * @dev Changes owner to buyer
@@ -208,42 +152,31 @@ interface IMarketplace {
      * @dev Transfer the price to previous owner if it is not the first buy
      * @dev Owner should have approved marketplace to transfer its assets
      * @dev Buyer should have approved marketplace to transfer its ERC20 tokens to pay price and fees
-     * @param collection, Address of the asset collection
      * @param assetId, unique number of the asset
      */
-    function buy(address collection, uint256 assetId) external;
+    function buy(uint256 assetId) external;
 
     /**
      * @dev Batch buy assets from owners
      * @dev Loop through arrays and calls the buy function
-     * @param collections, Addresses of the asset collections
      * @param assetIds, unique identifiers of the assets
      */
-    function batchBuy(
-        address[] calldata collections,
-        uint256[] calldata assetIds
-    ) external;
+    function batchBuy(uint256[] calldata assetIds) external;
 
     /**
      * @dev Relist an asset for the current owner
-     * @param collection, Address of the asset collection
      * @param assetId, unique identifier of the asset
      * @param salePrice, new price for asset sale
      */
-    function relist(
-        address collection,
-        uint256 assetId,
-        uint256 salePrice
-    ) external;
+    function relist(uint256 assetId, uint256 salePrice) external;
 
     /**
      * @dev claim available rewards for current owner
      * @dev updates lastClaimDate for the asset in the asset contract
      * @dev Caller should own the assetId
-     * @param collection, Address of the asset collection
      * @param assetId, unique number of the asset
      */
-    function claimReward(address collection, uint256 assetId) external;
+    function claimReward(uint256 assetId) external;
 
     /**
      * @dev Set new initial fee
@@ -277,7 +210,6 @@ interface IMarketplace {
      * @dev Allows to buy asset with a signed message by owner with agreed sale price
      * @param owner, Address of the owner of asset
      * @param offeror, Address of the offeror
-     * @param collection, Address of the asset collection
      * @param offerPrice, offered price for buying asset
      * @param assetId, asset id to buy
      * @param deadline, The expiration date of this agreement
@@ -293,7 +225,6 @@ interface IMarketplace {
     function counterOffer(
         address owner,
         address offeror,
-        address collection,
         uint256 offerPrice,
         uint256 assetId,
         uint256 deadline,
@@ -356,34 +287,28 @@ interface IMarketplace {
 
     /**
      * @dev Calculates the remaning reward
-     * @param collection, Address of the asset collection
      * @param assetId, unique identifier of asset
      * @return reward the rewards Amount
      */
     function getRemainingReward(
-        address collection,
         uint256 assetId
     ) external view returns (uint256 reward);
 
     /**
      * @dev Calculates available rewards to claim
-     * @param collection, Address of the asset collection
      * @param assetId, unique identifier of asset
      * @return reward the accumulated rewards amount for the current owner
      */
     function getAvailableReward(
-        address collection,
         uint256 assetId
     ) external view returns (uint256 reward);
 
     /**
      * @dev Gets the asset information
-     * @param collection, Address of the asset collection
      * @param assetId, unique identifier of asset
      * @return assetInfo struct
      */
     function getAssetInfo(
-        address collection,
         uint256 assetId
     ) external view returns (AssetInfo memory);
 }

@@ -2,15 +2,11 @@
 pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import "dual-layer-token/contracts/DLT/interfaces/IDLTReceiver.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "contracts/Marketplace/interface/IMarketplace.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
@@ -28,8 +24,6 @@ contract Marketplace is
     EIP712,
     AccessControl,
     IMarketplace,
-    IERC721Receiver,
-    IERC1155Receiver,
     IDLTReceiver
 {
     using SafeERC20 for IToken;
@@ -47,9 +41,9 @@ contract Marketplace is
     address private _feeWallet;
 
     /**
-     * @dev Mapping will be indexing the AssetInfo for each asset collection by its id
+     * @dev Mapping will be indexing the AssetInfo for asset collection by its id
      */
-    mapping(address => mapping(uint256 => AssetInfo)) private _assets;
+    mapping(uint256 => AssetInfo) private _assets;
     mapping(address => uint256) private _currentNonce;
 
     // solhint-disable-next-line var-name-mixedcase
@@ -59,7 +53,6 @@ contract Marketplace is
                 "CounterOffer(",
                 "address owner,",
                 "address offeror,",
-                "address collection,",
                 "uint256 offerPrice,",
                 "uint256 assetId,",
                 "uint256 nonce,",
@@ -68,8 +61,6 @@ contract Marketplace is
             )
         );
     bytes4 private constant _ASSET_INTERFACE_ID = type(IAsset).interfaceId;
-    bytes4 private constant _ERC721_INTERFACE_ID = type(IERC721).interfaceId;
-    bytes4 private constant _ERC1155_INTERFACE_ID = type(IERC1155).interfaceId;
 
     /**
      * @dev Constructor for the main Marketplace
@@ -99,50 +90,6 @@ contract Marketplace is
     }
 
     /**
-     * @dev See {IMarketplace-list721Asset}.
-     */
-    function list721Asset(
-        address collection,
-        address owner,
-        uint256 assetId,
-        uint256 price,
-        uint256 apr,
-        uint256 dueDate
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (!collection.supportsInterface(_ERC721_INTERFACE_ID)) {
-            revert UnsupportedInterface();
-        }
-        require(
-            IERC721(collection).ownerOf(assetId) == owner,
-            "owner does not own the asset"
-        );
-
-        _listAsset(collection, owner, assetId, price, apr, dueDate);
-    }
-
-    /**
-     * @dev See {IMarketplace-list1155Asset}.
-     */
-    function list1155Asset(
-        address collection,
-        address owner,
-        uint256 assetId,
-        uint256 price,
-        uint256 apr,
-        uint256 dueDate
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (!collection.supportsInterface(_ERC1155_INTERFACE_ID)) {
-            revert UnsupportedInterface();
-        }
-        require(
-            IERC1155(collection).balanceOf(owner, assetId) != 0,
-            "owner does not own the asset"
-        );
-
-        _listAsset(collection, owner, assetId, price, apr, dueDate);
-    }
-
-    /**
      * @dev See {IMarketplace-createAsset}.
      */
     function createAsset(
@@ -163,7 +110,7 @@ contract Marketplace is
         uint256 assetId
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _assetCollection.burnAsset(owner, assetId);
-        delete _assets[address(_assetCollection)][assetId];
+        delete _assets[assetId];
     }
 
     /**
@@ -204,38 +151,33 @@ contract Marketplace is
      * @dev See {IMarketplace-settleAsset}.
      */
     function settleAsset(
-        address collection,
         uint256 assetId
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        AssetInfo memory asset = _assets[collection][assetId];
+        AssetInfo memory asset = _assets[assetId];
         require(asset.owner != address(0), "Invalid asset id");
         require(block.timestamp > asset.dueDate, "Due date not passed");
 
-        _claimReward(collection, assetId);
+        _claimReward(assetId);
         _stableToken.safeTransferFrom(
             _treasuryWallet,
             asset.owner,
             asset.price
         );
-        _transferAsset(collection, address(this), asset.owner, assetId);
-        delete _assets[address(_assetCollection)][assetId];
+        _transferAsset(address(this), asset.owner, assetId);
+        delete _assets[assetId];
 
-        emit AssetSettled(collection, asset.owner, assetId);
+        emit AssetSettled(asset.owner, assetId);
     }
 
     /**
      * @dev See {IMarketplace-relist}.
      */
-    function relist(
-        address collection,
-        uint256 assetId,
-        uint256 salePrice
-    ) external {
-        AssetInfo storage asset = _assets[collection][assetId];
+    function relist(uint256 assetId, uint256 salePrice) external {
+        AssetInfo storage asset = _assets[assetId];
         require(asset.owner == _msgSender(), "You are not the owner");
         asset.salePrice = salePrice;
 
-        emit AssetRelisted(collection, assetId, salePrice);
+        emit AssetRelisted(assetId, salePrice);
     }
 
     /**
@@ -244,7 +186,6 @@ contract Marketplace is
     function counterOffer(
         address owner,
         address offeror,
-        address collection,
         uint256 offerPrice,
         uint256 assetId,
         uint256 deadline,
@@ -253,10 +194,7 @@ contract Marketplace is
         bytes32 s
     ) external {
         require(block.timestamp <= deadline, "Offer expired");
-        require(
-            owner == _assets[collection][assetId].owner,
-            "Signer is not the owner"
-        );
+        require(owner == _assets[assetId].owner, "Signer is not the owner");
         require(offeror == _msgSender(), "You are not the offeror");
         uint256 nonce = _useNonce(owner);
         bytes32 offerHash = keccak256(
@@ -264,7 +202,6 @@ contract Marketplace is
                 _OFFER_TYPEHASH,
                 owner,
                 offeror,
-                collection,
                 offerPrice,
                 assetId,
                 nonce,
@@ -276,31 +213,23 @@ contract Marketplace is
         address signer = ECDSA.recover(hash, v, r, s);
 
         require(signer == owner, "Invalid signature");
-        _buy(collection, assetId, offerPrice);
+        _buy(assetId, offerPrice);
     }
 
     /**
      * @dev See {IMarketplace-buy}.
      */
-    function buy(address collection, uint256 assetId) external {
-        _buy(collection, assetId, _assets[collection][assetId].salePrice);
+    function buy(uint256 assetId) external {
+        _buy(assetId, _assets[assetId].salePrice);
     }
 
     /**
      * @dev See {IMarketplace-batchBuy}.
      */
-    function batchBuy(
-        address[] calldata collections,
-        uint256[] calldata assetIds
-    ) external {
+    function batchBuy(uint256[] calldata assetIds) external {
         uint256 length = assetIds.length;
-        require(collections.length == length, "No array parity");
         for (uint256 i = 0; i < length; ) {
-            _buy(
-                collections[i],
-                assetIds[i],
-                _assets[collections[i]][assetIds[i]].salePrice
-            );
+            _buy(assetIds[i], _assets[assetIds[i]].salePrice);
 
             unchecked {
                 ++i;
@@ -311,10 +240,10 @@ contract Marketplace is
     /**
      * @dev See {IMarketplace-claimReward}.
      */
-    function claimReward(address collection, uint256 assetId) external {
-        AssetInfo memory asset = _assets[collection][assetId];
+    function claimReward(uint256 assetId) external {
+        AssetInfo memory asset = _assets[assetId];
         require(asset.owner == _msgSender(), "You are not the owner");
-        _claimReward(collection, assetId);
+        _claimReward(assetId);
     }
 
     /**
@@ -420,20 +349,18 @@ contract Marketplace is
      * @dev See {IMarketplace-getAssetInfo}.
      */
     function getAssetInfo(
-        address collection,
         uint256 assetId
     ) external view returns (AssetInfo memory) {
-        return _assets[collection][assetId];
+        return _assets[assetId];
     }
 
     /**
      * @dev See {IMarketplace-getRemainingReward}.
      */
     function getRemainingReward(
-        address collection,
         uint256 assetId
     ) external view returns (uint256 reward) {
-        AssetInfo memory asset = _assets[collection][assetId];
+        AssetInfo memory asset = _assets[assetId];
         uint256 tenure;
 
         if (asset.lastClaimDate != 0) {
@@ -454,44 +381,9 @@ contract Marketplace is
      * @dev See {IMarketplace-getAvailableReward}.
      */
     function getAvailableReward(
-        address collection,
         uint256 assetId
     ) external view returns (uint256) {
-        return _getAvailableReward(collection, assetId);
-    }
-
-    /**
-     * @dev See {IERC721Receiver-onERC721Received}.
-     *
-     * Always returns `IERC721Receiver.onERC721Received.selector`.
-     */
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes memory
-    ) public virtual override returns (bytes4) {
-        return this.onERC721Received.selector;
-    }
-
-    function onERC1155Received(
-        address,
-        address,
-        uint256,
-        uint256,
-        bytes memory
-    ) public virtual override returns (bytes4) {
-        return this.onERC1155Received.selector;
-    }
-
-    function onERC1155BatchReceived(
-        address,
-        address,
-        uint256[] memory,
-        uint256[] memory,
-        bytes memory
-    ) public virtual override returns (bytes4) {
-        return this.onERC1155BatchReceived.selector;
+        return _getAvailableReward(assetId);
     }
 
     function onDLTReceived(
@@ -521,13 +413,7 @@ contract Marketplace is
      */
     function supportsInterface(
         bytes4 interfaceId
-    )
-        public
-        view
-        virtual
-        override(ERC165, AccessControl, IERC165)
-        returns (bool)
-    {
+    ) public view virtual override(ERC165, AccessControl) returns (bool) {
         return
             interfaceId == type(IMarketplace).interfaceId ||
             super.supportsInterface(interfaceId);
@@ -564,19 +450,11 @@ contract Marketplace is
             "Asset already created"
         );
         _assetCollection.createAsset(owner, assetId);
-        _listAsset(
-            address(_assetCollection),
-            owner,
-            assetId,
-            price,
-            apr,
-            dueDate
-        );
+        _listAsset(owner, assetId, price, apr, dueDate);
     }
 
     /**
-     * @dev Called when asset creates or and erc721 or erc1155 is listed
-     * @param collection, address of asset collection
+     * @dev Called when asset creates
      * @param owner, address of asset owner
      * @param assetId, unique identifier of asset
      * @param price, asset price to sell and settle
@@ -584,26 +462,14 @@ contract Marketplace is
      * @param dueDate, end date for calculating rewards
      */
     function _listAsset(
-        address collection,
         address owner,
         uint256 assetId,
         uint256 price,
         uint256 apr,
         uint256 dueDate
     ) private {
-        require(
-            _assets[collection][assetId].owner == address(0),
-            "Asset already listed"
-        );
-        _assets[collection][assetId] = AssetInfo(
-            owner,
-            price,
-            price,
-            apr,
-            dueDate,
-            0
-        );
-        emit AssetListed(collection, owner, assetId);
+        _assets[assetId] = AssetInfo(owner, price, price, apr, dueDate, 0);
+        emit AssetListed(owner, assetId);
     }
 
     /**
@@ -636,14 +502,13 @@ contract Marketplace is
 
     /**
      * @dev Transfers rewards to owner and updates lastClaimDate
-     * @param collection, Address of the asset collection
      * @param assetId, unique identifier of the asset
      */
-    function _claimReward(address collection, uint256 assetId) private {
-        AssetInfo memory asset = _assets[collection][assetId];
+    function _claimReward(uint256 assetId) private {
+        AssetInfo memory asset = _assets[assetId];
 
-        uint256 reward = _getAvailableReward(collection, assetId);
-        _assets[collection][assetId].lastClaimDate = (
+        uint256 reward = _getAvailableReward(assetId);
+        _assets[assetId].lastClaimDate = (
             block.timestamp > asset.dueDate ? asset.dueDate : block.timestamp
         );
 
@@ -656,16 +521,11 @@ contract Marketplace is
      * @dev Safe transfer asset to marketplace and transfer the price to treasury wallet if it is the first buy
      * @dev Transfer the price to previous owner if it is not the first buy
      * @dev Transfer buying fee or initial fee to fee wallet based on asset status
-     * @param collection, Address of the asset collection
      * @param assetId, unique identifier of the asset
      * @param salePrice, unique identifier of the asset
      */
-    function _buy(
-        address collection,
-        uint256 assetId,
-        uint256 salePrice
-    ) private {
-        AssetInfo memory asset = _assets[collection][assetId];
+    function _buy(uint256 assetId, uint256 salePrice) private {
+        AssetInfo memory asset = _assets[assetId];
         require(asset.salePrice != 0, "Asset is not relisted");
         require(asset.dueDate > block.timestamp, "Due date has passed");
         uint256 fee = asset.lastClaimDate != 0 ? _buyingFee : _initialFee;
@@ -675,52 +535,38 @@ contract Marketplace is
         fee = (salePrice * fee) / 1e4;
 
         if (asset.lastClaimDate == 0) {
-            _assets[collection][assetId].lastClaimDate = block.timestamp;
-            _transferAsset(collection, asset.owner, address(this), assetId);
+            _assets[assetId].lastClaimDate = block.timestamp;
+            _transferAsset(asset.owner, address(this), assetId);
         }
-        _assets[collection][assetId].owner = _msgSender();
-        _assets[collection][assetId].salePrice = 0;
+        _assets[assetId].owner = _msgSender();
+        _assets[assetId].salePrice = 0;
 
         _stableToken.safeTransferFrom(_msgSender(), receiver, salePrice);
         _stableToken.safeTransferFrom(_msgSender(), _feeWallet, fee);
-        emit AssetBought(collection, asset.owner, _msgSender(), assetId);
+        emit AssetBought(asset.owner, _msgSender(), assetId);
     }
 
     /**
      * @dev Safe transfer asset from `from` address to `to` address
      * @dev Transfer the price to previous owner if it is not the first buy
      * @dev Transfer buying fee or initial fee to fee wallet based on asset status
-     * @param collection, Address of the asset collection
      * @param from, address of asset sender
      * @param to, address of asset receiver
      * @param assetId, unique identifier of the asset
      */
-    function _transferAsset(
-        address collection,
-        address from,
-        address to,
-        uint256 assetId
-    ) private {
-        if (collection == address(_assetCollection)) {
-            _assetCollection.safeTransferFrom(from, to, assetId, 1, 1, "");
-        } else if (collection.supportsInterface(_ERC721_INTERFACE_ID)) {
-            IERC721(collection).safeTransferFrom(from, to, assetId, "");
-        } else {
-            IERC1155(collection).safeTransferFrom(from, to, assetId, 1, "");
-        }
+    function _transferAsset(address from, address to, uint256 assetId) private {
+        _assetCollection.safeTransferFrom(from, to, assetId, 1, 1, "");
     }
 
     /**
      * @dev Calculates accumulated rewards based on rewardApr if the asset has an owner
-     * @param collection, Address of the asset collection
      * @param assetId, unique identifier of asset
      * @return reward , accumulated rewards for the current owner
      */
     function _getAvailableReward(
-        address collection,
         uint256 assetId
     ) private view returns (uint256 reward) {
-        AssetInfo memory asset = _assets[collection][assetId];
+        AssetInfo memory asset = _assets[assetId];
 
         if (asset.lastClaimDate != 0) {
             uint256 tenure = (

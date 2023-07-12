@@ -85,7 +85,6 @@ describe("Marketplace Signatures", function () {
       CounterOffer: [
         { name: "owner", type: "address" },
         { name: "offeror", type: "address" },
-        { name: "collection", type: "address" },
         { name: "offerPrice", type: "uint256" },
         { name: "assetId", type: "uint256" },
         { name: "nonce", type: "uint256" },
@@ -114,7 +113,6 @@ describe("Marketplace Signatures", function () {
       params = {
         owner: user1.address,
         offeror: offeror.address,
-        collection: assetContract.address,
         offerPrice: offer.offerPrice,
         assetId: 1,
         nonce: 0,
@@ -138,7 +136,6 @@ describe("Marketplace Signatures", function () {
         .counterOffer(
           user1.address,
           offeror.address,
-          assetContract.address,
           offer.offerPrice,
           1,
           offer.deadline + (await now()),
@@ -164,7 +161,6 @@ describe("Marketplace Signatures", function () {
       params = {
         owner: offeror.address,
         offeror: user1.address,
-        collection: assetContract.address,
         offerPrice: offer.offerPrice,
         assetId: 1,
         nonce: 0,
@@ -181,7 +177,6 @@ describe("Marketplace Signatures", function () {
           .counterOffer(
             offeror.address,
             user1.address,
-            assetContract.address,
             offer.offerPrice,
             1,
             offer.deadline + (await now()),
@@ -196,7 +191,6 @@ describe("Marketplace Signatures", function () {
       params = {
         owner: user1.address,
         offeror: offeror.address,
-        collection: assetContract.address,
         offerPrice: offer.offerPrice,
         assetId: 1,
         nonce: 0,
@@ -213,7 +207,6 @@ describe("Marketplace Signatures", function () {
           .counterOffer(
             user1.address,
             offeror.address,
-            assetContract.address,
             offer.offerPrice,
             1,
             offer.deadline + (await now()),
@@ -233,7 +226,6 @@ describe("Marketplace Signatures", function () {
           .counterOffer(
             user1.address,
             offeror.address,
-            assetContract.address,
             offer.offerPrice,
             1,
             offer.deadline + (await now()),
@@ -255,7 +247,6 @@ describe("Marketplace Signatures", function () {
         marketplaceContract.counterOffer(
           user1.address,
           offeror.address,
-          assetContract.address,
           offer.offerPrice,
           1,
           expiredDeadline,
