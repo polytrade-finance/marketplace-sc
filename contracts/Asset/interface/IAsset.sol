@@ -61,5 +61,8 @@ interface IAsset is IDLT, IDLTEnumerable, IDLTPermit {
      * @param mainId, unique identifier of asset
      * @return string value of asset URI
      */
-    function tokenURI(uint256 mainId, uint256 subId) external view returns (string memory);
+    function tokenURI(
+        uint256 mainId,
+        uint256 subId
+    ) external view returns (string memory);
 }

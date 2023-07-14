@@ -18,7 +18,14 @@ import "contracts/Asset/interface/IAsset.sol";
  * @author Polytrade.Finance
  * @dev Implementation of all assets trading operations
  */
-contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace, IDLTReceiver {
+contract Marketplace is
+    Context,
+    ERC165,
+    EIP712,
+    AccessControl,
+    IMarketplace,
+    IDLTReceiver
+{
     using SafeERC20 for IToken;
     using ERC165Checker for address;
 
@@ -41,19 +48,20 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace, ID
     mapping(address => uint256) private _currentNonce;
 
     // solhint-disable-next-line var-name-mixedcase
-    bytes32 private constant _OFFER_TYPEHASH = keccak256(
-        abi.encodePacked(
-            "CounterOffer(",
-            "address owner,",
-            "address offeror,",
-            "uint256 offerPrice,",
-            "uint256 assetType,",
-            "uint256 assetId,",
-            "uint256 nonce,",
-            "uint256 deadline",
-            ")"
-        )
-    );
+    bytes32 private constant _OFFER_TYPEHASH =
+        keccak256(
+            abi.encodePacked(
+                "CounterOffer(",
+                "address owner,",
+                "address offeror,",
+                "uint256 offerPrice,",
+                "uint256 assetType,",
+                "uint256 assetId,",
+                "uint256 nonce,",
+                "uint256 deadline",
+                ")"
+            )
+        );
     bytes4 private constant _ASSET_INTERFACE_ID = type(IAsset).interfaceId;
 
     /**
@@ -63,9 +71,12 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace, ID
      * @param treasuryWallet_, Address of the treasury wallet
      * @param feeWallet_, Address of the fee wallet
      */
-    constructor(address assetCollection_, address tokenAddress_, address treasuryWallet_, address feeWallet_)
-        EIP712("Polytrade", "2.1")
-    {
+    constructor(
+        address assetCollection_,
+        address tokenAddress_,
+        address treasuryWallet_,
+        address feeWallet_
+    ) EIP712("Polytrade", "2.1") {
         if (!assetCollection_.supportsInterface(_ASSET_INTERFACE_ID)) {
             revert UnsupportedInterface();
         }
@@ -81,19 +92,40 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace, ID
     }
 
     /**
+     * @dev See {IMarketplace-createProperty}.
+     */
+    function createProperty(
+        address owner,
+        uint256 assetId,
+        uint256 price,
+        uint256 dueDate,
+        PropertyInfo calldata propertyInfo
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _properties[assetId] = propertyInfo;
+        _createAsset(owner, 2, assetId, price, 0, dueDate);
+    }
+
+    /**
      * @dev See {IMarketplace-createAsset}.
      */
-    function createAsset(address owner, uint256 assetId, uint256 price, uint256 apr, uint256 dueDate)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function createAsset(
+        address owner,
+        uint256 assetId,
+        uint256 price,
+        uint256 apr,
+        uint256 dueDate
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _createAsset(owner, 1, assetId, price, apr, dueDate);
     }
 
     /**
      * @dev See {IMarketplace-createAsset}.
      */
-    function burnAsset(address owner, uint256 assetType, uint256 assetId) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function burnAsset(
+        address owner,
+        uint256 assetType,
+        uint256 assetId
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _assetCollection.burnAsset(owner, assetType, assetId);
         delete _assets[assetType][assetId];
     }
@@ -110,12 +142,22 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace, ID
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         uint256 length = assetIds.length;
         require(
-            owners.length == length && length == prices.length && length == dueDates.length && length == aprs.length,
+            owners.length == length &&
+                length == prices.length &&
+                length == dueDates.length &&
+                length == aprs.length,
             "No array parity"
         );
 
-        for (uint256 i = 0; i < length;) {
-            _createAsset(owners[i], 1, assetIds[i], prices[i], aprs[i], dueDates[i]);
+        for (uint256 i = 0; i < length; ) {
+            _createAsset(
+                owners[i],
+                1,
+                assetIds[i],
+                prices[i],
+                aprs[i],
+                dueDates[i]
+            );
 
             unchecked {
                 ++i;
@@ -126,13 +168,20 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace, ID
     /**
      * @dev See {IMarketplace-settleAsset}.
      */
-    function settleAsset(uint256 assetType, uint256 assetId) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function settleAsset(
+        uint256 assetType,
+        uint256 assetId
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         AssetInfo memory asset = _assets[assetType][assetId];
         require(asset.owner != address(0), "Invalid asset id");
         require(block.timestamp > asset.dueDate, "Due date not passed");
 
         _claimReward(assetType, assetId);
-        _stableToken.safeTransferFrom(_treasuryWallet, asset.owner, asset.price);
+        _stableToken.safeTransferFrom(
+            _treasuryWallet,
+            asset.owner,
+            asset.price
+        );
         _transferAsset(address(this), asset.owner, assetType, assetId);
         delete _assets[assetType][assetId];
 
@@ -142,7 +191,11 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace, ID
     /**
      * @dev See {IMarketplace-relist}.
      */
-    function relist(uint256 assetType, uint256 assetId, uint256 salePrice) external {
+    function relist(
+        uint256 assetType,
+        uint256 assetId,
+        uint256 salePrice
+    ) external {
         AssetInfo storage asset = _assets[assetType][assetId];
         require(asset.owner == _msgSender(), "You are not the owner");
         asset.salePrice = salePrice;
@@ -165,10 +218,24 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace, ID
         bytes32 s
     ) external {
         require(block.timestamp <= deadline, "Offer expired");
-        require(owner == _assets[assetType][assetId].owner, "Signer is not the owner");
+        require(
+            owner == _assets[assetType][assetId].owner,
+            "Signer is not the owner"
+        );
         require(offeror == _msgSender(), "You are not the offeror");
         uint256 nonce = _useNonce(owner);
-        bytes32 offerHash = keccak256(abi.encode(_OFFER_TYPEHASH, owner, offeror, offerPrice, assetType, assetId, nonce, deadline));
+        bytes32 offerHash = keccak256(
+            abi.encode(
+                _OFFER_TYPEHASH,
+                owner,
+                offeror,
+                offerPrice,
+                assetType,
+                assetId,
+                nonce,
+                deadline
+            )
+        );
 
         bytes32 hash = _hashTypedDataV4(offerHash);
         address signer = ECDSA.recover(hash, v, r, s);
@@ -187,11 +254,18 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace, ID
     /**
      * @dev See {IMarketplace-batchBuy}.
      */
-    function batchBuy(uint256[] calldata assetTypes, uint256[] calldata assetIds) external {
+    function batchBuy(
+        uint256[] calldata assetTypes,
+        uint256[] calldata assetIds
+    ) external {
         uint256 length = assetIds.length;
         require(assetTypes.length == length, "No array parity");
-        for (uint256 i = 0; i < length;) {
-            _buy(assetTypes[i], assetIds[i], _assets[assetTypes[i]][assetIds[i]].salePrice);
+        for (uint256 i = 0; i < length; ) {
+            _buy(
+                assetTypes[i],
+                assetIds[i],
+                _assets[assetTypes[i]][assetIds[i]].salePrice
+            );
 
             unchecked {
                 ++i;
@@ -211,7 +285,9 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace, ID
     /**
      * @dev See {IMarketplace-setInitialFee}.
      */
-    function setInitialFee(uint256 initialFee_) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setInitialFee(
+        uint256 initialFee_
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         uint256 oldFee = _initialFee;
         _initialFee = initialFee_;
 
@@ -221,7 +297,9 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace, ID
     /**
      * @dev See {IMarketplace-setBuyingFee}.
      */
-    function setBuyingFee(uint256 buyingFee_) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setBuyingFee(
+        uint256 buyingFee_
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         uint256 oldFee = _buyingFee;
         _buyingFee = buyingFee_;
 
@@ -231,14 +309,18 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace, ID
     /**
      * @dev See {IMarketplace-setTreasuryWallet}.
      */
-    function setTreasuryWallet(address newTreasuryWallet) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setTreasuryWallet(
+        address newTreasuryWallet
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _setTreasuryWallet(newTreasuryWallet);
     }
 
     /**
      * @dev See {IMarketplace-setFeeWallet}.
      */
-    function setFeeWallet(address newFeeWallet) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setFeeWallet(
+        address newFeeWallet
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _setFeeWallet(newFeeWallet);
     }
 
@@ -302,21 +384,41 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace, ID
     /**
      * @dev See {IMarketplace-getAssetInfo}.
      */
-    function getAssetInfo(uint256 assetType, uint256 assetId) external view returns (AssetInfo memory) {
+    function getAssetInfo(
+        uint256 assetId
+    ) external view returns (AssetInfo memory) {
         return _assets[assetType][assetId];
+    }
+
+    /**
+     * @dev See {IMarketplace-getPropertyInfo}.
+     */
+    function getPropertyInfo(
+        uint256 assetId
+    ) external view returns (PropertyInfo memory) {
+        return _properties[assetId];
     }
 
     /**
      * @dev See {IMarketplace-getRemainingReward}.
      */
-    function getRemainingReward(uint256 assetType, uint256 assetId) external view returns (uint256 reward) {
+    function getRemainingReward(
+        uint256 assetType,
+        uint256 assetId
+    ) external view returns (uint256 reward) {
         AssetInfo memory asset = _assets[assetType][assetId];
         uint256 tenure;
 
         if (asset.lastClaimDate != 0) {
             tenure = asset.dueDate - asset.lastClaimDate;
         } else if (asset.price != 0) {
-            tenure = asset.dueDate - (block.timestamp > asset.dueDate ? asset.dueDate : block.timestamp);
+            tenure =
+                asset.dueDate -
+                (
+                    block.timestamp > asset.dueDate
+                        ? asset.dueDate
+                        : block.timestamp
+                );
         }
         reward = _calculateFormula(asset.price, tenure, asset.rewardApr);
     }
@@ -324,39 +426,52 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace, ID
     /**
      * @dev See {IMarketplace-getAvailableReward}.
      */
-    function getAvailableReward(uint256 assetType, uint256 assetId) external view returns (uint256) {
+    function getAvailableReward(
+        uint256 assetType,
+        uint256 assetId
+    ) external view returns (uint256) {
         return _getAvailableReward(assetType, assetId);
     }
 
-    function onDLTReceived(address, address, uint256, uint256, uint256, bytes calldata)
-        public
-        virtual
-        override
-        returns (bytes4)
-    {
+    function onDLTReceived(
+        address,
+        address,
+        uint256,
+        uint256,
+        uint256,
+        bytes calldata
+    ) public virtual override returns (bytes4) {
         return this.onDLTReceived.selector;
     }
 
-    function onDLTBatchReceived(address, address, uint256[] memory, uint256[] memory, uint256[] memory, bytes calldata)
-        public
-        virtual
-        override
-        returns (bytes4)
-    {
+    function onDLTBatchReceived(
+        address,
+        address,
+        uint256[] memory,
+        uint256[] memory,
+        uint256[] memory,
+        bytes calldata
+    ) public virtual override returns (bytes4) {
         return this.onDLTBatchReceived.selector;
     }
 
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, AccessControl) returns (bool) {
-        return interfaceId == type(IMarketplace).interfaceId || super.supportsInterface(interfaceId);
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(ERC165, AccessControl) returns (bool) {
+        return
+            interfaceId == type(IMarketplace).interfaceId ||
+            super.supportsInterface(interfaceId);
     }
 
     /**
      * @dev "Consume a nonce": return the current value and increment
      */
-    function _useNonce(address owner) internal virtual returns (uint256 current) {
+    function _useNonce(
+        address owner
+    ) internal virtual returns (uint256 current) {
         current = _currentNonce[owner];
         _currentNonce[owner]++;
     }
@@ -378,7 +493,10 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace, ID
         uint256 apr,
         uint256 dueDate
     ) private {
-        require(_assetCollection.totalSubSupply(assetType, assetId) == 0, "Asset already created");
+        require(
+            _assetCollection.totalSubSupply(assetType, assetId) == 0,
+            "Asset already created"
+        );
         _assetCollection.createAsset(owner, assetType, assetId);
         _listAsset(owner, assetType, assetId, price, apr, dueDate);
     }
@@ -391,10 +509,22 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace, ID
      * @param apr, annual percentage rate for calculating rewards
      * @param dueDate, end date for calculating rewards
      */
-    function _listAsset(address owner, uint256 assetType, uint256 assetId, uint256 price, uint256 apr, uint256 dueDate)
-        private
-    {
-        _assets[assetType][assetId] = AssetInfo(owner, price, price, apr, dueDate, 0);
+    function _listAsset(
+        address owner,
+        uint256 assetType,
+        uint256 assetId,
+        uint256 price,
+        uint256 apr,
+        uint256 dueDate
+    ) private {
+        _assets[assetType][assetId] = AssetInfo(
+            owner,
+            price,
+            price,
+            apr,
+            dueDate,
+            0
+        );
         emit AssetListed(owner, assetType, assetId, price);
     }
 
@@ -434,7 +564,9 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace, ID
         AssetInfo memory asset = _assets[assetType][assetId];
 
         uint256 reward = _getAvailableReward(assetType, assetId);
-        _assets[assetType][assetId].lastClaimDate = (block.timestamp > asset.dueDate ? asset.dueDate : block.timestamp);
+        _assets[assetType][assetId].lastClaimDate = (
+            block.timestamp > asset.dueDate ? asset.dueDate : block.timestamp
+        );
 
         _stableToken.safeTransferFrom(_treasuryWallet, asset.owner, reward);
 
@@ -448,12 +580,18 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace, ID
      * @param assetId, unique identifier of the asset
      * @param salePrice, unique identifier of the asset
      */
-    function _buy(uint256 assetType, uint256 assetId, uint256 salePrice) private {
+    function _buy(
+        uint256 assetType,
+        uint256 assetId,
+        uint256 salePrice
+    ) private {
         AssetInfo memory asset = _assets[assetType][assetId];
         require(asset.salePrice != 0, "Asset is not relisted");
         require(asset.dueDate > block.timestamp, "Due date has passed");
         uint256 fee = asset.lastClaimDate != 0 ? _buyingFee : _initialFee;
-        address receiver = asset.lastClaimDate != 0 ? asset.owner : _treasuryWallet;
+        address receiver = asset.lastClaimDate != 0
+            ? asset.owner
+            : _treasuryWallet;
         fee = (salePrice * fee) / 1e4;
 
         if (asset.lastClaimDate == 0) {
@@ -465,7 +603,13 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace, ID
 
         _stableToken.safeTransferFrom(_msgSender(), receiver, salePrice);
         _stableToken.safeTransferFrom(_msgSender(), _feeWallet, fee);
-        emit AssetBought(asset.owner, _msgSender(), assetType, assetId, salePrice);
+        emit AssetBought(
+            asset.owner,
+            _msgSender(),
+            assetType,
+            assetId,
+            salePrice
+        );
     }
 
     /**
@@ -476,7 +620,12 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace, ID
      * @param to, address of asset receiver
      * @param assetId, unique identifier of the asset
      */
-    function _transferAsset(address from, address to, uint256 assetType, uint256 assetId) private {
+    function _transferAsset(
+        address from,
+        address to,
+        uint256 assetType,
+        uint256 assetId
+    ) private {
         _assetCollection.safeTransferFrom(from, to, assetType, assetId, 1, "");
     }
 
@@ -485,11 +634,18 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace, ID
      * @param assetId, unique identifier of asset
      * @return reward , accumulated rewards for the current owner
      */
-    function _getAvailableReward(uint256 assetType, uint256 assetId) private view returns (uint256 reward) {
+    function _getAvailableReward(
+        uint256 assetType,
+        uint256 assetId
+    ) private view returns (uint256 reward) {
         AssetInfo memory asset = _assets[assetType][assetId];
 
         if (asset.lastClaimDate != 0) {
-            uint256 tenure = (block.timestamp > asset.dueDate ? asset.dueDate : block.timestamp) - asset.lastClaimDate;
+            uint256 tenure = (
+                block.timestamp > asset.dueDate
+                    ? asset.dueDate
+                    : block.timestamp
+            ) - asset.lastClaimDate;
 
             reward = _calculateFormula(asset.price, tenure, asset.rewardApr);
         }
@@ -501,7 +657,11 @@ contract Marketplace is Context, ERC165, EIP712, AccessControl, IMarketplace, ID
      * @param tenure is the duration from last updated rewards
      * @param apr is the annual percentage rate of rewards for assets
      */
-    function _calculateFormula(uint256 price, uint256 tenure, uint256 apr) private pure returns (uint256) {
+    function _calculateFormula(
+        uint256 price,
+        uint256 tenure,
+        uint256 apr
+    ) private pure returns (uint256) {
         return ((price * tenure * apr) / 1e4) / _YEAR;
     }
 }
