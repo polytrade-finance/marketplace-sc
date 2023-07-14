@@ -26,21 +26,36 @@ interface IMarketplace {
     }
 
     /**
+     * @title A new struct to define the asset information
+     * @param owner, is the address of owner of asset
+     * @param price, is the price of asset
+     * @param salePrice, is the sale price of asset
+     * @param rewardApr, is the Apr for calculating rewards
+     * @param dueDate, is the end date for caluclating rewards
+     * @param lastClaimDate, is the date of last claim rewards
+     */
+    struct PropertyInfo {
+        address owner;
+        uint256 price;
+        uint256 salePrice;
+        uint256 rewardApr;
+        uint256 dueDate;
+        uint256 lastClaimDate;
+    }
+
+    /**
      * @dev Emitted when an asset is listed with it's parameters for an owner
      * @param owner, Address of the initial onvoice owner
      * @param assetId, assetId is the unique identifier of asset
      */
-    event AssetListed(address indexed owner, uint256 assetId);
+    event AssetListed(address indexed owner, uint256 assetType, uint256 assetId, uint256 price);
 
     /**
      * @dev Emitted when new `Treasury Wallet` has been set
      * @param oldTreasuryWallet, Address of the old treasury wallet
      * @param newTreasuryWallet, Address of the new treasury wallet
      */
-    event TreasuryWalletSet(
-        address oldTreasuryWallet,
-        address newTreasuryWallet
-    );
+    event TreasuryWalletSet(address oldTreasuryWallet, address newTreasuryWallet);
 
     /**
      * @dev Emitted when new `Fee Wallet` has been set
@@ -54,7 +69,7 @@ interface IMarketplace {
      * @param receiver, Address of reward receiver
      * @param reward, Amount of rewards received
      */
-    event RewardsClaimed(address indexed receiver, uint256 reward);
+    event RewardsClaimed(address indexed receiver, uint256 assetType, uint256 assetId, uint256 reward);
 
     /**
      * @dev Emitted when asset owner changes
@@ -62,11 +77,7 @@ interface IMarketplace {
      * @param newOwner, Address of the new owner
      * @param assetId, idof the bought asset
      */
-    event AssetBought(
-        address indexed oldOwner,
-        address indexed newOwner,
-        uint256 assetId
-    );
+    event AssetBought(address indexed oldOwner, address indexed newOwner, uint256 assetType, uint256 assetId, uint256 salePrice);
 
     /**
      * @dev Emitted when a new initial fee set
@@ -89,14 +100,14 @@ interface IMarketplace {
      * @param owner, address of the asset owner
      * @param assetId, unique number of the asset
      */
-    event AssetSettled(address indexed owner, uint256 assetId);
+    event AssetSettled(address indexed owner, uint256 assetType, uint256 assetId);
 
     /**
      * @dev Emitted when an asset is settled
      * @param assetId, unique number of the asset
      * @param salePrice, unique number of the asset
      */
-    event AssetRelisted(uint256 assetId, uint256 salePrice);
+    event AssetRelisted(address indexed owner, uint256 indexed assetType, uint256 indexed assetId, uint256 salePrice);
 
     /**
      * @dev Reverted on unsupported interface detection
@@ -112,13 +123,7 @@ interface IMarketplace {
      * @param apr, annual percentage rate for calculating rewards
      * @dev Needs admin access to create an asset
      */
-    function createAsset(
-        address owner,
-        uint256 assetId,
-        uint256 price,
-        uint256 apr,
-        uint256 dueDate
-    ) external;
+    function createAsset(address owner, uint256 assetId, uint256 price, uint256 apr, uint256 dueDate) external;
 
     /**
      * @dev Creates batch asset with their parameters
@@ -144,7 +149,7 @@ interface IMarketplace {
      * @dev Deletes the stored parameters
      * @param assetId, unique number of the asset
      */
-    function settleAsset(uint256 assetId) external;
+    function settleAsset(uint256 assetType, uint256 assetId) external;
 
     /**
      * @dev Changes owner to buyer
@@ -154,21 +159,21 @@ interface IMarketplace {
      * @dev Buyer should have approved marketplace to transfer its ERC20 tokens to pay price and fees
      * @param assetId, unique number of the asset
      */
-    function buy(uint256 assetId) external;
+    function buy(uint256 assetType, uint256 assetId) external;
 
     /**
      * @dev Batch buy assets from owners
      * @dev Loop through arrays and calls the buy function
      * @param assetIds, unique identifiers of the assets
      */
-    function batchBuy(uint256[] calldata assetIds) external;
+    function batchBuy(uint256[] calldata assetTypes, uint256[] calldata assetIds) external;
 
     /**
      * @dev Relist an asset for the current owner
      * @param assetId, unique identifier of the asset
      * @param salePrice, new price for asset sale
      */
-    function relist(uint256 assetId, uint256 salePrice) external;
+    function relist(uint256 assetType, uint256 assetId, uint256 salePrice) external;
 
     /**
      * @dev claim available rewards for current owner
@@ -176,7 +181,7 @@ interface IMarketplace {
      * @dev Caller should own the assetId
      * @param assetId, unique number of the asset
      */
-    function claimReward(uint256 assetId) external;
+    function claimReward(uint256 assetType, uint256 assetId) external;
 
     /**
      * @dev Set new initial fee
@@ -226,6 +231,7 @@ interface IMarketplace {
         address owner,
         address offeror,
         uint256 offerPrice,
+        uint256 assetType,
         uint256 assetId,
         uint256 deadline,
         uint8 v,
@@ -290,25 +296,19 @@ interface IMarketplace {
      * @param assetId, unique identifier of asset
      * @return reward the rewards Amount
      */
-    function getRemainingReward(
-        uint256 assetId
-    ) external view returns (uint256 reward);
+    function getRemainingReward(uint256 assetType, uint256 assetId) external view returns (uint256 reward);
 
     /**
      * @dev Calculates available rewards to claim
      * @param assetId, unique identifier of asset
      * @return reward the accumulated rewards amount for the current owner
      */
-    function getAvailableReward(
-        uint256 assetId
-    ) external view returns (uint256 reward);
+    function getAvailableReward(uint256 assetType, uint256 assetId) external view returns (uint256 reward);
 
     /**
      * @dev Gets the asset information
      * @param assetId, unique identifier of asset
      * @return assetInfo struct
      */
-    function getAssetInfo(
-        uint256 assetId
-    ) external view returns (AssetInfo memory);
+    function getAssetInfo(uint256 assetType, uint256 assetId) external view returns (AssetInfo memory);
 }
