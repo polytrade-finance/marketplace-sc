@@ -204,7 +204,7 @@ interface IMarketplace {
      * @dev Deletes the stored parameters
      * @param assetId, unique number of the asset
      */
-    function settleAsset(uint256 assetType, uint256 assetId) external;
+    function settleAsset(uint256 assetId) external;
 
     /**
      * @dev Changes owner to buyer
