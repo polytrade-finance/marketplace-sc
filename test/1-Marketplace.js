@@ -72,7 +72,7 @@ describe("Marketplace", function () {
 
     expect(await assetContract.subIdBalanceOf(user1.address, 1)).to.eq(1);
 
-    expect(await assetContract.tokenURI(1)).to.eq(`https://ipfs.io/ipfs${1}`);
+    expect(await assetContract.tokenURI(1, 1)).to.eq(`https://ipfs.io/ipfs${1}`);
   });
 
   it("Should burn asset successfully", async function () {
@@ -95,7 +95,7 @@ describe("Marketplace", function () {
 
     expect(await assetContract.subIdBalanceOf(user1.address, 1)).to.eq(1);
 
-    expect(await marketplaceContract.burnAsset(user1.address, 1))
+    expect(await marketplaceContract.burnAsset(user1.address, 1, 1))
       .to.emit(assetContract, "AssetBurnt")
       .withArgs(user1.address, 1);
 
@@ -133,11 +133,11 @@ describe("Marketplace", function () {
       [asset.dueDate, asset.dueDate, asset.dueDate]
     );
 
-    expect(await assetContract.subIdBalanceOf(user1.address, 1)).to.eq(1);
+    expect(await assetContract.subBalanceOf(user1.address, 1, 1)).to.eq(1);
 
-    expect(await assetContract.subIdBalanceOf(user1.address, 2)).to.eq(1);
+    expect(await assetContract.subBalanceOf(user1.address, 1, 2)).to.eq(1);
 
-    expect(await assetContract.subIdBalanceOf(user1.address, 3)).to.eq(1);
+    expect(await assetContract.subBalanceOf(user1.address, 1, 3)).to.eq(1);
   });
 
   it("Should revert Batch create assets on wrong array parity", async function () {
@@ -213,7 +213,7 @@ describe("Marketplace", function () {
       .withArgs(user1.address, 1);
 
     const expectedReward = 0;
-    const actualReward = await marketplaceContract.getRemainingReward(1);
+    const actualReward = await marketplaceContract.getRemainingReward(1, 1);
 
     expect(actualReward).to.be.equal(expectedReward);
   });
@@ -294,7 +294,7 @@ describe("Marketplace", function () {
 
   it("Should revert on on relisting and asset without ownership", async function () {
     await expect(
-      marketplaceContract.connect(user1).relist(1, asset.assetPrice)
+      marketplaceContract.connect(user1).relist(1, 1, asset.assetPrice)
     ).to.be.revertedWith("You are not the owner");
   });
 
@@ -342,7 +342,7 @@ describe("Marketplace", function () {
       .to.emit(assetContract, "AssetCreated")
       .withArgs(user1.address, 1);
 
-    const info = await marketplaceContract.getAssetInfo(1);
+    const info = await marketplaceContract.getAssetInfo(1, 1);
 
     expect(info.owner).to.eq(user1.address);
     expect(info.price).to.eq(asset.assetPrice);
@@ -436,7 +436,7 @@ describe("Marketplace", function () {
 
   it("Should revert to burn asset without admin role", async function () {
     await expect(
-      marketplaceContract.connect(user1).burnAsset(user1.address, 1)
+      marketplaceContract.connect(user1).burnAsset(user1.address, 1, 1)
     ).to.be.revertedWith(
       `AccessControl: account ${user1.address.toLowerCase()} is missing role ${ethers.utils.hexZeroPad(
         ethers.utils.hexlify(0),
@@ -484,7 +484,7 @@ describe("Marketplace", function () {
 
   it("Should revert to claim reward if asset does not exist or not bought yet", async function () {
     await expect(
-      marketplaceContract.connect(user1).claimReward(1)
+      marketplaceContract.connect(user1).claimReward(1, 1)
     ).to.be.revertedWith("You are not the owner");
   });
 
@@ -542,10 +542,10 @@ describe("Marketplace", function () {
       .connect(buyer)
       .approve(marketplaceContract.address, asset.assetPrice);
 
-    await marketplaceContract.connect(buyer).buy(1);
+    await marketplaceContract.connect(buyer).buy(1, 1);
 
     await expect(
-      marketplaceContract.connect(user1).claimReward(1)
+      marketplaceContract.connect(user1).claimReward(1, 1)
     ).to.be.revertedWith("You are not the owner");
   });
 
@@ -566,7 +566,7 @@ describe("Marketplace", function () {
       .connect(buyer)
       .approve(marketplaceContract.address, asset.assetPrice);
 
-    await expect(await marketplaceContract.connect(buyer).buy(1)).not.to.be
+    await expect(await marketplaceContract.connect(buyer).buy(1, 1)).not.to.be
       .reverted;
 
     expect(await stableTokenContract.balanceOf(treasuryWallet.address)).to.eq(
@@ -574,7 +574,7 @@ describe("Marketplace", function () {
     );
 
     expect(
-      await assetContract.subIdBalanceOf(marketplaceContract.address, 1)
+      await assetContract.subBalanceOf(marketplaceContract.address, 1, 1)
     ).to.eq(1);
   });
 
@@ -599,9 +599,9 @@ describe("Marketplace", function () {
       .connect(treasuryWallet)
       .approve(marketplaceContract.address, asset.assetPrice);
 
-    expect(await marketplaceContract.getAvailableReward(1)).to.eq(0);
+    expect(await marketplaceContract.getAvailableReward(1, 1)).to.eq(0);
 
-    await marketplaceContract.connect(buyer).buy(1);
+    await marketplaceContract.connect(buyer).buy(1, 1);
 
     const tenure = 10 * DAY;
     await time.increase(tenure);
@@ -609,15 +609,15 @@ describe("Marketplace", function () {
     const expectedReward = Math.round(
       (tenure * asset.assetPrice * asset.rewardApr) / (10000 * YEAR)
     );
-    const actualReward = await marketplaceContract.getAvailableReward(1);
+    const actualReward = await marketplaceContract.getAvailableReward(1, 1);
 
     expect(actualReward).to.be.within(expectedReward - 1, expectedReward + 1);
 
     const beforeClaim = await stableTokenContract.balanceOf(buyer.address);
-    await marketplaceContract.connect(buyer).claimReward(1);
+    await marketplaceContract.connect(buyer).claimReward(1, 1);
     const afterClaim = await stableTokenContract.balanceOf(buyer.address);
 
-    await marketplaceContract.getRemainingReward(1);
+    await marketplaceContract.getRemainingReward(1, 1);
 
     expect(afterClaim.sub(beforeClaim)).to.eq(actualReward);
   });
@@ -644,7 +644,7 @@ describe("Marketplace", function () {
       .connect(treasuryWallet)
       .approve(marketplaceContract.address, asset.assetPrice);
 
-    await expect(await marketplaceContract.connect(buyer).buy(1)).not.to.be
+    await expect(await marketplaceContract.connect(buyer).buy(1, 1)).not.to.be
       .reverted;
 
     const tenure = asset.dueDate - (await now());
@@ -653,15 +653,15 @@ describe("Marketplace", function () {
     const expectedReward = Math.round(
       (tenure * asset.assetPrice * asset.rewardApr) / (10000 * YEAR)
     );
-    const actualReward = await marketplaceContract.getAvailableReward(1);
+    const actualReward = await marketplaceContract.getAvailableReward(1, 1);
 
     expect(actualReward).to.be.within(expectedReward - 1, expectedReward + 1);
 
     const beforeClaim = await stableTokenContract.balanceOf(buyer.address);
-    await marketplaceContract.connect(buyer).claimReward(1);
+    await marketplaceContract.connect(buyer).claimReward(1, 1);
     const afterClaim = await stableTokenContract.balanceOf(buyer.address);
 
-    const remainingReward = await marketplaceContract.getRemainingReward(1);
+    const remainingReward = await marketplaceContract.getRemainingReward(1, 1);
 
     expect(afterClaim.sub(beforeClaim)).to.eq(actualReward);
     expect(remainingReward).to.eq(0);
@@ -684,7 +684,7 @@ describe("Marketplace", function () {
       .connect(buyer)
       .approve(marketplaceContract.address, asset.assetPrice);
 
-    await expect(marketplaceContract.connect(buyer).buy(1)).to.revertedWith(
+    await expect(marketplaceContract.connect(buyer).buy(1, 1)).to.revertedWith(
       "Due date has passed"
     );
   });
@@ -715,7 +715,7 @@ describe("Marketplace", function () {
       .connect(treasuryWallet)
       .approve(marketplaceContract.address, asset.assetPrice);
 
-    await expect(await marketplaceContract.connect(buyer).buy(1)).not.to.be
+    await expect(await marketplaceContract.connect(buyer).buy(1, 1)).not.to.be
       .reverted;
 
     await time.increase(10);
@@ -755,7 +755,7 @@ describe("Marketplace", function () {
 
     const expectedReward = 0;
 
-    const actualReward = await marketplaceContract.getRemainingReward(1);
+    const actualReward = await marketplaceContract.getRemainingReward(1, 1);
 
     expect(actualReward).to.be.equal(expectedReward);
   });
@@ -794,9 +794,9 @@ describe("Marketplace", function () {
 
     const before1stBuy = await stableTokenContract.balanceOf(feeWallet.address);
 
-    await marketplaceContract.connect(buyer).buy(1);
+    await marketplaceContract.connect(buyer).buy(1, 1);
 
-    await marketplaceContract.connect(buyer).relist(1, asset.assetPrice);
+    await marketplaceContract.connect(buyer).relist(1, 1, asset.assetPrice);
     const after1stBuy = await stableTokenContract.balanceOf(feeWallet.address);
 
     await assetContract
@@ -809,7 +809,7 @@ describe("Marketplace", function () {
 
     const before2ndBuy = await stableTokenContract.balanceOf(feeWallet.address);
 
-    await expect(await marketplaceContract.connect(user1).buy(1)).not.to.be
+    await expect(await marketplaceContract.connect(user1).buy(1, 1)).not.to.be
       .reverted;
 
     const after2ndBuy = await stableTokenContract.balanceOf(feeWallet.address);
@@ -849,7 +849,7 @@ describe("Marketplace", function () {
       .connect(buyer)
       .approve(marketplaceContract.address, totalStableTokenAmount);
 
-    await expect(await marketplaceContract.connect(buyer).batchBuy([1, 2])).not
+    await expect(await marketplaceContract.connect(buyer).batchBuy([1, 1], [1, 2])).not
       .to.be.reverted;
 
     expect(await stableTokenContract.balanceOf(treasuryWallet.address)).to.eq(
@@ -857,10 +857,10 @@ describe("Marketplace", function () {
     );
 
     expect(
-      await assetContract.subIdBalanceOf(marketplaceContract.address, 1)
+      await assetContract.subBalanceOf(marketplaceContract.address, 1, 1)
     ).to.eq(1);
     expect(
-      await assetContract.subIdBalanceOf(marketplaceContract.address, 2)
+      await assetContract.subBalanceOf(marketplaceContract.address, 1, 2)
     ).to.eq(1);
   });
 
@@ -882,9 +882,9 @@ describe("Marketplace", function () {
       .connect(buyer)
       .approve(marketplaceContract.address, asset.assetPrice);
 
-    await marketplaceContract.connect(buyer).buy(1);
+    await marketplaceContract.connect(buyer).buy(1, 1);
 
-    await expect(marketplaceContract.connect(user1).buy(1)).to.be.revertedWith(
+    await expect(marketplaceContract.connect(user1).buy(1, 1)).to.be.revertedWith(
       "Asset is not relisted"
     );
   });
@@ -908,8 +908,8 @@ describe("Marketplace", function () {
       .safeBatchTransferFrom(
         user1.address,
         marketplaceContract.address,
-        [1, 2, 3],
         [1, 1, 1],
+        [1, 2, 3],
         [1, 1, 1],
         "0x"
       );
