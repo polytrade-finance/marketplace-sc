@@ -17,14 +17,16 @@ interface IAsset is IDLT, IDLTEnumerable, IDLTPermit {
     /**
      * @dev Emitted when an asset is created
      * @param owner, address of the owner of asset
-     * @param mainId, unique identifier of asset
+     * @param mainId, unique identifier of asset type
+     * @param subId, unique identifier of asset
      */
     event AssetCreated(address owner, uint256 mainId, uint256 subId);
 
     /**
      * @dev Emitted when an asset is burnt
      * @param owner, address of the owner of asset
-     * @param mainId, unique identifier of asset
+     * @param mainId, unique identifier of asset type
+     * @param subId, unique identifier of asset
      */
     event AssetBurnt(address owner, uint256 mainId, uint256 subId);
 
@@ -36,7 +38,8 @@ interface IAsset is IDLT, IDLTEnumerable, IDLTPermit {
     /**
      * @dev Creates an asset with its parameters
      * @param owner, initial owner of asset
-     * @param mainId, unique identifier of asset
+     * @param mainId, unique identifier of asset type
+     * @param subId, unique identifier of asset
      * @dev Needs marketplace access to create an asset
      */
     function createAsset(address owner, uint256 mainId, uint256 subId) external;
@@ -44,7 +47,8 @@ interface IAsset is IDLT, IDLTEnumerable, IDLTPermit {
     /**
      * @dev Burns an asset with its parameters
      * @param owner, initial owner of asset
-     * @param mainId, unique identifier of asset
+     * @param mainId, unique identifier of asset type
+     * @param subId, unique identifier of asset
      * @dev Needs marketplace access to create an asset
      */
     function burnAsset(address owner, uint256 mainId, uint256 subId) external;
@@ -58,7 +62,8 @@ interface IAsset is IDLT, IDLTEnumerable, IDLTPermit {
 
     /**
      * @dev concatenate asset id (mainId) to baseURI
-     * @param mainId, unique identifier of asset
+     * @param mainId, unique identifier of asset type
+     * @param subId, unique identifier of asset
      * @return string value of asset URI
      */
     function tokenURI(

@@ -50,7 +50,9 @@ interface IMarketplace {
     /**
      * @dev Emitted when an asset is listed with it's parameters for an owner
      * @param owner, Address of the initial onvoice owner
+     * @param assetType, assetType identifies whether its a property or an invoice
      * @param assetId, assetId is the unique identifier of asset
+     * @param price, assetId is the unique identifier of asset
      */
     event AssetListed(
         address indexed owner,
@@ -79,6 +81,8 @@ interface IMarketplace {
     /**
      * @dev Emitted when new rewards claimed by current owner
      * @param receiver, Address of reward receiver
+     * @param assetType, assetType identifies whether its a property or an invoice
+     * @param assetId, assetId is the unique identifier of asset
      * @param reward, Amount of rewards received
      */
     event RewardsClaimed(
@@ -92,7 +96,9 @@ interface IMarketplace {
      * @dev Emitted when asset owner changes
      * @param oldOwner, Address of the previous owner
      * @param newOwner, Address of the new owner
-     * @param assetId, idof the bought asset
+     * @param assetType, assetType identifies whether its a property or an invoice
+     * @param assetId, id of the bought asset
+     @ @param salePrice, the price that asset bought for
      */
     event AssetBought(
         address indexed oldOwner,
@@ -121,6 +127,7 @@ interface IMarketplace {
     /**
      * @dev Emitted when an asset is settled
      * @param owner, address of the asset owner
+     * @param assetType, assetType identifies whether its a property or an invoice
      * @param assetId, unique number of the asset
      */
     event AssetSettled(
@@ -131,6 +138,8 @@ interface IMarketplace {
 
     /**
      * @dev Emitted when an asset is settled
+     * @param owner, address of the asset owner
+     * @param assetType, assetType identifies whether its a property or an invoice
      * @param assetId, unique number of the asset
      * @param salePrice, unique number of the asset
      */
@@ -164,11 +173,11 @@ interface IMarketplace {
     ) external;
 
     /**
-     * @dev Creates an asset with its parameters
-     * @param owner, initial owner of asset
-     * @param assetId, unique identifier of asset
-     * @param price, asset price to sell
-     * @param dueDate, end date for calculating rewards
+     * @dev Creates a property with its parameters
+     * @param owner, initial owner of property
+     * @param assetId, unique identifier of property
+     * @param price, property price to sell
+     * @param dueDate, minimum locking duration for property
      * @param propertyInfo, is the property information in PropertyInfo format
      * @dev Needs admin access to create an asset
      */
@@ -212,6 +221,7 @@ interface IMarketplace {
      * @dev Transfer the price to previous owner if it is not the first buy
      * @dev Owner should have approved marketplace to transfer its assets
      * @dev Buyer should have approved marketplace to transfer its ERC20 tokens to pay price and fees
+     * @param assetType, assetType identifies whether its a property or an invoice
      * @param assetId, unique number of the asset
      */
     function buy(uint256 assetType, uint256 assetId) external;
@@ -219,6 +229,7 @@ interface IMarketplace {
     /**
      * @dev Batch buy assets from owners
      * @dev Loop through arrays and calls the buy function
+     * @param assetTypes, arrray of assetTypes that identifies whether its a property or an invoice
      * @param assetIds, unique identifiers of the assets
      */
     function batchBuy(
@@ -228,6 +239,7 @@ interface IMarketplace {
 
     /**
      * @dev Relist an asset for the current owner
+     * @param assetType, assetType identifies whether its a property or an invoice
      * @param assetId, unique identifier of the asset
      * @param salePrice, new price for asset sale
      */
@@ -241,6 +253,7 @@ interface IMarketplace {
      * @dev claim available rewards for current owner
      * @dev updates lastClaimDate for the asset in the asset contract
      * @dev Caller should own the assetId
+     * @param assetType, assetType identifies whether its a property or an invoice
      * @param assetId, unique number of the asset
      */
     function claimReward(uint256 assetType, uint256 assetId) external;
@@ -278,6 +291,7 @@ interface IMarketplace {
      * @param owner, Address of the owner of asset
      * @param offeror, Address of the offeror
      * @param offerPrice, offered price for buying asset
+     * @param assetType, assetType identifies whether its a property or an invoice
      * @param assetId, asset id to buy
      * @param deadline, The expiration date of this agreement
      * Requirements:
@@ -356,6 +370,7 @@ interface IMarketplace {
     /**
      * @dev Calculates the remaning reward
      * @param assetId, unique identifier of asset
+     * @param assetType, assetType identifies whether its a property or an invoice
      * @return reward the rewards Amount
      */
     function getRemainingReward(
@@ -365,6 +380,7 @@ interface IMarketplace {
 
     /**
      * @dev Calculates available rewards to claim
+     * @param assetType, assetType identifies whether its a property or an invoice
      * @param assetId, unique identifier of asset
      * @return reward the accumulated rewards amount for the current owner
      */
@@ -375,7 +391,7 @@ interface IMarketplace {
 
     /**
      * @dev Gets the asset information
-     * @param assetType, unique identifier of asset type
+     * @param assetType, assetType identifies whether its a property or an invoice
      * @param assetId, unique identifier of asset
      * @return AssetInfo struct
      */

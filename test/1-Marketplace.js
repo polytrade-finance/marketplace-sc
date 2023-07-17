@@ -51,10 +51,7 @@ describe("Marketplace", function () {
       feeWallet.address
     );
 
-    await assetContract.setBaseURI(
-      2,
-      "https://ipfs.io/ipfs"
-    )
+    await assetContract.setBaseURI(2, "https://ipfs.io/ipfs");
   });
 
   it("Should create property successfully", async function () {
@@ -63,7 +60,7 @@ describe("Marketplace", function () {
       marketplaceContract.address
     );
 
-    expect(
+    await expect(
       await marketplaceContract.createProperty(
         user1.address,
         1,
@@ -77,7 +74,9 @@ describe("Marketplace", function () {
 
     expect(await assetContract.subIdBalanceOf(user1.address, 2)).to.eq(1);
 
-    expect(await assetContract.tokenURI(2, 1)).to.eq(`https://ipfs.io/ipfs${1}`);
+    expect(await assetContract.tokenURI(2, 1)).to.eq(
+      `https://ipfs.io/ipfs${1}`
+    );
   });
 
   it("Should create asset successfully", async function () {
@@ -86,7 +85,7 @@ describe("Marketplace", function () {
       marketplaceContract.address
     );
 
-    expect(
+    await expect(
       await marketplaceContract.createAsset(
         user1.address,
         1,
@@ -96,11 +95,13 @@ describe("Marketplace", function () {
       )
     )
       .to.emit(assetContract, "AssetCreated")
-      .withArgs(user1.address, 1);
+      .withArgs(user1.address, 1, 1);
 
     expect(await assetContract.subIdBalanceOf(user1.address, 1)).to.eq(1);
 
-    expect(await assetContract.tokenURI(1, 1)).to.eq(`https://ipfs.io/ipfs${1}`);
+    expect(await assetContract.tokenURI(1, 1)).to.eq(
+      `https://ipfs.io/ipfs${1}`
+    );
   });
 
   it("Should burn asset successfully", async function () {
@@ -109,7 +110,7 @@ describe("Marketplace", function () {
       marketplaceContract.address
     );
 
-    expect(
+    await expect(
       await marketplaceContract.createAsset(
         user1.address,
         1,
@@ -119,13 +120,13 @@ describe("Marketplace", function () {
       )
     )
       .to.emit(assetContract, "AssetCreated")
-      .withArgs(user1.address, 1);
+      .withArgs(user1.address, 1, 1);
 
     expect(await assetContract.subIdBalanceOf(user1.address, 1)).to.eq(1);
 
-    expect(await marketplaceContract.burnAsset(user1.address, 1, 1))
+    await expect(await marketplaceContract.burnAsset(user1.address, 1, 1))
       .to.emit(assetContract, "AssetBurnt")
-      .withArgs(user1.address, 1);
+      .withArgs(user1.address, 1, 1);
 
     expect(await assetContract.subIdBalanceOf(user1.address, 1)).to.eq(0);
   });
@@ -228,7 +229,7 @@ describe("Marketplace", function () {
       marketplaceContract.address
     );
 
-    expect(
+    await expect(
       await marketplaceContract.createAsset(
         user1.address,
         1,
@@ -238,7 +239,7 @@ describe("Marketplace", function () {
       )
     )
       .to.emit(marketplaceContract, "AssetListed")
-      .withArgs(user1.address, 1);
+      .withArgs(user1.address, 1, 1, 0);
 
     const expectedReward = 0;
     const actualReward = await marketplaceContract.getRemainingReward(1, 1);
@@ -252,7 +253,7 @@ describe("Marketplace", function () {
       marketplaceContract.address
     );
 
-    expect(
+    await expect(
       await marketplaceContract.createAsset(
         user1.address,
         1,
@@ -262,7 +263,7 @@ describe("Marketplace", function () {
       )
     )
       .to.emit(marketplaceContract, "AssetListed")
-      .withArgs(user1.address, 1);
+      .withArgs(user1.address, 1, 1, asset.assetPrice);
 
     await expect(
       marketplaceContract.createAsset(
@@ -358,7 +359,7 @@ describe("Marketplace", function () {
       marketplaceContract.address
     );
 
-    expect(
+    await expect(
       await marketplaceContract.createAsset(
         user1.address,
         1,
@@ -368,7 +369,7 @@ describe("Marketplace", function () {
       )
     )
       .to.emit(assetContract, "AssetCreated")
-      .withArgs(user1.address, 1);
+      .withArgs(user1.address, 1, 1);
 
     const info = await marketplaceContract.getAssetInfo(1, 1);
 
@@ -384,7 +385,7 @@ describe("Marketplace", function () {
       marketplaceContract.address
     );
 
-    expect(
+    await expect(
       await marketplaceContract.createProperty(
         user1.address,
         1,
@@ -587,7 +588,7 @@ describe("Marketplace", function () {
       marketplaceContract.address
     );
 
-    expect(
+    await expect(
       await marketplaceContract.createAsset(
         user1.address,
         1,
@@ -618,7 +619,7 @@ describe("Marketplace", function () {
       marketplaceContract.address
     );
 
-    expect(
+    await expect(
       await marketplaceContract.createProperty(
         user1.address,
         1,
@@ -638,9 +639,9 @@ describe("Marketplace", function () {
       .connect(treasuryWallet)
       .approve(marketplaceContract.address, asset.assetPrice);
 
-    await expect(marketplaceContract.settleProperty(1, asset.assetPrice)).to.be.revertedWith(
-      "Due date not passed"
-    );
+    await expect(
+      marketplaceContract.settleProperty(1, asset.assetPrice)
+    ).to.be.revertedWith("Due date not passed");
   });
 
   it("Should revert to settle asset with invalid id", async function () {
@@ -650,9 +651,9 @@ describe("Marketplace", function () {
   });
 
   it("Should revert to settle property with invalid id", async function () {
-    await expect(marketplaceContract.settleProperty(1, asset.assetPrice)).to.be.revertedWith(
-      "Invalid asset id"
-    );
+    await expect(
+      marketplaceContract.settleProperty(1, asset.assetPrice)
+    ).to.be.revertedWith("Invalid asset id");
   });
 
   it("Should revert to settle property with invalid amount", async function () {
@@ -831,7 +832,7 @@ describe("Marketplace", function () {
       marketplaceContract.address
     );
 
-    expect(
+    await expect(
       await marketplaceContract.createAsset(
         user1.address,
         1,
@@ -841,7 +842,7 @@ describe("Marketplace", function () {
       )
     )
       .to.emit(marketplaceContract, "AssetListed")
-      .withArgs(user1.address, 1);
+      .withArgs(user1.address, 1, 1, asset.assetPrice);
 
     await stableTokenContract
       .connect(buyer)
@@ -860,9 +861,9 @@ describe("Marketplace", function () {
 
     await time.increase(1000);
 
-    expect(await marketplaceContract.settleAsset(1))
-      .to.emit(assetContract, "AssetSettled")
-      .withArgs(1);
+    await expect(await marketplaceContract.settleAsset(1))
+      .to.emit(marketplaceContract, "AssetSettled")
+      .withArgs(buyer.address, 1, 1);
 
     const afterSettle = await stableTokenContract.balanceOf(buyer.address);
 
@@ -875,7 +876,7 @@ describe("Marketplace", function () {
       marketplaceContract.address
     );
 
-    expect(
+    await expect(
       await marketplaceContract.createProperty(
         user1.address,
         1,
@@ -908,9 +909,11 @@ describe("Marketplace", function () {
 
     await time.increase(1000);
 
-    expect(await marketplaceContract.settleProperty(1, 2 * asset.assetPrice))
-      .to.emit(assetContract, "AssetSettled")
-      .withArgs(asset.owner, 2, 1);
+    await expect(
+      await marketplaceContract.settleProperty(1, 2 * asset.assetPrice)
+    )
+      .to.emit(marketplaceContract, "AssetSettled")
+      .withArgs(buyer.address, 2, 1);
 
     const afterSettle = await stableTokenContract.balanceOf(buyer.address);
 
@@ -923,7 +926,7 @@ describe("Marketplace", function () {
       marketplaceContract.address
     );
 
-    expect(
+    await expect(
       await marketplaceContract.createAsset(
         user1.address,
         1,
@@ -933,7 +936,7 @@ describe("Marketplace", function () {
       )
     )
       .to.emit(marketplaceContract, "AssetListed")
-      .withArgs(user1.address, 1);
+      .withArgs(user1.address, 1, 1, asset.assetPrice);
 
     await time.increase(YEAR);
 
@@ -1033,12 +1036,13 @@ describe("Marketplace", function () {
       .connect(buyer)
       .approve(marketplaceContract.address, totalStableTokenAmount);
 
-    await expect(marketplaceContract.connect(buyer).batchBuy([1], [1, 2])).to.be.revertedWith(
-      "No array parity"
-    );
+    await expect(
+      marketplaceContract.connect(buyer).batchBuy([1], [1, 2])
+    ).to.be.revertedWith("No array parity");
 
-    await expect(await marketplaceContract.connect(buyer).batchBuy([1, 1], [1, 2])).not
-      .to.be.reverted;
+    await expect(
+      await marketplaceContract.connect(buyer).batchBuy([1, 1], [1, 2])
+    ).not.to.be.reverted;
 
     expect(await stableTokenContract.balanceOf(treasuryWallet.address)).to.eq(
       totalStableTokenAmount
@@ -1072,9 +1076,9 @@ describe("Marketplace", function () {
 
     await marketplaceContract.connect(buyer).buy(1, 1);
 
-    await expect(marketplaceContract.connect(user1).buy(1, 1)).to.be.revertedWith(
-      "Asset is not relisted"
-    );
+    await expect(
+      marketplaceContract.connect(user1).buy(1, 1)
+    ).to.be.revertedWith("Asset is not relisted");
   });
 
   it("Should receive batch created assets", async function () {
