@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { asset, MarketplaceAccess, DAY, YEAR } = require("./data");
+const { property, asset, MarketplaceAccess, DAY, YEAR } = require("./data");
 const { time } = require("@nomicfoundation/hardhat-network-helpers");
 const { now } = require("./helpers");
 
@@ -50,6 +50,34 @@ describe("Marketplace", function () {
       treasuryWallet.address,
       feeWallet.address
     );
+
+    await assetContract.setBaseURI(
+      2,
+      "https://ipfs.io/ipfs"
+    )
+  });
+
+  it("Should create property successfully", async function () {
+    await assetContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+
+    expect(
+      await marketplaceContract.createProperty(
+        user1.address,
+        1,
+        asset.assetPrice,
+        asset.dueDate,
+        property
+      )
+    )
+      .to.emit(assetContract, "AssetCreated")
+      .withArgs(user1.address, 2, 1);
+
+    expect(await assetContract.subIdBalanceOf(user1.address, 2)).to.eq(1);
+
+    expect(await assetContract.tokenURI(2, 1)).to.eq(`https://ipfs.io/ipfs${1}`);
   });
 
   it("Should create asset successfully", async function () {
@@ -350,6 +378,41 @@ describe("Marketplace", function () {
     expect(info.dueDate).to.eq(asset.dueDate);
   });
 
+  it("Should return the property info struct", async function () {
+    await assetContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+
+    expect(
+      await marketplaceContract.createProperty(
+        user1.address,
+        1,
+        asset.assetPrice,
+        asset.dueDate,
+        property
+      )
+    )
+      .to.emit(assetContract, "AssetCreated")
+      .withArgs(user1.address, 2, 1);
+
+    const info = await marketplaceContract.getAssetInfo(2, 1);
+    const propInfo = await marketplaceContract.getPropertyInfo(1);
+
+    expect(info.owner).to.eq(user1.address);
+    expect(info.price).to.eq(asset.assetPrice);
+    expect(info.rewardApr).to.eq(0);
+    expect(info.dueDate).to.eq(asset.dueDate);
+    expect(propInfo.value).to.eq(property.value);
+    expect(propInfo.size).to.eq(property.size);
+    expect(propInfo.rooms).to.eq(property.rooms);
+    expect(propInfo.bathrooms).to.eq(property.bathrooms);
+    expect(propInfo.constructionDate).to.eq(property.constructionDate);
+    expect(propInfo.country).to.eq(property.country);
+    expect(propInfo.city).to.eq(property.city);
+    expect(propInfo.location).to.eq(property.location);
+  });
+
   it("Should return the asset contract address while calling getAssetCollection()", async function () {
     expect(await marketplaceContract.getAssetCollection()).to.eq(
       assetContract.address
@@ -415,6 +478,25 @@ describe("Marketplace", function () {
     );
   });
 
+  it("Should revert to create property without admin role", async function () {
+    await expect(
+      marketplaceContract
+        .connect(user1)
+        .createProperty(
+          user1.address,
+          1,
+          asset.assetPrice,
+          asset.dueDate,
+          property
+        )
+    ).to.be.revertedWith(
+      `AccessControl: account ${user1.address.toLowerCase()} is missing role ${ethers.utils.hexZeroPad(
+        ethers.utils.hexlify(0),
+        32
+      )}`
+    );
+  });
+
   it("Should revert to create asset without admin role", async function () {
     await expect(
       marketplaceContract
@@ -448,6 +530,17 @@ describe("Marketplace", function () {
   it("Should revert to settle asset without admin role", async function () {
     await expect(
       marketplaceContract.connect(user1).settleAsset(1)
+    ).to.be.revertedWith(
+      `AccessControl: account ${user1.address.toLowerCase()} is missing role ${ethers.utils.hexZeroPad(
+        ethers.utils.hexlify(0),
+        32
+      )}`
+    );
+  });
+
+  it("Should revert to settle property without admin role", async function () {
+    await expect(
+      marketplaceContract.connect(user1).settleProperty(1, 100)
     ).to.be.revertedWith(
       `AccessControl: account ${user1.address.toLowerCase()} is missing role ${ethers.utils.hexZeroPad(
         ethers.utils.hexlify(0),
@@ -504,7 +597,7 @@ describe("Marketplace", function () {
       )
     )
       .to.emit(marketplaceContract, "AssetListed")
-      .withArgs(user1.address, 1);
+      .withArgs(user1.address, 1, 1, asset.assetPrice);
 
     await stableTokenContract
       .connect(buyer)
@@ -519,9 +612,52 @@ describe("Marketplace", function () {
     );
   });
 
+  it("Should revert to settle property before due date", async function () {
+    await assetContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+
+    expect(
+      await marketplaceContract.createProperty(
+        user1.address,
+        1,
+        asset.assetPrice,
+        asset.dueDate,
+        property
+      )
+    )
+      .to.emit(marketplaceContract, "AssetListed")
+      .withArgs(user1.address, 2, 1, asset.assetPrice);
+
+    await stableTokenContract
+      .connect(buyer)
+      .transfer(treasuryWallet.address, asset.assetPrice);
+
+    await stableTokenContract
+      .connect(treasuryWallet)
+      .approve(marketplaceContract.address, asset.assetPrice);
+
+    await expect(marketplaceContract.settleProperty(1, asset.assetPrice)).to.be.revertedWith(
+      "Due date not passed"
+    );
+  });
+
   it("Should revert to settle asset with invalid id", async function () {
     await expect(marketplaceContract.settleAsset(1)).to.be.revertedWith(
       "Invalid asset id"
+    );
+  });
+
+  it("Should revert to settle property with invalid id", async function () {
+    await expect(marketplaceContract.settleProperty(1, asset.assetPrice)).to.be.revertedWith(
+      "Invalid asset id"
+    );
+  });
+
+  it("Should revert to settle property with invalid amount", async function () {
+    await expect(marketplaceContract.settleProperty(1, 0)).to.be.revertedWith(
+      "Invalid settle amount"
     );
   });
 
@@ -733,6 +869,54 @@ describe("Marketplace", function () {
     expect(afterSettle.sub(beforeSettle)).to.be.equal(asset.assetPrice);
   });
 
+  it("Should create a property settle the asset after due date", async function () {
+    await assetContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.address
+    );
+
+    expect(
+      await marketplaceContract.createProperty(
+        user1.address,
+        1,
+        asset.assetPrice,
+        (await now()) + 100,
+        property
+      )
+    )
+      .to.emit(marketplaceContract, "AssetListed")
+      .withArgs(user1.address, 2, 1, asset.assetPrice);
+
+    await stableTokenContract
+      .connect(buyer)
+      .transfer(treasuryWallet.address, 2 * asset.assetPrice);
+
+    await stableTokenContract
+      .connect(buyer)
+      .approve(marketplaceContract.address, asset.assetPrice);
+
+    await stableTokenContract
+      .connect(treasuryWallet)
+      .approve(marketplaceContract.address, 2 * asset.assetPrice);
+
+    await expect(await marketplaceContract.connect(buyer).buy(2, 1)).not.to.be
+      .reverted;
+
+    await time.increase(10);
+
+    const beforeSettle = await stableTokenContract.balanceOf(buyer.address);
+
+    await time.increase(1000);
+
+    expect(await marketplaceContract.settleProperty(1, 2 * asset.assetPrice))
+      .to.emit(assetContract, "AssetSettled")
+      .withArgs(asset.owner, 2, 1);
+
+    const afterSettle = await stableTokenContract.balanceOf(buyer.address);
+
+    expect(afterSettle.sub(beforeSettle)).to.be.equal(2 * asset.assetPrice);
+  });
+
   it("Should get remaining zero reward after due date", async function () {
     await assetContract.grantRole(
       MarketplaceAccess,
@@ -848,6 +1032,10 @@ describe("Marketplace", function () {
     await stableTokenContract
       .connect(buyer)
       .approve(marketplaceContract.address, totalStableTokenAmount);
+
+    await expect(marketplaceContract.connect(buyer).batchBuy([1], [1, 2])).to.be.revertedWith(
+      "No array parity"
+    );
 
     await expect(await marketplaceContract.connect(buyer).batchBuy([1, 1], [1, 2])).not
       .to.be.reverted;
