@@ -531,25 +531,6 @@ contract Marketplace is
             "Asset already created"
         );
         _assetCollection.createAsset(owner, assetType, assetId);
-        _listAsset(owner, assetType, assetId, price, apr, dueDate);
-    }
-
-    /**
-     * @dev Called when asset creates
-     * @param owner, address of asset owner
-     * @param assetId, unique identifier of asset
-     * @param price, asset price to sell and settle
-     * @param apr, annual percentage rate for calculating rewards
-     * @param dueDate, end date for calculating rewards
-     */
-    function _listAsset(
-        address owner,
-        uint256 assetType,
-        uint256 assetId,
-        uint256 price,
-        uint256 apr,
-        uint256 dueDate
-    ) private {
         _assets[assetType][assetId] = AssetInfo(
             owner,
             price,
