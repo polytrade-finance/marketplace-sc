@@ -18,38 +18,38 @@ describe("Asset", function () {
       "https://ipfs.io/ipfs"
     );
 
-    await assetContract.deployed();
+    await assetContract.waitForDeployment();
   });
 
   it("Should revert on creating asset by invalid caller", async function () {
     await expect(
-      assetContract.connect(deployer).createAsset(deployer.address, 1, 1)
+      assetContract.connect(deployer).createAsset(deployer.getAddress(), 1, 1)
     ).to.be.revertedWith(
-      `AccessControl: account ${deployer.address.toLowerCase()} is missing role ${MarketplaceAccess}`
+      `AccessControl: account ${deployer.getAddress().toLowerCase()} is missing role ${MarketplaceAccess}`
     );
   });
 
   it("Should revert on burning asset by invalid caller", async function () {
     await expect(
-      assetContract.connect(deployer).burnAsset(deployer.address, 1, 1)
+      assetContract.connect(deployer).burnAsset(deployer.getAddress(), 1, 1)
     ).to.be.revertedWith(
-      `AccessControl: account ${deployer.address.toLowerCase()} is missing role ${MarketplaceAccess}`
+      `AccessControl: account ${deployer.getAddress().toLowerCase()} is missing role ${MarketplaceAccess}`
     );
   });
 
   it("Should revert on calling `createAsset` without interface support", async function () {
-    await assetContract.grantRole(MarketplaceAccess, deployer.address);
+    await assetContract.grantRole(MarketplaceAccess, deployer.getAddress());
 
     await expect(
-      assetContract.createAsset(deployer.address, 1, 1)
+      assetContract.createAsset(deployer.getAddress(), 1, 1)
     ).to.be.revertedWithCustomError(assetContract, "UnsupportedInterface");
   });
 
   it("Should revert on calling `burnAsset` without interface support", async function () {
-    await assetContract.grantRole(MarketplaceAccess, deployer.address);
+    await assetContract.grantRole(MarketplaceAccess, deployer.getAddress());
 
     await expect(
-      assetContract.burnAsset(deployer.address, 1, 1)
+      assetContract.burnAsset(deployer.getAddress(), 1, 1)
     ).to.be.revertedWithCustomError(assetContract, "UnsupportedInterface");
   });
 

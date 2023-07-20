@@ -1,6 +1,5 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { splitSignature } = require("ethers/lib/utils");
 const { asset, MarketplaceAccess, offer } = require("./data");
 const { time } = require("@nomicfoundation/hardhat-network-helpers");
 const { now } = require("./helpers");
@@ -41,27 +40,27 @@ describe("Marketplace Signatures", function () {
       "https://ipfs.io/ipfs"
     );
 
-    await assetContract.deployed();
+    await assetContract.waitForDeployment();
 
     stableTokenContract = await (
       await ethers.getContractFactory("ERC20Token")
-    ).deploy("USD Dollar", "USDC", 18, offeror.address, 200000);
+    ).deploy("USD Dollar", "USDC", 18, offeror.getAddress(), 200000);
 
     marketplaceContract = await (
       await ethers.getContractFactory("Marketplace")
     ).deploy(
-      assetContract.address,
-      stableTokenContract.address,
-      treasuryWallet.address,
-      feeWallet.address
+      assetContract.getAddress(),
+      stableTokenContract.getAddress(),
+      treasuryWallet.getAddress(),
+      feeWallet.getAddress()
     );
 
     await assetContract.grantRole(
       MarketplaceAccess,
-      marketplaceContract.address
+      marketplaceContract.getAddress()
     );
     await marketplaceContract.createAsset(
-      user1.address,
+      user1.getAddress(),
       1,
       asset.assetPrice,
       asset.rewardApr,
@@ -70,7 +69,7 @@ describe("Marketplace Signatures", function () {
 
     await stableTokenContract
       .connect(offeror)
-      .approve(marketplaceContract.address, 10 * asset.assetPrice);
+      .approve(marketplaceContract.getAddress(), 10n * asset.assetPrice);
 
     domainSeparator = await marketplaceContract.DOMAIN_SEPARATOR();
 
@@ -78,7 +77,7 @@ describe("Marketplace Signatures", function () {
       name,
       version,
       chainId,
-      verifyingContract: marketplaceContract.address,
+      verifyingContract: await marketplaceContract.getAddress(),
     };
 
     offerType = {
@@ -96,7 +95,7 @@ describe("Marketplace Signatures", function () {
 
   describe("Counter Offer", function () {
     it("Should return 0 for initial nonce", async function () {
-      expect(await marketplaceContract.nonces(user1.address)).to.be.equal("0");
+      expect(await marketplaceContract.nonces(user1.getAddress())).to.be.equal("0");
     });
 
     it("Should return correct domain separator", async function () {
@@ -104,40 +103,40 @@ describe("Marketplace Signatures", function () {
         await domainSeparatorCal(
           name,
           version,
-          31337,
-          marketplaceContract.address
+          chainId,
+          await marketplaceContract.getAddress()
         )
       );
     });
 
     it("Should buy asset with owner signed offer", async function () {
       params = {
-        owner: user1.address,
-        offeror: offeror.address,
+        owner: await user1.getAddress(),
+        offeror: await offeror.getAddress(),
         offerPrice: offer.offerPrice,
         assetType: 1,
         assetId: 1,
         nonce: 0,
-        deadline: offer.deadline + (await now()),
+        deadline: offer.deadline + BigInt(await now()),
       };
 
       signature = await user1._signTypedData(domainData, offerType, params);
       // Validate Signature Offchain
       const hash = calculateOfferHash(params);
 
-      validateRecoveredAddress(user1.address, domainSeparator, hash, signature);
+      validateRecoveredAddress(user1.getAddress(), domainSeparator, hash, signature);
 
-      const { r, s, v } = splitSignature(signature);
+      const { r, s, v } = ethers.Signature.from(signature);
 
       const balanceBeforeBuy = await stableTokenContract.balanceOf(
-        offeror.address
+        offeror.getAddress()
       );
 
       await marketplaceContract
         .connect(offeror)
         .counterOffer(
-          user1.address,
-          offeror.address,
+          user1.getAddress(),
+          offeror.getAddress(),
           offer.offerPrice,
           1,
           1,
@@ -148,22 +147,22 @@ describe("Marketplace Signatures", function () {
         );
 
       const balanceAfterBuy = await stableTokenContract.balanceOf(
-        offeror.address
+        offeror.getAddress()
       );
 
       expect(balanceBeforeBuy.sub(balanceAfterBuy)).to.be.equal(
         offer.offerPrice
       );
-      expect(await marketplaceContract.nonces(user1.address)).to.be.equal("1");
+      expect(await marketplaceContract.nonces(user1.getAddress())).to.be.equal("1");
       expect(
-        await stableTokenContract.balanceOf(treasuryWallet.address)
+        await stableTokenContract.balanceOf(treasuryWallet.getAddress())
       ).to.be.equal(offer.offerPrice);
     });
 
     it("Should revert if signer is not asset owner", async function () {
       params = {
-        owner: offeror.address,
-        offeror: user1.address,
+        owner: offeror.getAddress(),
+        offeror: user1.getAddress(),
         offerPrice: offer.offerPrice,
         assetType: 1,
         assetId: 1,
@@ -173,14 +172,14 @@ describe("Marketplace Signatures", function () {
 
       signature = await offeror._signTypedData(domainData, offerType, params);
 
-      const { r, s, v } = splitSignature(signature);
+      const { r, s, v } = ethers.Signature.from(signature);
 
       await expect(
         marketplaceContract
           .connect(offeror)
           .counterOffer(
-            offeror.address,
-            user1.address,
+            offeror.getAddress(),
+            user1.getAddress(),
             offer.offerPrice,
             1,
             1,
@@ -194,8 +193,8 @@ describe("Marketplace Signatures", function () {
 
     it("Should revert if sender is not offeror", async function () {
       params = {
-        owner: user1.address,
-        offeror: offeror.address,
+        owner: user1.getAddress(),
+        offeror: offeror.getAddress(),
         offerPrice: offer.offerPrice,
         assetType: 1,
         assetId: 1,
@@ -205,14 +204,14 @@ describe("Marketplace Signatures", function () {
 
       signature = await user1._signTypedData(domainData, offerType, params);
 
-      const { r, s, v } = splitSignature(signature);
+      const { r, s, v } = ethers.Signature.from(signature);
 
       await expect(
         marketplaceContract
           .connect(user1)
           .counterOffer(
-            user1.address,
-            offeror.address,
+            user1.getAddress(),
+            offeror.getAddress(),
             offer.offerPrice,
             1,
             1,
@@ -225,14 +224,14 @@ describe("Marketplace Signatures", function () {
     });
 
     it("Should revert reused signature by offeror", async function () {
-      const { r, s, v } = splitSignature(signature);
+      const { r, s, v } = ethers.Signature.from(signature);
 
       await expect(
         marketplaceContract
           .connect(offeror)
           .counterOffer(
-            user1.address,
-            offeror.address,
+            user1.getAddress(),
+            offeror.getAddress(),
             offer.offerPrice,
             1,
             1,
@@ -249,12 +248,12 @@ describe("Marketplace Signatures", function () {
 
       signature = await user1._signTypedData(domainData, offerType, params);
 
-      const { r, s, v } = splitSignature(signature);
+      const { r, s, v } = ethers.Signature.from(signature);
 
       await expect(
         marketplaceContract.counterOffer(
-          user1.address,
-          offeror.address,
+          user1.getAddress(),
+          offeror.getAddress(),
           offer.offerPrice,
           1,
           1,
