@@ -8,7 +8,7 @@ const toBN = (n) => BigInt(toHex(n, 0));
 
 const toHex = (n, numBytes) => {
   const asHexString = typeof n === "bigint"
-    ? n.toBeHex().slice(2)
+    ? ethers.toBeHex(n).slice(2)
     : typeof n === "string"
       ? hexRegex.test(n)
         ? n.replace(/0x/, "")
@@ -29,11 +29,11 @@ const calculateOfferHash = (params) => {
       offerTypeHash.slice(2),
       params.owner.slice(2).padStart(64, "0"),
       params.offeror.slice(2).padStart(64, "0"),
-      toBN(params.offerPrice).toBeHex().slice(2).padStart(64, "0"),
-      toBN(params.assetType).toBeHex().slice(2).padStart(64, "0"),
-      toBN(params.assetId).toBeHex().slice(2).padStart(64, "0"),
-      toBN(params.nonce).toBeHex().slice(2).padStart(64, "0"),
-      toBN(params.deadline).toBeHex().slice(2).padStart(64, "0"),
+      ethers.toBeHex(toBN(params.offerPrice)).slice(2).padStart(64, "0"),
+      ethers.toBeHex(toBN(params.assetType)).slice(2).padStart(64, "0"),
+      ethers.toBeHex(toBN(params.assetId)).slice(2).padStart(64, "0"),
+      ethers.toBeHex(toBN(params.nonce)).slice(2).padStart(64, "0"),
+      ethers.toBeHex(toBN(params.deadline)).slice(2).padStart(64, "0"),
     ].join("")
   );
 

@@ -120,11 +120,11 @@ describe("Marketplace Signatures", function () {
         deadline: offer.deadline + BigInt(await now()),
       };
 
-      signature = await user1._signTypedData(domainData, offerType, params);
+      signature = await user1.signTypedData(domainData, offerType, params);
       // Validate Signature Offchain
       const hash = calculateOfferHash(params);
 
-      validateRecoveredAddress(user1.getAddress(), domainSeparator, hash, signature);
+      validateRecoveredAddress(await user1.getAddress(), domainSeparator, hash, signature);
 
       const { r, s, v } = ethers.Signature.from(signature);
 
@@ -140,7 +140,7 @@ describe("Marketplace Signatures", function () {
           offer.offerPrice,
           1,
           1,
-          offer.deadline + (await now()),
+          offer.deadline + BigInt(await now()),
           v,
           r,
           s
@@ -150,7 +150,7 @@ describe("Marketplace Signatures", function () {
         offeror.getAddress()
       );
 
-      expect(balanceBeforeBuy.sub(balanceAfterBuy)).to.be.equal(
+      expect(balanceBeforeBuy - balanceAfterBuy).to.be.equal(
         offer.offerPrice
       );
       expect(await marketplaceContract.nonces(user1.getAddress())).to.be.equal("1");
@@ -161,16 +161,16 @@ describe("Marketplace Signatures", function () {
 
     it("Should revert if signer is not asset owner", async function () {
       params = {
-        owner: offeror.getAddress(),
-        offeror: user1.getAddress(),
+        owner: await offeror.getAddress(),
+        offeror: await user1.getAddress(),
         offerPrice: offer.offerPrice,
         assetType: 1,
         assetId: 1,
         nonce: 0,
-        deadline: offer.deadline + (await now()),
+        deadline: offer.deadline + BigInt(await now()),
       };
 
-      signature = await offeror._signTypedData(domainData, offerType, params);
+      signature = await offeror.signTypedData(domainData, offerType, params);
 
       const { r, s, v } = ethers.Signature.from(signature);
 
@@ -183,7 +183,7 @@ describe("Marketplace Signatures", function () {
             offer.offerPrice,
             1,
             1,
-            offer.deadline + (await now()),
+            offer.deadline + BigInt(await now()),
             v,
             r,
             s
@@ -193,16 +193,16 @@ describe("Marketplace Signatures", function () {
 
     it("Should revert if sender is not offeror", async function () {
       params = {
-        owner: user1.getAddress(),
-        offeror: offeror.getAddress(),
+        owner: await user1.getAddress(),
+        offeror: await offeror.getAddress(),
         offerPrice: offer.offerPrice,
         assetType: 1,
         assetId: 1,
         nonce: 0,
-        deadline: offer.deadline + (await now()),
+        deadline: offer.deadline + BigInt(await now()),
       };
 
-      signature = await user1._signTypedData(domainData, offerType, params);
+      signature = await user1.signTypedData(domainData, offerType, params);
 
       const { r, s, v } = ethers.Signature.from(signature);
 
@@ -215,7 +215,7 @@ describe("Marketplace Signatures", function () {
             offer.offerPrice,
             1,
             1,
-            offer.deadline + (await now()),
+            offer.deadline + BigInt(await now()),
             v,
             r,
             s
@@ -235,7 +235,7 @@ describe("Marketplace Signatures", function () {
             offer.offerPrice,
             1,
             1,
-            offer.deadline + (await now()),
+            offer.deadline + BigInt(await now()),
             v,
             r,
             s
@@ -244,9 +244,9 @@ describe("Marketplace Signatures", function () {
     });
 
     it("Should revert expired offers", async function () {
-      const expiredDeadline = (await time.latest()) - 100;
+      const expiredDeadline = BigInt(await time.latest()) - 100n;
 
-      signature = await user1._signTypedData(domainData, offerType, params);
+      signature = await user1.signTypedData(domainData, offerType, params);
 
       const { r, s, v } = ethers.Signature.from(signature);
 
