@@ -37,13 +37,14 @@ describe("Marketplace Signatures", function () {
     assetContract = await AssetFactory.deploy(
       "Polytrade Asset Collection",
       "PIC",
+      "2.1",
       "https://ipfs.io/ipfs"
     );
 
     await assetContract.deployed();
 
     stableTokenContract = await (
-      await ethers.getContractFactory("Token")
+      await ethers.getContractFactory("ERC20Token")
     ).deploy("USD Dollar", "USDC", 18, offeror.address, 200000);
 
     marketplaceContract = await (
@@ -64,7 +65,7 @@ describe("Marketplace Signatures", function () {
       1,
       asset.assetPrice,
       asset.rewardApr,
-      asset.dueDate
+      (await now()) + 100
     );
 
     await stableTokenContract
@@ -85,6 +86,7 @@ describe("Marketplace Signatures", function () {
         { name: "owner", type: "address" },
         { name: "offeror", type: "address" },
         { name: "offerPrice", type: "uint256" },
+        { name: "assetType", type: "uint256" },
         { name: "assetId", type: "uint256" },
         { name: "nonce", type: "uint256" },
         { name: "deadline", type: "uint256" },
@@ -113,6 +115,7 @@ describe("Marketplace Signatures", function () {
         owner: user1.address,
         offeror: offeror.address,
         offerPrice: offer.offerPrice,
+        assetType: 1,
         assetId: 1,
         nonce: 0,
         deadline: offer.deadline + (await now()),
@@ -136,6 +139,7 @@ describe("Marketplace Signatures", function () {
           user1.address,
           offeror.address,
           offer.offerPrice,
+          1,
           1,
           offer.deadline + (await now()),
           v,
@@ -161,6 +165,7 @@ describe("Marketplace Signatures", function () {
         owner: offeror.address,
         offeror: user1.address,
         offerPrice: offer.offerPrice,
+        assetType: 1,
         assetId: 1,
         nonce: 0,
         deadline: offer.deadline + (await now()),
@@ -178,6 +183,7 @@ describe("Marketplace Signatures", function () {
             user1.address,
             offer.offerPrice,
             1,
+            1,
             offer.deadline + (await now()),
             v,
             r,
@@ -191,6 +197,7 @@ describe("Marketplace Signatures", function () {
         owner: user1.address,
         offeror: offeror.address,
         offerPrice: offer.offerPrice,
+        assetType: 1,
         assetId: 1,
         nonce: 0,
         deadline: offer.deadline + (await now()),
@@ -207,6 +214,7 @@ describe("Marketplace Signatures", function () {
             user1.address,
             offeror.address,
             offer.offerPrice,
+            1,
             1,
             offer.deadline + (await now()),
             v,
@@ -226,6 +234,7 @@ describe("Marketplace Signatures", function () {
             user1.address,
             offeror.address,
             offer.offerPrice,
+            1,
             1,
             offer.deadline + (await now()),
             v,
@@ -247,6 +256,7 @@ describe("Marketplace Signatures", function () {
           user1.address,
           offeror.address,
           offer.offerPrice,
+          1,
           1,
           expiredDeadline,
           v,

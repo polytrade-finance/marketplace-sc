@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity =0.8.17;
+pragma solidity 0.8.17;
 
 /**
  * @title The main interface to define the main marketplace
@@ -7,6 +7,60 @@ pragma solidity =0.8.17;
  * @dev Collection of all procedures related to the marketplace
  */
 interface IMarketplace {
+    /**
+     * @title A new struct to define the asset information
+     * @param owner, is the address of owner of asset
+     * @param price, is the price of asset
+     * @param salePrice, is the sale price of asset
+     * @param rewardApr, is the Apr for calculating rewards
+     * @param dueDate, is the end date for caluclating rewards
+     * @param lastClaimDate, is the date of last claim rewards
+     */
+    struct AssetInfo {
+        address owner;
+        uint256 price;
+        uint256 salePrice;
+        uint256 rewardApr;
+        uint256 dueDate;
+        uint256 lastClaimDate;
+    }
+
+    /**
+     * @title storing property information
+     * @param value, is the value of the property
+     * @param size, is the size of the property is sq2
+     * @param rooms, is the number of the rooms
+     * @param bathrooms, is the number of the bathrooms
+     * @param constructionDate, is the date of property construction
+     * @param country, is the location country
+     * @param city, is the location city
+     * @param location, is the google map location
+     */
+    struct PropertyInfo {
+        uint256 value;
+        uint256 size;
+        uint256 rooms;
+        uint256 bathrooms;
+        uint256 constructionDate;
+        string country;
+        string city;
+        string location;
+    }
+
+    /**
+     * @dev Emitted when an asset is listed with it's parameters for an owner
+     * @param owner, Address of the initial onvoice owner
+     * @param assetType, assetType identifies whether its a property or an invoice
+     * @param assetId, assetId is the unique identifier of asset
+     * @param price, assetId is the unique identifier of asset
+     */
+    event AssetListed(
+        address indexed owner,
+        uint256 assetType,
+        uint256 assetId,
+        uint256 price
+    );
+
     /**
      * @dev Emitted when new `Treasury Wallet` has been set
      * @param oldTreasuryWallet, Address of the old treasury wallet
@@ -27,20 +81,31 @@ interface IMarketplace {
     /**
      * @dev Emitted when new rewards claimed by current owner
      * @param receiver, Address of reward receiver
+     * @param assetType, assetType identifies whether its a property or an invoice
+     * @param assetId, assetId is the unique identifier of asset
      * @param reward, Amount of rewards received
      */
-    event RewardsClaimed(address indexed receiver, uint256 reward);
+    event RewardsClaimed(
+        address indexed receiver,
+        uint256 assetType,
+        uint256 assetId,
+        uint256 reward
+    );
 
     /**
      * @dev Emitted when asset owner changes
      * @param oldOwner, Address of the previous owner
      * @param newOwner, Address of the new owner
-     * @param id, idof the bought asset
+     * @param assetType, assetType identifies whether its a property or an invoice
+     * @param assetId, id of the bought asset
+     @ @param salePrice, the price that asset bought for
      */
     event AssetBought(
         address indexed oldOwner,
         address indexed newOwner,
-        uint256 id
+        uint256 assetType,
+        uint256 assetId,
+        uint256 salePrice
     );
 
     /**
@@ -62,16 +127,28 @@ interface IMarketplace {
     /**
      * @dev Emitted when an asset is settled
      * @param owner, address of the asset owner
+     * @param assetType, assetType identifies whether its a property or an invoice
      * @param assetId, unique number of the asset
      */
-    event AssetSettled(address indexed owner, uint256 assetId);
+    event AssetSettled(
+        address indexed owner,
+        uint256 assetType,
+        uint256 assetId
+    );
 
     /**
      * @dev Emitted when an asset is settled
+     * @param owner, address of the asset owner
+     * @param assetType, assetType identifies whether its a property or an invoice
      * @param assetId, unique number of the asset
      * @param salePrice, unique number of the asset
      */
-    event AssetRelisted(uint256 assetId, uint256 salePrice);
+    event AssetRelisted(
+        address indexed owner,
+        uint256 indexed assetType,
+        uint256 indexed assetId,
+        uint256 salePrice
+    );
 
     /**
      * @dev Reverted on unsupported interface detection
@@ -81,7 +158,7 @@ interface IMarketplace {
     /**
      * @dev Creates an asset with its parameters
      * @param owner, initial owner of asset
-     * @param mainId, unique identifier of asset
+     * @param assetId, unique identifier of asset
      * @param price, asset price to sell
      * @param dueDate, end date for calculating rewards
      * @param apr, annual percentage rate for calculating rewards
@@ -89,16 +166,33 @@ interface IMarketplace {
      */
     function createAsset(
         address owner,
-        uint256 mainId,
+        uint256 assetId,
         uint256 price,
         uint256 apr,
         uint256 dueDate
     ) external;
 
     /**
+     * @dev Creates a property with its parameters
+     * @param owner, initial owner of property
+     * @param assetId, unique identifier of property
+     * @param price, property price to sell
+     * @param dueDate, minimum locking duration for property
+     * @param propertyInfo, is the property information in PropertyInfo format
+     * @dev Needs admin access to create an asset
+     */
+    function createProperty(
+        address owner,
+        uint256 assetId,
+        uint256 price,
+        uint256 dueDate,
+        PropertyInfo calldata propertyInfo
+    ) external;
+
+    /**
      * @dev Creates batch asset with their parameters
      * @param owners, initial owners of assets
-     * @param mainIds, unique identifiers of assets
+     * @param assetIds, unique identifiers of assets
      * @param prices, assets price to sell
      * @param dueDates, end dates for calculating rewards
      * @param aprs, annual percentage rates for calculating rewards
@@ -106,7 +200,7 @@ interface IMarketplace {
      */
     function batchCreateAsset(
         address[] calldata owners,
-        uint256[] calldata mainIds,
+        uint256[] calldata assetIds,
         uint256[] calldata prices,
         uint256[] calldata aprs,
         uint256[] calldata dueDates
@@ -114,42 +208,55 @@ interface IMarketplace {
 
     /**
      * @dev Settles an asset after due date and claim remaining rewards for the owner
-     * @dev call `settleasset` function from asset collection
-     * @dev Burns the asset and transfers the price to current owner
+     * @dev Transfer back the asset and transfers the price to current owner
+     * @dev Transfer price to current owner
+     * @dev Deletes the stored parameters
      * @param assetId, unique number of the asset
      */
     function settleAsset(uint256 assetId) external;
 
     /**
-     * @dev Transfer asset to buyer and price to treasuryWallet also deducts fee from buyer
+     * @dev Changes owner to buyer
+     * @dev Safe transfer asset to marketplace and transfer the price to treasury wallet if it is the first buy
+     * @dev Transfer the price to previous owner if it is not the first buy
      * @dev Owner should have approved marketplace to transfer its assets
      * @dev Buyer should have approved marketplace to transfer its ERC20 tokens to pay price and fees
-     * @dev Automatically claims rewards for prevoius owner
+     * @param assetType, assetType identifies whether its a property or an invoice
      * @param assetId, unique number of the asset
      */
-    function buy(uint256 assetId) external;
+    function buy(uint256 assetType, uint256 assetId) external;
 
     /**
      * @dev Batch buy assets from owners
      * @dev Loop through arrays and calls the buy function
+     * @param assetTypes, arrray of assetTypes that identifies whether its a property or an invoice
      * @param assetIds, unique identifiers of the assets
      */
-    function batchBuy(uint256[] calldata assetIds) external;
+    function batchBuy(
+        uint256[] calldata assetTypes,
+        uint256[] calldata assetIds
+    ) external;
 
     /**
-     * @dev Relist an asset by current owner
+     * @dev Relist an asset for the current owner
+     * @param assetType, assetType identifies whether its a property or an invoice
      * @param assetId, unique identifier of the asset
      * @param salePrice, new price for asset sale
      */
-    function relist(uint256 assetId, uint256 salePrice) external;
+    function relist(
+        uint256 assetType,
+        uint256 assetId,
+        uint256 salePrice
+    ) external;
 
     /**
      * @dev claim available rewards for current owner
      * @dev updates lastClaimDate for the asset in the asset contract
      * @dev Caller should own the assetId
+     * @param assetType, assetType identifies whether its a property or an invoice
      * @param assetId, unique number of the asset
      */
-    function claimReward(uint256 assetId) external;
+    function claimReward(uint256 assetType, uint256 assetId) external;
 
     /**
      * @dev Set new initial fee
@@ -180,10 +287,11 @@ interface IMarketplace {
     function setFeeWallet(address newFeeWallet) external;
 
     /**
-     * @dev Allows to set a new fee wallet address where buying fees will be allocated.
+     * @dev Allows to buy asset with a signed message by owner with agreed sale price
      * @param owner, Address of the owner of asset
      * @param offeror, Address of the offeror
      * @param offerPrice, offered price for buying asset
+     * @param assetType, assetType identifies whether its a property or an invoice
      * @param assetId, asset id to buy
      * @param deadline, The expiration date of this agreement
      * Requirements:
@@ -199,6 +307,7 @@ interface IMarketplace {
         address owner,
         address offeror,
         uint256 offerPrice,
+        uint256 assetType,
         uint256 assetId,
         uint256 deadline,
         uint8 v,
@@ -257,4 +366,46 @@ interface IMarketplace {
      * @return percentage of buying fee with 2 decimals
      */
     function getBuyingFee() external view returns (uint256);
+
+    /**
+     * @dev Calculates the remaning reward
+     * @param assetId, unique identifier of asset
+     * @param assetType, assetType identifies whether its a property or an invoice
+     * @return reward the rewards Amount
+     */
+    function getRemainingReward(
+        uint256 assetType,
+        uint256 assetId
+    ) external view returns (uint256 reward);
+
+    /**
+     * @dev Calculates available rewards to claim
+     * @param assetType, assetType identifies whether its a property or an invoice
+     * @param assetId, unique identifier of asset
+     * @return reward the accumulated rewards amount for the current owner
+     */
+    function getAvailableReward(
+        uint256 assetType,
+        uint256 assetId
+    ) external view returns (uint256 reward);
+
+    /**
+     * @dev Gets the asset information
+     * @param assetType, assetType identifies whether its a property or an invoice
+     * @param assetId, unique identifier of asset
+     * @return AssetInfo struct
+     */
+    function getAssetInfo(
+        uint256 assetType,
+        uint256 assetId
+    ) external view returns (AssetInfo memory);
+
+    /**
+     * @dev Gets the property information
+     * @param assetId, unique identifier of asset
+     * @return PropertyInfo struct
+     */
+    function getPropertyInfo(
+        uint256 assetId
+    ) external view returns (PropertyInfo memory);
 }

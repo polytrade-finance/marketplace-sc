@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { asset, MarketplaceAccess } = require("./data");
+const { MarketplaceAccess } = require("./data");
 
 describe("Asset", function () {
   let assetContract;
@@ -13,7 +13,8 @@ describe("Asset", function () {
     const AssetFactory = await ethers.getContractFactory("Asset");
     assetContract = await AssetFactory.deploy(
       "Polytrade Asset Collection",
-      "PIC",
+      "PAC",
+      "2.1",
       "https://ipfs.io/ipfs"
     );
 
@@ -22,15 +23,15 @@ describe("Asset", function () {
 
   it("Should revert on creating asset by invalid caller", async function () {
     await expect(
-      assetContract
-        .connect(deployer)
-        .createAsset(
-          deployer.address,
-          1,
-          asset.assetPrice,
-          asset.rewardApr,
-          asset.dueDate
-        )
+      assetContract.connect(deployer).createAsset(deployer.address, 1, 1)
+    ).to.be.revertedWith(
+      `AccessControl: account ${deployer.address.toLowerCase()} is missing role ${MarketplaceAccess}`
+    );
+  });
+
+  it("Should revert on burning asset by invalid caller", async function () {
+    await expect(
+      assetContract.connect(deployer).burnAsset(deployer.address, 1, 1)
     ).to.be.revertedWith(
       `AccessControl: account ${deployer.address.toLowerCase()} is missing role ${MarketplaceAccess}`
     );
@@ -40,88 +41,26 @@ describe("Asset", function () {
     await assetContract.grantRole(MarketplaceAccess, deployer.address);
 
     await expect(
-      assetContract.createAsset(
-        deployer.address,
-        1,
-        asset.assetPrice,
-        asset.rewardApr,
-        asset.dueDate
-      )
+      assetContract.createAsset(deployer.address, 1, 1)
+    ).to.be.revertedWithCustomError(assetContract, "UnsupportedInterface");
+  });
+
+  it("Should revert on calling `burnAsset` without interface support", async function () {
+    await assetContract.grantRole(MarketplaceAccess, deployer.address);
+
+    await expect(
+      assetContract.burnAsset(deployer.address, 1, 1)
     ).to.be.revertedWithCustomError(assetContract, "UnsupportedInterface");
   });
 
   it("Should to set new base uri", async function () {
-    await expect(assetContract.setBaseURI("https://ipfs2.io/ipfs")).to.not.be
+    await expect(assetContract.setBaseURI(1, "https://ipfs2.io/ipfs")).to.not.be
       .reverted;
-  });
-
-  it("Should revert on calling `settleAsset` without interface support", async function () {
-    await assetContract.grantRole(MarketplaceAccess, deployer.address);
-
-    await expect(assetContract.settleAsset(1)).to.be.revertedWithCustomError(
-      assetContract,
-      "UnsupportedInterface"
-    );
-  });
-
-  it("Should revert on calling `claimReward` without interface support", async function () {
-    await assetContract.grantRole(MarketplaceAccess, deployer.address);
-
-    await expect(assetContract.updateClaim(1)).to.be.revertedWithCustomError(
-      assetContract,
-      "UnsupportedInterface"
-    );
-  });
-
-  it("Should revert to relist asset without marketplace role", async function () {
-    await expect(
-      assetContract.connect(deployer).relist(1, asset.assetPrice)
-    ).to.be.revertedWith(
-      `AccessControl: account ${deployer.address.toLowerCase()} is missing role ${MarketplaceAccess}`
-    );
-  });
-
-  it("Should revert to settle asset without marketplace role", async function () {
-    await expect(
-      assetContract.connect(deployer).settleAsset(1)
-    ).to.be.revertedWith(
-      `AccessControl: account ${deployer.address.toLowerCase()} is missing role ${MarketplaceAccess}`
-    );
   });
 
   it("Should revert to set new base uri by invalid caller", async function () {
     await expect(
-      assetContract.connect(user1).setBaseURI("https://ipfs2.io/ipfs")
+      assetContract.connect(user1).setBaseURI(1, "https://ipfs2.io/ipfs")
     ).to.be.reverted;
-  });
-
-  it("Should revert to update claim status without `MarketplaceAccess` role", async function () {
-    await expect(
-      assetContract.connect(user1).updateClaim(1)
-    ).to.be.revertedWith(
-      `AccessControl: account ${user1.address.toLowerCase()} is missing role ${MarketplaceAccess}`
-    );
-  });
-
-  it("Should revert to settle asset without `MarketplaceAccess` role", async function () {
-    await expect(
-      assetContract.connect(user1).updateClaim(1)
-    ).to.be.revertedWith(
-      `AccessControl: account ${user1.address.toLowerCase()} is missing role ${MarketplaceAccess}`
-    );
-  });
-
-  it("Should return zero rewards for not minted asset", async function () {
-    const expectedReward = 0;
-    const actualReward = await assetContract.getRemainingReward(2);
-
-    expect(actualReward).to.be.equal(expectedReward);
-  });
-
-  it("Should return zero available rewards for not minted asset", async function () {
-    const expectedReward = 0;
-    const actualReward = await assetContract.getAvailableReward(2);
-
-    expect(actualReward).to.be.equal(expectedReward);
   });
 });
