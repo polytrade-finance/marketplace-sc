@@ -7,9 +7,10 @@ const hexRegex = /[A-Fa-fx]/g;
 const toBN = (n) => BigInt(toHex(n, 0));
 
 const toHex = (n, numBytes) => {
-  const asHexString = typeof n === "bigint"
-    ? ethers.toBeHex(n).slice(2)
-    : typeof n === "string"
+  const asHexString =
+    typeof n === "bigint"
+      ? ethers.toBeHex(n).slice(2)
+      : typeof n === "string"
       ? hexRegex.test(n)
         ? n.replace(/0x/, "")
         : Number(n).toString(16)
@@ -25,16 +26,16 @@ const calculateOfferHash = (params) => {
 
   const derivedOfferHash = ethers.keccak256(
     "0x" +
-    [
-      offerTypeHash.slice(2),
-      params.owner.slice(2).padStart(64, "0"),
-      params.offeror.slice(2).padStart(64, "0"),
-      ethers.toBeHex(toBN(params.offerPrice)).slice(2).padStart(64, "0"),
-      ethers.toBeHex(toBN(params.assetType)).slice(2).padStart(64, "0"),
-      ethers.toBeHex(toBN(params.assetId)).slice(2).padStart(64, "0"),
-      ethers.toBeHex(toBN(params.nonce)).slice(2).padStart(64, "0"),
-      ethers.toBeHex(toBN(params.deadline)).slice(2).padStart(64, "0"),
-    ].join("")
+      [
+        offerTypeHash.slice(2),
+        params.owner.slice(2).padStart(64, "0"),
+        params.offeror.slice(2).padStart(64, "0"),
+        ethers.toBeHex(toBN(params.offerPrice)).slice(2).padStart(64, "0"),
+        ethers.toBeHex(toBN(params.assetType)).slice(2).padStart(64, "0"),
+        ethers.toBeHex(toBN(params.assetId)).slice(2).padStart(64, "0"),
+        ethers.toBeHex(toBN(params.nonce)).slice(2).padStart(64, "0"),
+        ethers.toBeHex(toBN(params.deadline)).slice(2).padStart(64, "0"),
+      ].join("")
   );
 
   return derivedOfferHash;
@@ -46,7 +47,9 @@ const validateRecoveredAddress = (
   hash,
   signature
 ) => {
-  const digest = ethers.keccak256(`0x1901${domainSeparator.slice(2)}${hash.slice(2)}`);
+  const digest = ethers.keccak256(
+    `0x1901${domainSeparator.slice(2)}${hash.slice(2)}`
+  );
   const recoveredAddress = ethers.recoverAddress(digest, signature);
   expect(recoveredAddress).to.be.equal(expectAddress);
 };

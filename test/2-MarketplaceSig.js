@@ -95,7 +95,9 @@ describe("Marketplace Signatures", function () {
 
   describe("Counter Offer", function () {
     it("Should return 0 for initial nonce", async function () {
-      expect(await marketplaceContract.nonces(user1.getAddress())).to.be.equal("0");
+      expect(await marketplaceContract.nonces(user1.getAddress())).to.be.equal(
+        "0"
+      );
     });
 
     it("Should return correct domain separator", async function () {
@@ -124,7 +126,12 @@ describe("Marketplace Signatures", function () {
       // Validate Signature Offchain
       const hash = calculateOfferHash(params);
 
-      validateRecoveredAddress(await user1.getAddress(), domainSeparator, hash, signature);
+      validateRecoveredAddress(
+        await user1.getAddress(),
+        domainSeparator,
+        hash,
+        signature
+      );
 
       const { r, s, v } = ethers.Signature.from(signature);
 
@@ -150,10 +157,10 @@ describe("Marketplace Signatures", function () {
         offeror.getAddress()
       );
 
-      expect(balanceBeforeBuy - balanceAfterBuy).to.be.equal(
-        offer.offerPrice
+      expect(balanceBeforeBuy - balanceAfterBuy).to.be.equal(offer.offerPrice);
+      expect(await marketplaceContract.nonces(user1.getAddress())).to.be.equal(
+        "1"
       );
-      expect(await marketplaceContract.nonces(user1.getAddress())).to.be.equal("1");
       expect(
         await stableTokenContract.balanceOf(treasuryWallet.getAddress())
       ).to.be.equal(offer.offerPrice);
