@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "dual-layer-token/contracts/DLT/interfaces/IDLTReceiver.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "contracts/Marketplace/interface/IMarketplace.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
@@ -19,9 +20,10 @@ import "contracts/Asset/interface/IAsset.sol";
  * @dev Implementation of all assets trading operations
  */
 contract Marketplace is
+    Initializable,
     Context,
     ERC165,
-    EIP712,
+    EIP712Upgradeable,
     AccessControl,
     IMarketplace,
     IDLTReceiver
@@ -34,8 +36,8 @@ contract Marketplace is
     uint256 private _initialFee;
     uint256 private _buyingFee;
 
-    IAsset private immutable _assetCollection;
-    IToken private immutable _stableToken;
+    IAsset private _assetCollection;
+    IToken private _stableToken;
 
     address private _treasuryWallet;
     address private _feeWallet;
@@ -65,18 +67,19 @@ contract Marketplace is
     bytes4 private constant _ASSET_INTERFACE_ID = type(IAsset).interfaceId;
 
     /**
-     * @dev Constructor for the main Marketplace
+     * @dev Initializer for the main Marketplace
      * @param assetCollection_, Address of the asset collection used in the marketplace
      * @param tokenAddress_, Address of the ERC20 token address
      * @param treasuryWallet_, Address of the treasury wallet
      * @param feeWallet_, Address of the fee wallet
      */
-    constructor(
+    function initialize(
         address assetCollection_,
         address tokenAddress_,
         address treasuryWallet_,
         address feeWallet_
-    ) EIP712("Polytrade", "2.1") {
+    ) external initializer {
+        __EIP712_init("Polytrade", "2.1");
         if (!assetCollection_.supportsInterface(_ASSET_INTERFACE_ID)) {
             revert UnsupportedInterface();
         }

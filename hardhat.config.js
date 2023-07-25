@@ -1,10 +1,8 @@
 require("@nomicfoundation/hardhat-toolbox");
+require("@openzeppelin/hardhat-upgrades");
 require("hardhat-contract-sizer");
 require("dotenv").config();
 
-require("@nomiclabs/hardhat-ethers");
-require("@nomiclabs/hardhat-etherscan");
-require("@openzeppelin/hardhat-upgrades");
 const {
   TESTNET_PRIVATE_KEY,
   MAINNET_PRIVATE_KEY,

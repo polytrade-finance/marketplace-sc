@@ -1,5 +1,5 @@
 const { expect } = require("chai");
-const { ethers } = require("hardhat");
+const { ethers, upgrades } = require("hardhat");
 const { asset, MarketplaceAccess, offer } = require("./data");
 const { time } = require("@nomicfoundation/hardhat-network-helpers");
 const { now } = require("./helpers");
@@ -46,13 +46,14 @@ describe("Marketplace Signatures", function () {
       await ethers.getContractFactory("ERC20Token")
     ).deploy("USD Dollar", "USDC", 18, offeror.getAddress(), 200000);
 
-    marketplaceContract = await (
-      await ethers.getContractFactory("Marketplace")
-    ).deploy(
-      assetContract.getAddress(),
-      stableTokenContract.getAddress(),
-      treasuryWallet.getAddress(),
-      feeWallet.getAddress()
+    marketplaceContract = await upgrades.deployProxy(
+      await ethers.getContractFactory("Marketplace"),
+      [
+        await assetContract.getAddress(),
+        await stableTokenContract.getAddress(),
+        await treasuryWallet.getAddress(),
+        await feeWallet.getAddress(),
+      ]
     );
 
     await assetContract.grantRole(
