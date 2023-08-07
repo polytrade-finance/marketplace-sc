@@ -65,7 +65,8 @@ describe("Marketplace Signatures", function () {
       1,
       asset.assetPrice,
       asset.rewardApr,
-      (await now()) + 100
+      (await now()) + 100,
+      asset.minFraction
     );
 
     await stableTokenContract
@@ -88,6 +89,7 @@ describe("Marketplace Signatures", function () {
         { name: "offerPrice", type: "uint256" },
         { name: "assetType", type: "uint256" },
         { name: "assetId", type: "uint256" },
+        { name: "fractionsToBuy", type: "uint256" },
         { name: "nonce", type: "uint256" },
         { name: "deadline", type: "uint256" },
       ],
@@ -119,6 +121,7 @@ describe("Marketplace Signatures", function () {
         offerPrice: offer.offerPrice,
         assetType: 1,
         assetId: 1,
+        fractionsToBuy: asset.minFraction,
         nonce: 0,
         deadline: offer.deadline + BigInt(await now()),
       };
@@ -148,6 +151,7 @@ describe("Marketplace Signatures", function () {
           offer.offerPrice,
           1,
           1,
+          asset.minFraction,
           offer.deadline + BigInt(await now()),
           v,
           r,
@@ -158,13 +162,15 @@ describe("Marketplace Signatures", function () {
         offeror.getAddress()
       );
 
-      expect(balanceBeforeBuy - balanceAfterBuy).to.be.equal(offer.offerPrice);
+      expect(balanceBeforeBuy - balanceAfterBuy).to.be.equal(
+        offer.offerPrice / 10n
+      );
       expect(await marketplaceContract.nonces(user1.getAddress())).to.be.equal(
         "1"
       );
       expect(
         await stableTokenContract.balanceOf(treasuryWallet.getAddress())
-      ).to.be.equal(offer.offerPrice);
+      ).to.be.equal(offer.offerPrice / 10n);
     });
 
     it("Should revert if signer is not asset owner", async function () {
@@ -174,6 +180,7 @@ describe("Marketplace Signatures", function () {
         offerPrice: offer.offerPrice,
         assetType: 1,
         assetId: 1,
+        fractionsToBuy: asset.minFraction,
         nonce: 0,
         deadline: offer.deadline + BigInt(await now()),
       };
@@ -191,6 +198,7 @@ describe("Marketplace Signatures", function () {
             offer.offerPrice,
             1,
             1,
+            asset.minFraction,
             offer.deadline + BigInt(await now()),
             v,
             r,
@@ -206,6 +214,7 @@ describe("Marketplace Signatures", function () {
         offerPrice: offer.offerPrice,
         assetType: 1,
         assetId: 1,
+        fractionsToBuy: asset.minFraction,
         nonce: 0,
         deadline: offer.deadline + BigInt(await now()),
       };
@@ -223,6 +232,7 @@ describe("Marketplace Signatures", function () {
             offer.offerPrice,
             1,
             1,
+            asset.minFraction,
             offer.deadline + BigInt(await now()),
             v,
             r,
@@ -243,6 +253,7 @@ describe("Marketplace Signatures", function () {
             offer.offerPrice,
             1,
             1,
+            asset.minFraction,
             offer.deadline + BigInt(await now()),
             v,
             r,
@@ -265,6 +276,7 @@ describe("Marketplace Signatures", function () {
           offer.offerPrice,
           1,
           1,
+          asset.minFraction,
           expiredDeadline,
           v,
           r,
