@@ -17,6 +17,7 @@ const asset = {
   assetPrice: ethers.parseUnits("10", DECIMALS.SIX),
   rewardApr: ethers.parseUnits("10", DECIMALS.TWO), // with 2 decimals
   dueDate: Number(new Date("2023-11-12").getTime() / 1000), // in seconds
+  minFraction: 1000, // from 10000
   lastSale: 0,
   lastClaim: 0,
 };
