@@ -18,6 +18,9 @@ module.exports = {
       optimizer: {
         enabled: true,
         runs: 10000,
+        details: {
+          yul: true,
+        },
       },
     },
   },
