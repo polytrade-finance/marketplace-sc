@@ -33,7 +33,9 @@ describe("Asset", function () {
 
   it("Should revert on burning asset by invalid caller", async function () {
     await expect(
-      assetContract.connect(deployer).burnAsset(deployer.getAddress(), 1, 1)
+      assetContract
+        .connect(deployer)
+        .burnAsset(deployer.getAddress(), 1, 1, 10000)
     ).to.be.revertedWith(
       `AccessControl: account ${(
         await deployer.getAddress()
@@ -51,8 +53,8 @@ describe("Asset", function () {
   it("Should revert on calling `burnAsset` without interface support", async function () {
     await assetContract.grantRole(MarketplaceAccess, deployer.getAddress());
 
-    await expect(assetContract.burnAsset(deployer.getAddress(), 1, 1)).to.be
-      .reverted;
+    await expect(assetContract.burnAsset(deployer.getAddress(), 1, 1, 10000)).to
+      .be.reverted;
   });
 
   it("Should to set new base uri", async function () {
