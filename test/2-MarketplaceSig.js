@@ -30,13 +30,13 @@ describe("Marketplace Signatures", function () {
     [, user1, offeror, treasuryWallet, feeWallet] = await ethers.getSigners();
 
     name = "Polytrade";
-    version = "2.1";
+    version = "2.2";
     chainId = 31337;
     const AssetFactory = await ethers.getContractFactory("Asset");
     assetContract = await AssetFactory.deploy(
       "Polytrade Asset Collection",
       "PIC",
-      "2.1",
+      "2.2",
       "https://ipfs.io/ipfs"
     );
 

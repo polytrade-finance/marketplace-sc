@@ -80,7 +80,7 @@ contract Marketplace is
         address treasuryWallet_,
         address feeWallet_
     ) external initializer {
-        __EIP712_init("Polytrade", "2.1");
+        __EIP712_init("Polytrade", "2.2");
         if (!assetCollection_.supportsInterface(_ASSET_INTERFACE_ID)) {
             revert UnsupportedInterface();
         }
