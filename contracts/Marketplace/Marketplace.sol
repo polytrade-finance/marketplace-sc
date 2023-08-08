@@ -624,9 +624,13 @@ contract Marketplace is
         );
         uint256 reward = (_getAvailableReward(assetType, assetId) *
             subBalanceOf) / 1e4;
-        _assets[assetType][assetId].purchaseDate = (
-            block.timestamp > asset.dueDate ? asset.dueDate : block.timestamp
-        );
+        if (_assetCollection.totalSubSupply(assetType, assetId) == 0) {
+            _assets[assetType][assetId].purchaseDate = (
+                block.timestamp > asset.dueDate
+                    ? asset.dueDate
+                    : block.timestamp
+            );
+        }
 
         _stableToken.safeTransferFrom(_treasuryWallet, receiver, reward);
 
