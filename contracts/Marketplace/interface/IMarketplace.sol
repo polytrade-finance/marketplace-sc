@@ -13,7 +13,7 @@ interface IMarketplace {
      * @param price, is the price of asset
      * @param rewardApr, is the Apr for calculating rewards
      * @param dueDate, is the end date for caluclating rewards
-     * @param purchaseDate, is the date of last claim rewards
+     * @param purchaseDate, is the date of the first purchase
      */
     struct AssetInfo {
         address owner;
