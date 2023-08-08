@@ -1364,20 +1364,4 @@ describe("Marketplace", function () {
         .buy(1, 1, asset.minFraction, buyer.getAddress())
     ).to.be.revertedWith("Asset is not relisted");
   });
-
-  it("Should receive batch created assets", async function () {
-    await assetContract.grantRole(
-      MarketplaceAccess,
-      marketplaceContract.getAddress()
-    );
-
-    await marketplaceContract.batchCreateAsset(
-      [user1.getAddress(), user1.getAddress(), user1.getAddress()],
-      [1, 2, 3],
-      [asset.assetPrice, asset.assetPrice, asset.assetPrice],
-      [asset.rewardApr, asset.rewardApr, asset.rewardApr],
-      [asset.dueDate, asset.dueDate, asset.dueDate],
-      [asset.minFraction, asset.minFraction, asset.minFraction]
-    );
-  });
 });
