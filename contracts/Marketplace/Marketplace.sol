@@ -186,6 +186,16 @@ contract Marketplace is
     }
 
     /**
+     * @dev See {IMarketplace-settleAsset}.
+     */
+    function settleUnsold(
+        uint256 assetType,
+        uint256 assetId
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _settleAsset(assetType, assetId, _assets[assetType][assetId].owner, 0);
+    }
+
+    /**
      * @dev See {IMarketplace-batchSettleAsset}.
      */
     function batchSettleAsset(
@@ -565,15 +575,16 @@ contract Marketplace is
         require(block.timestamp > asset.dueDate, "Due date not passed");
 
         settlePrice = (settlePrice * subBalanceOf) / 1e4;
+        delete _listedInfo[assetType][assetId][owner];
+
         _stableToken.safeTransferFrom(_treasuryWallet, owner, settlePrice);
         _assetCollection.burnAsset(owner, assetType, assetId, subBalanceOf);
 
-        delete _listedInfo[assetType][assetId][owner];
         if (_assetCollection.totalSubSupply(assetType, assetId) == 0) {
             delete _assets[assetType][assetId];
         }
 
-        emit AssetSettled(asset.owner, assetType, assetId);
+        emit AssetSettled(asset.owner, assetType, assetId, settlePrice);
     }
 
     /**
