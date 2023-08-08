@@ -705,6 +705,19 @@ describe("Marketplace", function () {
     );
   });
 
+  it("Should revert to settle unsold asset without admin role", async function () {
+    await expect(
+      marketplaceContract.connect(user1).settleUnsold(1, 1)
+    ).to.be.revertedWith(
+      `AccessControl: account ${(
+        await user1.getAddress()
+      ).toLowerCase()} is missing role ${ethers.zeroPadValue(
+        ethers.toBeHex(0),
+        32
+      )}`
+    );
+  });
+
   it("Should revert to set buying fee without admin role", async function () {
     await expect(
       marketplaceContract.connect(user1).setBuyingFee(1000)
@@ -1071,6 +1084,52 @@ describe("Marketplace", function () {
     );
   });
 
+  it("Should create a property settle the unsold asset after due date", async function () {
+    await assetContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.getAddress()
+    );
+
+    await marketplaceContract.createProperty(
+      user1.getAddress(),
+      1,
+      asset.assetPrice,
+      (await now()) + 100,
+      asset.minFraction,
+      property
+    );
+
+    await stableTokenContract
+      .connect(buyer)
+      .transfer(treasuryWallet.getAddress(), 2n * asset.assetPrice);
+
+    await stableTokenContract
+      .connect(buyer)
+      .approve(marketplaceContract.getAddress(), asset.assetPrice);
+
+    await stableTokenContract
+      .connect(treasuryWallet)
+      .approve(marketplaceContract.getAddress(), 2n * asset.assetPrice);
+
+    await expect(
+      await marketplaceContract
+        .connect(buyer)
+        .buy(2, 1, asset.minFraction, user1.getAddress())
+    ).not.to.be.reverted;
+
+    await time.increase(1000);
+
+    await marketplaceContract.settleUnsold(2, 1);
+
+    const afterSettle = await assetContract.subBalanceOf(
+      user1.getAddress(),
+      2,
+      1
+    );
+
+    expect(afterSettle).to.be.equal(0);
+  });
+
   it("Should get remaining zero reward after due date", async function () {
     await assetContract.grantRole(
       MarketplaceAccess,
@@ -1335,7 +1394,7 @@ describe("Marketplace", function () {
     expect(await assetContract.subBalanceOf(buyer.getAddress(), 1, 2)).to.eq(0);
   });
 
-  it("Should revert when asset is not relisted", async function () {
+  it("Should revert to buy when asset is not relisted", async function () {
     await assetContract.grantRole(
       MarketplaceAccess,
       marketplaceContract.getAddress()

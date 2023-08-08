@@ -138,11 +138,13 @@ interface IMarketplace {
      * @param owner, address of the asset owner
      * @param assetType, assetType identifies whether its a property or an invoice
      * @param assetId, unique number of the asset
+     * @param settlePrice, paid amount for settlement
      */
     event AssetSettled(
         address indexed owner,
         uint256 assetType,
-        uint256 assetId
+        uint256 assetId,
+        uint256 settlePrice
     );
 
     /**
@@ -258,6 +260,14 @@ interface IMarketplace {
         address owner,
         uint256 amount
     ) external;
+
+    /**
+     * @dev Settles the remaining unsold fractions of an asset
+     * @dev Deletes the stored parameters
+     * @param assetType, unique identifier of the asset type
+     * @param assetId, unique identifier of the asset
+     */
+    function settleUnsold(uint256 assetType, uint256 assetId) external;
 
     /**
      * @dev Changes owner to buyer
