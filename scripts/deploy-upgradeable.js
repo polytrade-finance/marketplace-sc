@@ -1,4 +1,4 @@
-const { ethers } = require("hardhat");
+const { ethers, upgrades } = require("hardhat");
 const hre = require("hardhat");
 const { tokenAddress, treasuryWallet, feeWallet } = require("./data");
 
@@ -10,49 +10,42 @@ async function main() {
   const asset = await AssetFactory.deploy(
     "PolytradeAssetManager",
     "PAM",
+    "2.2",
     "https://polytrade.finance"
   );
   await asset.waitForDeployment();
 
-  console.log(asset.getAddress());
+  console.log(await asset.getAddress());
 
-  const TokenFactory = await ethers.getContractFactory("Token");
+  const TokenFactory = await ethers.getContractFactory("ERC20Token");
   const token = TokenFactory.attach(tokenAddress);
 
   console.log(await token.getAddress());
 
   const Marketplace = await ethers.getContractFactory("Marketplace");
-  const marketplace = await Marketplace.deploy(
-    asset.getAddress(),
-    token.getAddress(),
+  const marketplace = await upgrades.deployProxy(Marketplace, [
+    await asset.getAddress(),
+    await token.getAddress(),
     treasuryWallet,
-    feeWallet
-  );
+    feeWallet,
+  ]);
   await marketplace.waitForDeployment();
 
   console.log(await marketplace.getAddress());
 
   await token.approve(marketplace.getAddress(), ethers.MaxUint256);
   await asset.grantRole(MarketplaceAccess, marketplace.getAddress());
+  await asset.setApprovalForAll(marketplace.getAddress(), true);
   await marketplace.setInitialFee(100);
   await marketplace.setBuyingFee(200);
 
   await hre.run("verify:verify", {
-    address: asset.getAddress(),
+    address: await asset.getAddress(),
     constructorArguments: [
       "PolytradeAssetManager",
       "PAM",
+      "2.2",
       "https://polytrade.finance",
-    ],
-  });
-
-  await hre.run("verify:verify", {
-    address: marketplace.getAddress(),
-    constructorArguments: [
-      asset.getAddress(),
-      token.getAddress(),
-      treasuryWallet,
-      feeWallet,
     ],
   });
 }
@@ -62,3 +55,7 @@ async function main() {
 main().catch((error) => {
   throw new Error(error);
 });
+
+// 0x676F2BE7973C5c4b137BB6f36B2776Cc2957679A
+// 0xdd7fded184a005ba01f9f963ff2242136cf4f3eb
+// 0xc0787A0F5081173a1C9b8Ad1597377082dCE558c
