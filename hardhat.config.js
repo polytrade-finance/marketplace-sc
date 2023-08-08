@@ -8,6 +8,8 @@ const {
   MAINNET_PRIVATE_KEY,
   TESTNET_ARCHIVAL_RPC,
   MAINNET_ARCHIVAL_RPC,
+  MASTERCARD_PRIVATE_KEY,
+  MASTERCARD_ARCHIVAL_RPC
 } = process.env;
 
 /** @type import('hardhat/config').HardhatUserConfig */
@@ -28,18 +30,25 @@ module.exports = {
     mumbai: {
       url: `${TESTNET_ARCHIVAL_RPC}`,
       accounts: [
-        `${
-          TESTNET_PRIVATE_KEY ||
-          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        `${TESTNET_PRIVATE_KEY ||
+        "0x0000000000000000000000000000000000000000000000000000000000000000"
         }`,
       ],
     },
     polygon: {
       url: `${MAINNET_ARCHIVAL_RPC}`,
       accounts: [
-        `${
-          MAINNET_PRIVATE_KEY ||
-          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        `${MAINNET_PRIVATE_KEY ||
+        "0x0000000000000000000000000000000000000000000000000000000000000000"
+        }`,
+      ],
+    },
+    mastercard: {
+      url: `${MASTERCARD_ARCHIVAL_RPC}`,
+      chainId: 1223532587,
+      accounts: [
+        `${MASTERCARD_PRIVATE_KEY ||
+        "0x0000000000000000000000000000000000000000000000000000000000000000"
         }`,
       ],
     },
