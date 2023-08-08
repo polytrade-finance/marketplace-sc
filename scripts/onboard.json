@@ -1,0 +1,234 @@
+{
+    "accounts": {
+        "bankA": {
+            "wallets": [
+                {
+                    "id": "f6fa6026-9afb-40d7-aff5-acb343e63011",
+                    "name": "innov-sprint-0fada85567-gbpa-0",
+                    "mnemonic": "sleep allow bone raccoon ritual merge key jealous slab style demand smoke happy brown pudding guilt mercy oven wool mention tomorrow trophy volcano where",
+                    "privateKey": "0xe3a1125a0b48978a2cb5406606e413cabf309386427d9dfb5c0126a3c37645a7",
+                    "address": "0xde983723acdab24a89f7625ffead245c94617b69",
+                    "derivationPath": "m/44'/60'/0'/0/0",
+                    "balance": "10000 (GBPA)"
+                },
+                {
+                    "id": "f084bf13-c746-4e7a-b3e6-3736b5910c7b",
+                    "name": "innov-sprint-0fada85567-gbpa-1",
+                    "mnemonic": "field actress require exit below apart spice civil shrug auction cram reason night unit rebuild dwarf rail surprise attract exit fire shoot frost pyramid",
+                    "privateKey": "0x1a2c219ad728f01ad1d937e145e6b2e9c82d9c22e9995469aac017ab6821f0f4",
+                    "address": "0x531f8e22b30d6e62b34c9ec56b703106f7eb22fd",
+                    "derivationPath": "m/44'/60'/0'/0/0",
+                    "balance": "10000 (GBPA)"
+                },
+                {
+                    "id": "3772da97-526b-4190-98b7-0778c7285b15",
+                    "name": "innov-sprint-0fada85567-gbpa-2",
+                    "mnemonic": "enough much month element purse skirt valid burden use heavy lobster extra display help frown address critic sheriff wisdom clay frog situate orphan message",
+                    "privateKey": "0x123bf7c7ed8da0b00da11414d48249ed747d8c84a540edc52af438797593f709",
+                    "address": "0x6eb6c100521b638a4b92758fa85f952dca7f4c51",
+                    "derivationPath": "m/44'/60'/0'/0/0",
+                    "balance": "10000 (GBPA)"
+                },
+                {
+                    "id": "1d928813-ee40-4b07-88cf-050ed5eb24d0",
+                    "name": "innov-sprint-0fada85567-gbpa-3",
+                    "mnemonic": "crisp cigar sure solar manual pitch suffer almost frost arm sibling attend rib soda soul grant alcohol addict tiger push profit accident shy north",
+                    "privateKey": "0x8e7c7fd3b6bf83c9007ab52433e9ddfa18b7c4753247dd628ee42621bb654564",
+                    "address": "0x3e39ac21dcb7633ba2cbf39722e3445f0873492f",
+                    "derivationPath": "m/44'/60'/0'/0/0",
+                    "balance": "10000 (GBPA)"
+                },
+                {
+                    "id": "c59fc0c3-63d7-4f42-b8d8-e8edeb9a3b3d",
+                    "name": "innov-sprint-0fada85567-gbpa-4",
+                    "mnemonic": "original pluck celery prize timber pencil guilt liar wonder oppose swift idle cable donkey glue engine useless differ output risk shrug sausage decorate sail",
+                    "privateKey": "0xd6b9711e676ceea5cfe003c4e54646126598192d26ec9e5475e5249673d9b66c",
+                    "address": "0x5a5bf88d3e8c54dbb1c88b30d01df02a054914b0",
+                    "derivationPath": "m/44'/60'/0'/0/0",
+                    "balance": "10000 (GBPA)"
+                }
+            ],
+            "tokenContractAddress": "0x5ca8233c2b5930a115a93dd55ca759daf843e36f",
+            "treasuryAddress": "0x26bb385b32b55c7ab34bb15fffaa74221ed1d6ed"
+        },
+        "bankB": {
+            "wallets": [
+                {
+                    "id": "2d8ac0f0-4c63-4704-ba02-892fefab9382",
+                    "name": "innov-sprint-0fada85567-gbpb-0",
+                    "mnemonic": "town reunion mind social before stable habit kite leave act impact stereo return walnut roast novel boy earth clump history oil casual elbow pact",
+                    "privateKey": "0xe53ea010a32c595def4f102e1593c3a821b2f93634a58d9ac0ec507092db631c",
+                    "address": "0x3b03cab02f8cfa99dfb59228956d2b57a0b3c8e8",
+                    "derivationPath": "m/44'/60'/0'/0/0",
+                    "balance": "10000 (GBPB)"
+                },
+                {
+                    "id": "8b57f42b-3685-448e-baab-35a22d93a437",
+                    "name": "innov-sprint-0fada85567-gbpb-1",
+                    "mnemonic": "key matrix fabric october tank name first outdoor frost shoulder suit pencil rookie faith sick chapter drink ripple soup blind noise toilet pyramid voyage",
+                    "privateKey": "0x5df42e569b895ca530b940e01ffd2173fc644880c6b5ea61c451d28298971f3b",
+                    "address": "0xd171d2bfb17c79b484a58e07b8e28bdb40ab9ae9",
+                    "derivationPath": "m/44'/60'/0'/0/0",
+                    "balance": "10000 (GBPB)"
+                },
+                {
+                    "id": "3ddacb87-5c9e-4650-8e84-1fd80dfd4d8d",
+                    "name": "innov-sprint-0fada85567-gbpb-2",
+                    "mnemonic": "fitness record admit century hat sudden solar master depth custom ahead latin monster fit mesh negative snow uncover correct bird original call exclude tone",
+                    "privateKey": "0x0a753cc0efeffd972329449004dfb75ad7e81dfae7ebac9d1b6a0528100e5097",
+                    "address": "0x03700bebc0631c76c906228345d79ee57ec0eb05",
+                    "derivationPath": "m/44'/60'/0'/0/0",
+                    "balance": "10000 (GBPB)"
+                },
+                {
+                    "id": "c7646dd4-6326-4bf8-8d05-09317efe0c40",
+                    "name": "innov-sprint-0fada85567-gbpb-3",
+                    "mnemonic": "key item mercy minor citizen narrow embrace logic collect shoulder swim lottery come fringe oxygen wrong crowd divide solve myth core lock network mosquito",
+                    "privateKey": "0x909efc863813addb6ce5d2419d0e2f23f008094c61a858c0a4409f309c635f62",
+                    "address": "0x64ff8761f5b7b588efd5be6ebd7aa78c32fb5ff7",
+                    "derivationPath": "m/44'/60'/0'/0/0",
+                    "balance": "10000 (GBPB)"
+                },
+                {
+                    "id": "5b0387b6-19cb-4814-b98e-644b891b4f46",
+                    "name": "innov-sprint-0fada85567-gbpb-4",
+                    "mnemonic": "ripple home mad course hello enrich cash odor face sign feed drastic learn acoustic dance spring bench vague alley wool script female able ticket",
+                    "privateKey": "0x377141f7638d72284c87b4f55302baccd84765b8857c1f8ebbdaed099378eba7",
+                    "address": "0x57db2534d65c7ccf4e44e0aaf186b9bb864dafc0",
+                    "derivationPath": "m/44'/60'/0'/0/0",
+                    "balance": "10000 (GBPB)"
+                }
+            ],
+            "tokenContractAddress": "0xee69455f05f23a834b3d216ad6e32383cd9b4f83",
+            "treasuryAddress": "0x6a602ad5181865587984b932c14f9d8a69c6b073"
+        },
+        "bankC": {
+            "wallets": [
+                {
+                    "id": "4ea84d60-df49-4d41-b0c7-7fe93e54648e",
+                    "name": "innov-sprint-0fada85567-gbpc-0",
+                    "mnemonic": "alarm ensure layer vivid cliff thing wise odor fantasy arena tilt embody rough shrimp acquire document toss just play inform local donkey protect suspect",
+                    "privateKey": "0x2f38e6b0e14657da767a10f2288c36e574fa06e3815bffbfb887bcf8dc212453",
+                    "address": "0x1afc47ab4631dd30841fb2bcc744503f8ebebb4f",
+                    "derivationPath": "m/44'/60'/0'/0/0",
+                    "balance": "10000 (GBPC)"
+                },
+                {
+                    "id": "e57a8c72-1ae2-4e58-b32a-a2bd99fbd5fc",
+                    "name": "innov-sprint-0fada85567-gbpc-1",
+                    "mnemonic": "glance margin ability round size label impose utility disease honey put bag fluid film waste abstract move wait holiday execute diary that void lobster",
+                    "privateKey": "0xc65f865bccb926281512d0282c4119b39a46182fbd9cbad0a65a49dd05dd9a39",
+                    "address": "0xa8a183f2bfd6f74d6317bee4bce942ab25c433fd",
+                    "derivationPath": "m/44'/60'/0'/0/0",
+                    "balance": "10000 (GBPC)"
+                },
+                {
+                    "id": "af30f3ca-9171-4b0e-a473-2acf151cd5b4",
+                    "name": "innov-sprint-0fada85567-gbpc-2",
+                    "mnemonic": "tray antenna deliver earth panther code ivory end access era plate tide ready adapt income skill armed soap crash smoke spread trumpet drip ice",
+                    "privateKey": "0xf555bcfa57c94c6e6eda8c1cec031dee79f9b4ad3fb1a5455cd44cc6809ea0de",
+                    "address": "0x7ceba6442e41b6973f9732f26f9e51660caee03c",
+                    "derivationPath": "m/44'/60'/0'/0/0",
+                    "balance": "10000 (GBPC)"
+                },
+                {
+                    "id": "2040f692-5f94-40e1-8fc6-dd963be107bd",
+                    "name": "innov-sprint-0fada85567-gbpc-3",
+                    "mnemonic": "write lamp pudding immune allow parrot small logic liberty bulb crouch clock grape illness field airport ocean mixture soft frozen run heavy treat guide",
+                    "privateKey": "0x534083e82b93846cb7139a93125fe2000941b31858f2f6fda6344a2fa4b851e4",
+                    "address": "0xb578f667c204f658c56b67de2c826f29892d1139",
+                    "derivationPath": "m/44'/60'/0'/0/0",
+                    "balance": "10000 (GBPC)"
+                },
+                {
+                    "id": "0beb2451-5288-4ee2-ad00-af6fc77fea30",
+                    "name": "innov-sprint-0fada85567-gbpc-4",
+                    "mnemonic": "dutch excuse pumpkin elite atom ritual wheat suggest sick simple belt theme scene scatter blood behind tribe mask frozen wrap travel text nuclear quality",
+                    "privateKey": "0x1a116eaeb7d84d820a725695d9216481091f0cd93ceb3e5684ac87049228399c",
+                    "address": "0x07b1143da6e3f22843fb889717b5302dff1103e6",
+                    "derivationPath": "m/44'/60'/0'/0/0",
+                    "balance": "10000 (GBPC)"
+                }
+            ],
+            "tokenContractAddress": "0x821bbb5d3dcff9b71409e262b7c9e82a94675cda",
+            "treasuryAddress": "0x60919e359edc4982759aebdb098d8d33c87c4f78"
+        },
+        "bankD": {
+            "wallets": [
+                {
+                    "id": "44dfd3ab-3fb9-4480-b6b6-8642c0be7cc0",
+                    "name": "innov-sprint-0fada85567-gbpd-0",
+                    "mnemonic": "minor rocket small culture shuffle video trap ski capable trouble room afraid urge chicken post access sail bridge age tide green frog glare evil",
+                    "privateKey": "0xc693fac57d7f0c3cfc9e6ac74250ca7150cd2a97b58c9753ff756fc55edd774b",
+                    "address": "0x15f2c62a988bd627dc589e148c673c17773621b5",
+                    "derivationPath": "m/44'/60'/0'/0/0",
+                    "balance": "10000 (GBPD)"
+                },
+                {
+                    "id": "61e9c0ad-6717-438a-9455-23985ba2c11b",
+                    "name": "innov-sprint-0fada85567-gbpd-1",
+                    "mnemonic": "reject lonely all profit bike come flavor duck kangaroo case welcome depend regret impact velvet economy slam fiscal razor rifle kitchen actor appear utility",
+                    "privateKey": "0xa9b682fa8e79b6a846da6272fbaf9fd41261dd7a05ca4dd3ca0b6274bddfab77",
+                    "address": "0x45274a5428590a5c3a1995b279e0c41b4fe3397c",
+                    "derivationPath": "m/44'/60'/0'/0/0",
+                    "balance": "10000 (GBPD)"
+                },
+                {
+                    "id": "47a8ddc5-8dcb-483f-8e99-d6b680bd7f70",
+                    "name": "innov-sprint-0fada85567-gbpd-2",
+                    "mnemonic": "ski move scrub name ginger strong pudding siege movie green deliver exercise advance topic bitter moon gold office sleep surprise twenty scissors skin animal",
+                    "privateKey": "0x5be4ae3366319a98b885efae47cb341a3865f79dccab3f522d94651eaa37ff17",
+                    "address": "0x9ecae405600d2fe57cabb805d528a3b523a9fe26",
+                    "derivationPath": "m/44'/60'/0'/0/0",
+                    "balance": "10000 (GBPD)"
+                },
+                {
+                    "id": "90c778fa-7cf5-43ce-b1d2-931f05f4627b",
+                    "name": "innov-sprint-0fada85567-gbpd-3",
+                    "mnemonic": "spice panic enough eight tell citizen add buddy betray carpet little cube latin hint wing width leisure soul injury office inmate define sport flame",
+                    "privateKey": "0x442ac3d6aa5c7f9003fe9386c28a9c64b297d53d67bf15548a848c7b2a030f22",
+                    "address": "0x5e924745f6648e71f915a8afe71bdafe10d85b07",
+                    "derivationPath": "m/44'/60'/0'/0/0",
+                    "balance": "10000 (GBPD)"
+                },
+                {
+                    "id": "d2b65374-b18b-4c0e-a713-dfd8e19a914b",
+                    "name": "innov-sprint-0fada85567-gbpd-4",
+                    "mnemonic": "divert toss monkey coach expose diamond elite goat vacant enroll abstract gallery exotic lonely term math soldier liar monster repair draw child final receive",
+                    "privateKey": "0xf4b23b0ea8d1d8ab25dd52f01404659c2229586af987b28fb1c309567038d68e",
+                    "address": "0x4073393980c858ab44f966c1b3a9967e7b6117c0",
+                    "derivationPath": "m/44'/60'/0'/0/0",
+                    "balance": "10000 (GBPD)"
+                }
+            ],
+            "tokenContractAddress": "0xd22de4176c3088f93527a6bd4631eb95729d91e2",
+            "treasuryAddress": "0x761c3eabb0ad5837aa249fd030356f68f7a79214"
+        }
+    },
+    "sampleDvpDetails": {
+        "nftContractAddress": "0x573c9949006e15c6f7f060b0420622889c1ebaa6",
+        "nftEndpoint": "https://asset-platform.mtn-stg.eap.kaleido.io/api/v1/namespaces/innovation/apis/mtntoken-invoice-nft",
+        "cookieNFTContractAddress": "0xb7ab05a0f611d9694084ae5d0e9a1689689d699b",
+        "marketplaceContractAddress": "0xbb7831a0a90aa10ae3306be4695a2bf3547f5dc3",
+        "marketplaceEndpoint": "https://asset-platform.mtn-stg.eap.kaleido.io/api/v1/namespaces/innovation/apis/mtntoken-invoice-marketplace",
+        "cookieMarketplaceContractAddress": "0xd4e09faf14731b905ea79bfd81e85c4c6199bd5d"
+    },
+    "rpcDetails": {
+        "url": "https://u0bp2e7tzk-u0cpuj9soo-rpc.us0-aws.kaleido.io",
+        "chainId": "1223532587",
+        "username": "u0cu1hlggh",
+        "password": "DbhrxOkq5optCSK9NA9cHI2u6Hhs-5ERCl3pmyY2moQ"
+    },
+    "restApiDetails": {
+        "authType": "basic",
+        "username": "innov-sprint-0fada85567",
+        "password": "efe020a6-1df0-420a-82e1-e4f52aee8abf-8a63d34d-bf1b-445f-a277-3c8a475415b7",
+        "transactionStatusEndpoint": "https://asset-platform.mtn-stg.eap.kaleido.io/api/v1/namespaces/innovation/transactions/{tx}/status",
+        "blockchainEventsEndpoint": "https://asset-platform.mtn-stg.eap.kaleido.io/api/v1/namespaces/innovation/blockchainevents",
+        "blockExplorerUrl": "https://explorer.mtn-stg.eap.kaleido.io",
+        "gbpaEndpoint": "https://asset-platform.mtn-stg.eap.kaleido.io/api/v1/namespaces/innovation/apis/mtntoken-999000-gbpa",
+        "gbpbEndpoint": "https://asset-platform.mtn-stg.eap.kaleido.io/api/v1/namespaces/innovation/apis/mtntoken-999001-gbpb",
+        "gbpcEndpoint": "https://asset-platform.mtn-stg.eap.kaleido.io/api/v1/namespaces/innovation/apis/mtntoken-999002-gbpc",
+        "gbpdEndpoint": "https://asset-platform.mtn-stg.eap.kaleido.io/api/v1/namespaces/innovation/apis/mtntoken-999003-gbpd"
+    }
+}

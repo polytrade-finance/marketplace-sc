@@ -1,0 +1,392 @@
+{
+  "manifestVersion": "3.2",
+  "admin": {
+    "address": "0xe653c7FEcc87b8C5156Cc626c696C4EA16048d78",
+    "txHash": "0x7a58b6c0d96a34328d993b45017d29954fe851ae25f0596a54528c14fea3703d"
+  },
+  "proxies": [
+    {
+      "address": "0x9aA6bD147A87906e379a4c1D7B4248439DdBDcA9",
+      "txHash": "0x48207df21de7ac7fa3f9363efb8799f8e771e042e61afc218f063040adaf5e37",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x70cCa12990595E6e969F7087b4496bf8cdE0dA4a",
+      "txHash": "0xe00daf3388981643740b5c6f9f400bdce20b8be9c205ab8498144ba4af4c4fe1",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xc75272f2a80a1BbA2D96Cf18b7Ac9597a483cF08",
+      "txHash": "0xe014721a86b12d3ad65537679fc010d12c276fd7a1810193fdd35592499f5f97",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x98e0F8f20a19e7D529e60Bb7FE2B19b8DeEDFe01",
+      "txHash": "0x7abca1a3ebeb9d490957d6614ac7cee86d14f45577423252c5d035b55446a690",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xb78aA32CcEee2B2F1B51B945a68a26cd71a4bD23",
+      "txHash": "0x6ab036b6087d35440e99502a1473636fa0ffa3f85beb3b59e6eb737bdd0fce03",
+      "kind": "transparent"
+    }
+  ],
+  "impls": {
+    "d69dd839081bf14d694302c53681477929cb93f15a6ead8b65b3de83c7b5c971": {
+      "address": "0x0bfad54fe1CcB27FF8f61d2b3b4bF267317d48EE",
+      "txHash": "0x8145015ed4346feb99cd094e77a09ed671aad77c1b568d2e4c56aa4c56442653",
+      "layout": {
+        "solcVersion": "0.8.17",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:63",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:68"
+          },
+          {
+            "label": "_hashedName",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_bytes32",
+            "contract": "EIP712Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol:40",
+            "renamedFrom": "_HASHED_NAME"
+          },
+          {
+            "label": "_hashedVersion",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_bytes32",
+            "contract": "EIP712Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol:42",
+            "renamedFrom": "_HASHED_VERSION"
+          },
+          {
+            "label": "_name",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_string_storage",
+            "contract": "EIP712Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol:44"
+          },
+          {
+            "label": "_version",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_string_storage",
+            "contract": "EIP712Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol:45"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_array(t_uint256)48_storage",
+            "contract": "EIP712Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol:204"
+          },
+          {
+            "label": "_roles",
+            "offset": 0,
+            "slot": "53",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)2393_storage)",
+            "contract": "AccessControl",
+            "src": "@openzeppelin/contracts/access/AccessControl.sol:56"
+          },
+          {
+            "label": "_initialFee",
+            "offset": 0,
+            "slot": "54",
+            "type": "t_uint256",
+            "contract": "Marketplace",
+            "src": "contracts/Marketplace/Marketplace.sol:34"
+          },
+          {
+            "label": "_buyingFee",
+            "offset": 0,
+            "slot": "55",
+            "type": "t_uint256",
+            "contract": "Marketplace",
+            "src": "contracts/Marketplace/Marketplace.sol:35"
+          },
+          {
+            "label": "_assetCollection",
+            "offset": 0,
+            "slot": "56",
+            "type": "t_contract(IAsset)5795",
+            "contract": "Marketplace",
+            "src": "contracts/Marketplace/Marketplace.sol:37"
+          },
+          {
+            "label": "_stableToken",
+            "offset": 0,
+            "slot": "57",
+            "type": "t_contract(IToken)7842",
+            "contract": "Marketplace",
+            "src": "contracts/Marketplace/Marketplace.sol:38"
+          },
+          {
+            "label": "_treasuryWallet",
+            "offset": 0,
+            "slot": "58",
+            "type": "t_address",
+            "contract": "Marketplace",
+            "src": "contracts/Marketplace/Marketplace.sol:40"
+          },
+          {
+            "label": "_feeWallet",
+            "offset": 0,
+            "slot": "59",
+            "type": "t_address",
+            "contract": "Marketplace",
+            "src": "contracts/Marketplace/Marketplace.sol:41"
+          },
+          {
+            "label": "_properties",
+            "offset": 0,
+            "slot": "60",
+            "type": "t_mapping(t_uint256,t_struct(PropertyInfo)7478_storage)",
+            "contract": "Marketplace",
+            "src": "contracts/Marketplace/Marketplace.sol:46"
+          },
+          {
+            "label": "_assets",
+            "offset": 0,
+            "slot": "61",
+            "type": "t_mapping(t_uint256,t_mapping(t_uint256,t_struct(AssetInfo)7456_storage))",
+            "contract": "Marketplace",
+            "src": "contracts/Marketplace/Marketplace.sol:47"
+          },
+          {
+            "label": "_listedInfo",
+            "offset": 0,
+            "slot": "62",
+            "type": "t_mapping(t_uint256,t_mapping(t_uint256,t_mapping(t_address,t_struct(ListedInfo)7461_storage)))",
+            "contract": "Marketplace",
+            "src": "contracts/Marketplace/Marketplace.sol:48"
+          },
+          {
+            "label": "_currentNonce",
+            "offset": 0,
+            "slot": "63",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "Marketplace",
+            "src": "contracts/Marketplace/Marketplace.sol:50"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)48_storage": {
+            "label": "uint256[48]",
+            "numberOfBytes": "1536"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(IAsset)5795": {
+            "label": "contract IAsset",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IToken)7842": {
+            "label": "contract IToken",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(ListedInfo)7461_storage)": {
+            "label": "mapping(address => struct IMarketplace.ListedInfo)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)2393_storage)": {
+            "label": "mapping(bytes32 => struct AccessControl.RoleData)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_mapping(t_address,t_struct(ListedInfo)7461_storage))": {
+            "label": "mapping(uint256 => mapping(address => struct IMarketplace.ListedInfo))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_mapping(t_uint256,t_mapping(t_address,t_struct(ListedInfo)7461_storage)))": {
+            "label": "mapping(uint256 => mapping(uint256 => mapping(address => struct IMarketplace.ListedInfo)))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_mapping(t_uint256,t_struct(AssetInfo)7456_storage))": {
+            "label": "mapping(uint256 => mapping(uint256 => struct IMarketplace.AssetInfo))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(AssetInfo)7456_storage)": {
+            "label": "mapping(uint256 => struct IMarketplace.AssetInfo)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(PropertyInfo)7478_storage)": {
+            "label": "mapping(uint256 => struct IMarketplace.PropertyInfo)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(AssetInfo)7456_storage": {
+            "label": "struct IMarketplace.AssetInfo",
+            "members": [
+              {
+                "label": "owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "price",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "rewardApr",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "dueDate",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "purchaseDate",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "4"
+              }
+            ],
+            "numberOfBytes": "160"
+          },
+          "t_struct(ListedInfo)7461_storage": {
+            "label": "struct IMarketplace.ListedInfo",
+            "members": [
+              {
+                "label": "salePrice",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "minFraction",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(PropertyInfo)7478_storage": {
+            "label": "struct IMarketplace.PropertyInfo",
+            "members": [
+              {
+                "label": "value",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "size",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "rooms",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "bathrooms",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "constructionDate",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "country",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "city",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "6"
+              },
+              {
+                "label": "location",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "7"
+              }
+            ],
+            "numberOfBytes": "256"
+          },
+          "t_struct(RoleData)2393_storage": {
+            "label": "struct AccessControl.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_mapping(t_address,t_bool)",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    }
+  }
+}
