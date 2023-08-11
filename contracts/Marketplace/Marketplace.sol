@@ -97,7 +97,7 @@ contract Marketplace is
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
-        /**
+    /**
      * @dev See {IMarketplace-createProperty}.
      */
     function addBank(
@@ -309,7 +309,14 @@ contract Marketplace is
         }
         {
             address ownerAddress = owner;
-            _buy(bankId, assetType, assetId, offerPrice, fractionsToBuy, ownerAddress);
+            _buy(
+                bankId,
+                assetType,
+                assetId,
+                offerPrice,
+                fractionsToBuy,
+                ownerAddress
+            );
         }
     }
 
@@ -596,7 +603,11 @@ contract Marketplace is
         settlePrice = (settlePrice * subBalanceOf) / 1e4;
         delete _listedInfo[assetType][assetId][owner];
 
-        IToken(_bankAddress[0]).safeTransferFrom(_treasuryWallet, owner, settlePrice);
+        IToken(_bankAddress[0]).safeTransferFrom(
+            _treasuryWallet,
+            owner,
+            settlePrice
+        );
         _assetCollection.burnAsset(owner, assetType, assetId, subBalanceOf);
 
         if (_assetCollection.totalSubSupply(assetType, assetId) == 0) {
@@ -662,7 +673,11 @@ contract Marketplace is
             );
         }
 
-        IToken(_bankAddress[0]).safeTransferFrom(_treasuryWallet, receiver, reward);
+        IToken(_bankAddress[0]).safeTransferFrom(
+            _treasuryWallet,
+            receiver,
+            reward
+        );
 
         emit RewardsClaimed(receiver, assetType, assetId, reward);
     }
@@ -692,7 +707,7 @@ contract Marketplace is
             assetType,
             assetId
         );
-        
+
         require(
             fractionToBuy >= _listedInfo[assetType][assetId][owner].minFraction,
             "Fraction to buy < Min. fraction"

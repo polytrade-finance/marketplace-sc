@@ -174,10 +174,7 @@ interface IMarketplace {
      * @param id, id of bank, id 0 is default for settlment and treasury wallet interactions
      * @param bankAddress, id of bank token address
      */
-    function addBank(
-        uint256 id,
-        address bankAddress
-    ) external;
+    function addBank(uint256 id, address bankAddress) external;
 
     /**
      * @dev Creates an asset with its parameters
