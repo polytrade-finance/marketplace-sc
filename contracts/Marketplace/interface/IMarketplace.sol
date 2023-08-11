@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 /**
  * @title The main interface to define the main marketplace
- * @author Zakrad
+ * @author Polytrade.Finance
  * @dev Collection of all procedures related to the marketplace
  */
 interface IMarketplace {
