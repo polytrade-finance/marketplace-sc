@@ -169,6 +169,17 @@ interface IMarketplace {
     error UnsupportedInterface();
 
     /**
+     * @dev add bank token address to a specific id
+     * @dev used for identifying bank of buyers
+     * @param id, id of bank, id 0 is default for settlment and treasury wallet interactions
+     * @param bankAddress, id of bank token address
+     */
+    function addBank(
+        uint256 id,
+        address bankAddress
+    ) external;
+
+    /**
      * @dev Creates an asset with its parameters
      * @param owner, initial owner of asset
      * @param assetId, unique identifier of asset
@@ -275,12 +286,14 @@ interface IMarketplace {
      * @dev Transfer the price to previous owner if it is not the first buy
      * @dev Owner should have approved marketplace to transfer its assets
      * @dev Buyer should have approved marketplace to transfer its ERC20 tokens to pay price and fees
+     * @param bankId, Id of the bank which buyer is using its wallet
      * @param assetType, assetType identifies whether its a property or an invoice
      * @param assetId, unique number of the asset
      * @param fractionToBuy, amount of fraction for buying
      * @param owner, address of the owner of asset
      */
     function buy(
+        uint256 bankId,
         uint256 assetType,
         uint256 assetId,
         uint256 fractionToBuy,
@@ -291,11 +304,13 @@ interface IMarketplace {
      * @dev Batch buy assets from owners
      * @dev Loop through arrays and calls the buy function
      * @param assetTypes, arrray of assetTypes that identifies whether its a property or an invoice
+     * @param bankId, Id of the bank which buyer is using its wallet
      * @param assetIds, unique identifiers of the assets
      * @param fractionsToBuy, amounts of fraction for buying
      * @param owners, addresses of the owner of asset
      */
     function batchBuy(
+        uint256 bankId,
         uint256[] calldata assetTypes,
         uint256[] calldata assetIds,
         uint256[] calldata fractionsToBuy,
@@ -366,6 +381,7 @@ interface IMarketplace {
         address owner,
         address offeror,
         uint256 offerPrice,
+        uint256 bankId,
         uint256 assetType,
         uint256 assetId,
         uint256 fractionsToBuy,
@@ -383,9 +399,10 @@ interface IMarketplace {
 
     /**
      * @dev Gets current stable token address
+     * @param id of bank to receive added bank token address
      * @return address, Address of the stable token contract
      */
-    function getStableToken() external view returns (address);
+    function getStableToken(uint256 id) external view returns (address);
 
     /**
      * @dev Gets current treasury wallet address

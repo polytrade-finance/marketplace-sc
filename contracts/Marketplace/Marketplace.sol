@@ -43,6 +43,7 @@ contract Marketplace is
     /**
      * @dev Mapping will be indexing the AssetInfo for asset collection by its id
      */
+    mapping(uint256 => address) private _bankAddress;
     mapping(uint256 => PropertyInfo) private _properties;
     mapping(uint256 => mapping(uint256 => AssetInfo)) private _assets;
     mapping(uint256 => mapping(uint256 => mapping(address => ListedInfo)))
@@ -87,12 +88,23 @@ contract Marketplace is
         require(tokenAddress_ != address(0), "Invalid address");
 
         _assetCollection = IAsset(assetCollection_);
+        _bankAddress[0] = tokenAddress_;
         _stableToken = IToken(tokenAddress_);
 
         _setTreasuryWallet(treasuryWallet_);
         _setFeeWallet(feeWallet_);
 
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
+    }
+
+        /**
+     * @dev See {IMarketplace-createProperty}.
+     */
+    function addBank(
+        uint256 id,
+        address bankAddress
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _bankAddress[id] = bankAddress;
     }
 
     /**
@@ -257,6 +269,7 @@ contract Marketplace is
     function counterOffer(
         address owner,
         address offeror,
+        uint256 bankId,
         uint256 offerPrice,
         uint256 assetType,
         uint256 assetId,
@@ -273,6 +286,8 @@ contract Marketplace is
                 "Signer is not the owner"
             );
             require(offeror == _msgSender(), "You are not the offeror");
+        }
+        {
             uint256 nonce = _useNonce(owner);
             bytes32 offerHash = keccak256(
                 abi.encode(
@@ -290,11 +305,11 @@ contract Marketplace is
 
             bytes32 hash = _hashTypedDataV4(offerHash);
             address signer = ECDSA.recover(hash, v, r, s);
-
             require(signer == owner, "Invalid signature");
         }
         {
-            _buy(assetType, assetId, offerPrice, fractionsToBuy, owner);
+            address ownerAddress = owner;
+            _buy(bankId, assetType, assetId, offerPrice, fractionsToBuy, ownerAddress);
         }
     }
 
@@ -302,12 +317,14 @@ contract Marketplace is
      * @dev See {IMarketplace-buy}.
      */
     function buy(
+        uint256 bankId,
         uint256 assetType,
         uint256 assetId,
         uint256 fractionToBuy,
         address owner
     ) external {
         _buy(
+            bankId,
             assetType,
             assetId,
             _listedInfo[assetType][assetId][owner].salePrice,
@@ -320,6 +337,7 @@ contract Marketplace is
      * @dev See {IMarketplace-batchBuy}.
      */
     function batchBuy(
+        uint256 bankId,
         uint256[] calldata assetTypes,
         uint256[] calldata assetIds,
         uint256[] calldata fractionsToBuy,
@@ -334,6 +352,7 @@ contract Marketplace is
         );
         for (uint256 i = 0; i < length; ) {
             _buy(
+                bankId,
                 assetTypes[i],
                 assetIds[i],
                 _listedInfo[assetTypes[i]][assetIds[i]][owners[i]].salePrice,
@@ -399,8 +418,8 @@ contract Marketplace is
     /**
      * @dev See {IMarketplace-getStableToken}.
      */
-    function getStableToken() external view returns (address) {
-        return address(_stableToken);
+    function getStableToken(uint256 id) external view returns (address) {
+        return _bankAddress[id];
     }
 
     /**
@@ -577,7 +596,7 @@ contract Marketplace is
         settlePrice = (settlePrice * subBalanceOf) / 1e4;
         delete _listedInfo[assetType][assetId][owner];
 
-        _stableToken.safeTransferFrom(_treasuryWallet, owner, settlePrice);
+        IToken(_bankAddress[0]).safeTransferFrom(_treasuryWallet, owner, settlePrice);
         _assetCollection.burnAsset(owner, assetType, assetId, subBalanceOf);
 
         if (_assetCollection.totalSubSupply(assetType, assetId) == 0) {
@@ -643,7 +662,7 @@ contract Marketplace is
             );
         }
 
-        _stableToken.safeTransferFrom(_treasuryWallet, receiver, reward);
+        IToken(_bankAddress[0]).safeTransferFrom(_treasuryWallet, receiver, reward);
 
         emit RewardsClaimed(receiver, assetType, assetId, reward);
     }
@@ -652,6 +671,7 @@ contract Marketplace is
      * @dev Safe transfer asset to marketplace and transfer the price to treasury wallet if it is the first buy
      * @dev Transfer the price to previous owner if it is not the first buy
      * @dev Transfer buying fee or initial fee to fee wallet based on asset status
+     * @param bankId, id of an added bank that buyer use its wallet
      * @param assetType, type of asset to buy
      * @param assetId, unique identifier of the asset
      * @param salePrice, sale price for buying specific fraction of asset
@@ -659,6 +679,7 @@ contract Marketplace is
      * @param owner, address of owner of the fraction of asset
      */
     function _buy(
+        uint256 bankId,
         uint256 assetType,
         uint256 assetId,
         uint256 salePrice,
@@ -671,7 +692,7 @@ contract Marketplace is
             assetType,
             assetId
         );
-
+        
         require(
             fractionToBuy >= _listedInfo[assetType][assetId][owner].minFraction,
             "Fraction to buy < Min. fraction"
@@ -679,11 +700,14 @@ contract Marketplace is
         require(fractionToBuy <= ownerBalance, "Not enough fraction to buy");
         require(salePrice != 0, "Asset is not relisted");
         require(asset.dueDate > block.timestamp, "Due date has passed");
+        require(_bankAddress[bankId] != address(0), "Bank is not defined");
 
+        address tokenAddress = _bankAddress[bankId];
         uint256 payPrice = (salePrice * fractionToBuy) / 1e4;
         uint256 fee = asset.owner != owner ? _buyingFee : _initialFee;
         address receiver = asset.owner != owner ? asset.owner : _treasuryWallet;
         fee = (payPrice * fee) / 1e4;
+
         if (asset.purchaseDate == 0) {
             _assets[assetType][assetId].purchaseDate = block.timestamp;
         }
@@ -699,8 +723,8 @@ contract Marketplace is
             fractionToBuy,
             ""
         );
-        _stableToken.safeTransferFrom(_msgSender(), receiver, payPrice);
-        _stableToken.safeTransferFrom(_msgSender(), _feeWallet, fee);
+        IToken(tokenAddress).safeTransferFrom(_msgSender(), receiver, payPrice);
+        IToken(tokenAddress).safeTransferFrom(_msgSender(), _feeWallet, fee);
         emit AssetBought(
             owner,
             _msgSender(),
