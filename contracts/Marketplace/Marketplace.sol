@@ -100,7 +100,7 @@ contract Marketplace is
     /**
      * @dev See {IMarketplace-createProperty}.
      */
-    function addBank(
+    function addBankAccount(
         uint256 id,
         address bankAddress
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
