@@ -714,8 +714,8 @@ contract Marketplace is
         );
         require(fractionToBuy <= ownerBalance, "Not enough fraction to buy");
         require(salePrice != 0, "Asset is not relisted");
-        require(asset.dueDate > block.timestamp, "Due date has passed");
         require(_bankAddress[bankId] != address(0), "Bank is not defined");
+        require(asset.dueDate > block.timestamp, "Due date has passed");
 
         address tokenAddress = _bankAddress[bankId];
         uint256 payPrice = (salePrice * fractionToBuy) / 1e4;

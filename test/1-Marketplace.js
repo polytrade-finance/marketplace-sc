@@ -392,7 +392,7 @@ describe("Marketplace", function () {
 
     await marketplaceContract
       .connect(buyer)
-      .buy(1, 1, asset.minFraction, user1.getAddress());
+      .buy(0, 1, 1, asset.minFraction, user1.getAddress());
 
     await expect(
       marketplaceContract
@@ -435,7 +435,7 @@ describe("Marketplace", function () {
     await expect(
       marketplaceContract
         .connect(buyer)
-        .buy(1, 1, asset.minFraction - 1, user1.getAddress())
+        .buy(0, 1, 1, asset.minFraction - 1, user1.getAddress())
     ).to.be.revertedWith("Fraction to buy < Min. fraction");
   });
 
@@ -472,7 +472,7 @@ describe("Marketplace", function () {
 
     await marketplaceContract
       .connect(buyer)
-      .buy(1, 1, asset.minFraction, user1.getAddress());
+      .buy(0, 1, 1, asset.minFraction, user1.getAddress());
 
     await marketplaceContract
       .connect(buyer)
@@ -481,7 +481,7 @@ describe("Marketplace", function () {
     await expect(
       marketplaceContract
         .connect(user1)
-        .buy(1, 1, 2 * asset.minFraction, buyer.getAddress())
+        .buy(0, 1, 1, 2 * asset.minFraction, buyer.getAddress())
     ).to.be.revertedWith("Not enough fraction to buy");
   });
 
@@ -569,7 +569,7 @@ describe("Marketplace", function () {
   });
 
   it("Should return the stable token contract address while calling getStableToken()", async function () {
-    expect(await marketplaceContract.getStableToken()).to.eq(
+    expect(await marketplaceContract.getStableToken(0)).to.eq(
       await stableTokenContract.getAddress()
     );
   });
@@ -623,6 +623,19 @@ describe("Marketplace", function () {
   it("Should revert to set initial fee without admin role", async function () {
     await expect(
       marketplaceContract.connect(user1).setInitialFee(1000)
+    ).to.be.revertedWith(
+      `AccessControl: account ${(
+        await user1.getAddress()
+      ).toLowerCase()} is missing role ${ethers.zeroPadValue(
+        ethers.toBeHex(0),
+        32
+      )}`
+    );
+  });
+
+  it("Should revert to add bank account without admin role", async function () {
+    await expect(
+      marketplaceContract.connect(user1).addBankAccount(1, ethers.ZeroAddress)
     ).to.be.revertedWith(
       `AccessControl: account ${(
         await user1.getAddress()
@@ -844,6 +857,10 @@ describe("Marketplace", function () {
     ).to.be.revertedWith("Invalid settle amount");
   });
 
+  it("Should add bank account", async function () {
+    await marketplaceContract.addBankAccount(1, stableTokenContract.getAddress())
+  });
+
   it("Should create asset and selling it to buyer through Marketplace", async function () {
     await assetContract.grantRole(
       MarketplaceAccess,
@@ -865,7 +882,7 @@ describe("Marketplace", function () {
     await expect(
       await marketplaceContract
         .connect(buyer)
-        .buy(1, 1, asset.minFraction, user1.getAddress())
+        .buy(0, 1, 1, asset.minFraction, user1.getAddress())
     ).not.to.be.reverted;
 
     expect(
@@ -903,7 +920,7 @@ describe("Marketplace", function () {
 
     await marketplaceContract
       .connect(buyer)
-      .buy(1, 1, 10000, user1.getAddress());
+      .buy(0, 1, 1, 10000, user1.getAddress());
 
     const tenure = 10n * DAY;
     await time.increase(tenure);
@@ -945,7 +962,7 @@ describe("Marketplace", function () {
     await expect(
       await marketplaceContract
         .connect(buyer)
-        .buy(1, 1, 10000, user1.getAddress())
+        .buy(0, 1, 1, 10000, user1.getAddress())
     ).not.to.be.reverted;
 
     const tenure = BigInt(asset.dueDate - (await now()));
@@ -982,9 +999,35 @@ describe("Marketplace", function () {
     await expect(
       marketplaceContract
         .connect(buyer)
-        .buy(1, 1, asset.minFraction, user1.getAddress())
+        .buy(0, 1, 1, asset.minFraction, user1.getAddress())
     ).to.revertedWith("Due date has passed");
   });
+
+  it("Should revert to buy an with wrong bank id", async function () {
+    await assetContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.getAddress()
+    );
+    await marketplaceContract.createAsset(
+      user1.getAddress(),
+      1,
+      asset.assetPrice,
+      asset.rewardApr,
+      asset.dueDate,
+      asset.minFraction
+    );
+
+    await stableTokenContract
+      .connect(buyer)
+      .approve(marketplaceContract.getAddress(), asset.assetPrice);
+
+    await expect(
+      marketplaceContract
+        .connect(buyer)
+        .buy(2, 1, 1, asset.minFraction, user1.getAddress())
+    ).to.revertedWith("Bank is not defined");
+  });
+
 
   it("Should create an asset settle the asset after due date", async function () {
     await assetContract.grantRole(
@@ -1012,7 +1055,7 @@ describe("Marketplace", function () {
     await expect(
       await marketplaceContract
         .connect(buyer)
-        .buy(1, 1, asset.minFraction, user1.getAddress())
+        .buy(0, 1, 1, asset.minFraction, user1.getAddress())
     ).not.to.be.reverted;
 
     await time.increase(10);
@@ -1060,7 +1103,7 @@ describe("Marketplace", function () {
     await expect(
       await marketplaceContract
         .connect(buyer)
-        .buy(2, 1, asset.minFraction, user1.getAddress())
+        .buy(0, 2, 1, asset.minFraction, user1.getAddress())
     ).not.to.be.reverted;
 
     await time.increase(10);
@@ -1114,7 +1157,7 @@ describe("Marketplace", function () {
     await expect(
       await marketplaceContract
         .connect(buyer)
-        .buy(2, 1, asset.minFraction, user1.getAddress())
+        .buy(0, 2, 1, asset.minFraction, user1.getAddress())
     ).not.to.be.reverted;
 
     await time.increase(1000);
@@ -1193,7 +1236,7 @@ describe("Marketplace", function () {
 
     await marketplaceContract
       .connect(buyer)
-      .buy(1, 1, asset.minFraction, user1.getAddress());
+      .buy(0, 1, 1, asset.minFraction, user1.getAddress());
 
     await marketplaceContract
       .connect(buyer)
@@ -1217,7 +1260,7 @@ describe("Marketplace", function () {
     await expect(
       await marketplaceContract
         .connect(user1)
-        .buy(1, 1, asset.minFraction / 10, buyer.getAddress())
+        .buy(0, 1, 1, asset.minFraction / 10, buyer.getAddress())
     ).not.to.be.reverted;
 
     const after2ndBuy = await stableTokenContract.balanceOf(
@@ -1265,6 +1308,7 @@ describe("Marketplace", function () {
       marketplaceContract
         .connect(buyer)
         .batchBuy(
+          0,
           [1],
           [1, 2],
           [asset.minFraction, asset.minFraction],
@@ -1276,6 +1320,7 @@ describe("Marketplace", function () {
       await marketplaceContract
         .connect(buyer)
         .batchBuy(
+          0,
           [1, 1],
           [1, 2],
           [asset.minFraction, asset.minFraction],
@@ -1336,6 +1381,7 @@ describe("Marketplace", function () {
       marketplaceContract
         .connect(buyer)
         .batchBuy(
+          0,
           [1],
           [1, 2],
           [5000, 5000],
@@ -1347,6 +1393,7 @@ describe("Marketplace", function () {
       marketplaceContract
         .connect(buyer)
         .batchBuy(
+          0,
           [1, 1],
           [1, 2],
           [asset.minFraction * 5, asset.minFraction * 5],
@@ -1358,6 +1405,7 @@ describe("Marketplace", function () {
       marketplaceContract
         .connect(buyer)
         .batchBuy(
+          0,
           [1, 1],
           [1, 2],
           [asset.minFraction * 5, asset.minFraction * 5],
@@ -1415,12 +1463,12 @@ describe("Marketplace", function () {
 
     await marketplaceContract
       .connect(buyer)
-      .buy(1, 1, asset.minFraction, user1.getAddress());
+      .buy(0, 1, 1, asset.minFraction, user1.getAddress());
 
     await expect(
       marketplaceContract
         .connect(user1)
-        .buy(1, 1, asset.minFraction, buyer.getAddress())
+        .buy(0, 1, 1, asset.minFraction, buyer.getAddress())
     ).to.be.revertedWith("Asset is not relisted");
   });
 });

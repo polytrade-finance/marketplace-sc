@@ -148,6 +148,7 @@ describe("Marketplace Signatures", function () {
         .counterOffer(
           user1.getAddress(),
           offeror.getAddress(),
+          0,
           offer.offerPrice,
           1,
           1,
@@ -195,6 +196,7 @@ describe("Marketplace Signatures", function () {
           .counterOffer(
             offeror.getAddress(),
             user1.getAddress(),
+            0,
             offer.offerPrice,
             1,
             1,
@@ -229,6 +231,7 @@ describe("Marketplace Signatures", function () {
           .counterOffer(
             user1.getAddress(),
             offeror.getAddress(),
+            0,
             offer.offerPrice,
             1,
             1,
@@ -250,6 +253,7 @@ describe("Marketplace Signatures", function () {
           .counterOffer(
             user1.getAddress(),
             offeror.getAddress(),
+            0,
             offer.offerPrice,
             1,
             1,
@@ -273,6 +277,7 @@ describe("Marketplace Signatures", function () {
         marketplaceContract.counterOffer(
           user1.getAddress(),
           offeror.getAddress(),
+          0,
           offer.offerPrice,
           1,
           1,
