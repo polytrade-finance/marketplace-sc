@@ -15,7 +15,7 @@ import "contracts/Asset/interface/IAsset.sol";
 
 /**
  * @title The common marketplace for the assets
- * @author Zakrad
+ * @author Polytrade.Finance
  * @dev Implementation of all assets trading operations
  */
 contract Marketplace is
@@ -98,7 +98,7 @@ contract Marketplace is
     }
 
     /**
-     * @dev See {IMarketplace-createProperty}.
+     * @dev See {IMarketplace-addBankAccount}.
      */
     function addBankAccount(
         uint256 id,

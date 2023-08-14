@@ -10,6 +10,8 @@
   },
   "scripts": {
     "test": "npx hardhat test",
+    "mtn-test-invoice": "npx hardhat run scripts/mtn-test-invoice.js --network mastercard",
+    "mtn-test-property": "npx hardhat run scripts/mtn-test-property.js --network mastercard",
     "test:coverage": "npx hardhat coverage",
     "compile": "npx hardhat compile",
     "lint:js": "npx eslint \"**/*.js\"",

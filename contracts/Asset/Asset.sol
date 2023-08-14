@@ -14,7 +14,7 @@ import "contracts/Asset/interface/IAsset.sol";
 
 /**
  * @title The asset contract based on EIP6960
- * @author Zakrad
+ * @author Polytrade.Finance
  * @dev Manages creation of asset and rewards distribution
  */
 contract Asset is

@@ -1,5 +1,5 @@
 const { ethers } = require("hardhat");
-const { asset } = require("../../test/data");
+const { asset, property } = require("../../test/data");
 const { mtnAssetAddress, mtnMarketplaceAddress } = require("../data");
 require("dotenv").config();
 
@@ -37,6 +37,9 @@ const InitialSetup = async (
 
     const Marketplace = await ethers.getContractFactory("Marketplace");
     const marketplace = Marketplace.attach(mtnMarketplaceAddress);
+
+    console.log(`Marketplace Address: ${mtnMarketplaceAddress}`);
+    console.log(`Asset Contract Address: ${mtnAssetAddress} `);
 
     await tokenA.approve(marketplace.getAddress(), ethers.MaxUint256);
     console.log(
@@ -107,16 +110,18 @@ const CreateAsset = async (adminWalletAddress, id, price, apr, due) => {
 
     const dueTimestamp = (await now()) + due * 60;
 
-    await marketplace.createAsset(
-      adminWalletAddress,
-      id,
-      ethers.parseUnits(price, 18),
-      ethers.parseUnits(apr, 2),
-      dueTimestamp,
-      asset.minFraction
-    );
+    const hash = (
+      await marketplace.createAsset(
+        adminWalletAddress,
+        id,
+        ethers.parseUnits(price, 18),
+        ethers.parseUnits(apr, 2),
+        dueTimestamp,
+        asset.minFraction
+      )
+    ).hash;
     console.log(
-      `Create Invoice (price: ${price}, apr: ${apr}%, Min. fraction: 10%, Due: ${dueTimestamp}) success! \u2705 `
+      `\n Create Invoice (price: ${price}, apr: ${apr}%, Min. fraction: 10%, Due: ${dueTimestamp}) success! \u2705 hash: ${hash}`
     );
   } catch (error) {
     console.log(error);
@@ -124,7 +129,33 @@ const CreateAsset = async (adminWalletAddress, id, price, apr, due) => {
   }
 };
 
-const BuyFromBankA = async (buyerPK, owner, id, fractions) => {
+const CreateProperty = async (adminWalletAddress, id, price, due) => {
+  try {
+    const Marketplace = await ethers.getContractFactory("Marketplace");
+    const marketplace = Marketplace.attach(mtnMarketplaceAddress);
+
+    const dueTimestamp = (await now()) + due * 60;
+
+    const hash = (
+      await marketplace.createProperty(
+        adminWalletAddress,
+        id,
+        ethers.parseUnits(price, 18),
+        dueTimestamp,
+        asset.minFraction,
+        property
+      )
+    ).hash;
+    console.log(
+      `\n Create Property (price: ${price}, Min. fraction: 10%, Due: ${dueTimestamp}) success! \u2705 hash: ${hash}`
+    );
+  } catch (error) {
+    console.log(error);
+    throw new Error(error);
+  }
+};
+
+const BuyFromBankA = async (assetType, buyerPK, owner, id, fractions) => {
   try {
     const Marketplace = await ethers.getContractFactory("Marketplace");
     const marketplace = Marketplace.attach(mtnMarketplaceAddress);
@@ -133,13 +164,17 @@ const BuyFromBankA = async (buyerPK, owner, id, fractions) => {
 
     const buyerWallet = new ethers.Wallet(buyerPK, provider);
 
-    await marketplace.connect(buyerWallet).buy(0, 1, id, fractions, owner);
+    const hash = (
+      await marketplace
+        .connect(buyerWallet)
+        .buy(0, assetType, id, fractions, owner)
+    ).hash;
     console.log(
-      `Buy Invoice with ${
+      `\n Buy Invoice with ${
         buyerWallet.address
       } from Bank A (Asset id: ${id}, fractions: ${
         fractions / 100
-      }%) success! \u2705 `
+      }%) success! \u2705 hash: ${hash} `
     );
   } catch (error) {
     console.log(error);
@@ -147,7 +182,7 @@ const BuyFromBankA = async (buyerPK, owner, id, fractions) => {
   }
 };
 
-const BuyFromBankB = async (buyerPK, owner, id, fractions) => {
+const BuyFromBankB = async (assetType, buyerPK, owner, id, fractions) => {
   try {
     const Marketplace = await ethers.getContractFactory("Marketplace");
     const marketplace = Marketplace.attach(mtnMarketplaceAddress);
@@ -156,13 +191,17 @@ const BuyFromBankB = async (buyerPK, owner, id, fractions) => {
 
     const buyerWallet = new ethers.Wallet(buyerPK, provider);
 
-    await marketplace.connect(buyerWallet).buy(1, 1, id, fractions, owner);
+    const hash = (
+      await marketplace
+        .connect(buyerWallet)
+        .buy(1, assetType, id, fractions, owner)
+    ).hash;
     console.log(
-      `Buy Invoice with ${
+      `\n Buy Invoice with ${
         buyerWallet.address
       } from Bank B (Asset id: ${id}, fractions: ${
         fractions / 100
-      }%) success! \u2705 `
+      }%) success! \u2705 hash: ${hash}`
     );
   } catch (error) {
     console.log(error);
@@ -170,7 +209,7 @@ const BuyFromBankB = async (buyerPK, owner, id, fractions) => {
   }
 };
 
-const RelistAsset = async (ownerPK, id, salePrice, fractions) => {
+const RelistAsset = async (assetType, ownerPK, id, salePrice, fractions) => {
   try {
     const Marketplace = await ethers.getContractFactory("Marketplace");
     const marketplace = Marketplace.attach(mtnMarketplaceAddress);
@@ -179,15 +218,17 @@ const RelistAsset = async (ownerPK, id, salePrice, fractions) => {
 
     const ownerWallet = new ethers.Wallet(ownerPK, provider);
 
-    await marketplace
-      .connect(ownerWallet)
-      .relist(1, id, ethers.parseUnits(salePrice, 18), fractions);
+    const hash = (
+      await marketplace
+        .connect(ownerWallet)
+        .relist(assetType, id, ethers.parseUnits(salePrice, 18), fractions)
+    ).hash;
     console.log(
-      `Relist Invoice with ${
+      `\n Relist Invoice with ${
         ownerWallet.address
       } (Asset id: ${id}, Sale price: ${salePrice}, Min. fraction to buy: ${
         fractions / 100
-      }%) success! \u2705 `
+      }%) success! \u2705 hash: ${hash}`
     );
   } catch (error) {
     console.log(error);
@@ -200,10 +241,28 @@ const SettleAsset = async (id, owner) => {
     const Marketplace = await ethers.getContractFactory("Marketplace");
     const marketplace = Marketplace.attach(mtnMarketplaceAddress);
 
-    await marketplace.settleAsset(id, owner);
+    const hash = (await marketplace.settleAsset(id, owner)).hash;
 
     console.log(
-      `Settle Invoice for ${owner} owner (Asset id: ${id}) success! \u2705 `
+      `\n Settle Invoice for ${owner} owner (Asset id: ${id}) success! \u2705 hash: ${hash}`
+    );
+  } catch (error) {
+    console.log(error);
+    throw new Error(error);
+  }
+};
+
+const SettleProperty = async (id, owner, amount) => {
+  try {
+    const Marketplace = await ethers.getContractFactory("Marketplace");
+    const marketplace = Marketplace.attach(mtnMarketplaceAddress);
+
+    const hash = (
+      await marketplace.settleProperty(id, owner, ethers.parseUnits(amount, 18))
+    ).hash;
+
+    console.log(
+      `\n Settle Property for ${owner} owner (Asset id: ${id}, Settle amount: ${amount}) success! \u2705 hash: ${hash}`
     );
   } catch (error) {
     console.log(error);
@@ -214,8 +273,10 @@ const SettleAsset = async (id, owner) => {
 module.exports = {
   InitialSetup,
   CreateAsset,
+  CreateProperty,
   BuyFromBankA,
   BuyFromBankB,
   RelistAsset,
   SettleAsset,
+  SettleProperty,
 };

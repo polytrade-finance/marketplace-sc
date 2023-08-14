@@ -34,7 +34,7 @@ async function main() {
     ),
   ];
 
-  const id = 552;
+  const id = 601;
 
   await InitialSetup(
     treasuryWalletPK,
@@ -46,15 +46,15 @@ async function main() {
   await CreateAsset(addressBankA, id, "10", "10000", 1);
 
   setTimeout(async function () {
-    await BuyFromBankA(buyerPK, addressBankA, id, 3000);
+    await BuyFromBankA(1, buyerPK, addressBankA, id, 3000);
   }, 3000);
 
   setTimeout(async function () {
-    await RelistAsset(buyerPK, id, "11", 2000);
+    await RelistAsset(1, buyerPK, id, "11", 2000);
   }, 9000);
 
   setTimeout(async function () {
-    await BuyFromBankB(addressBankBPK, buyerAddress, id, 2000);
+    await BuyFromBankB(1, addressBankBPK, buyerAddress, id, 2000);
   }, 12000);
 
   setTimeout(async function () {
