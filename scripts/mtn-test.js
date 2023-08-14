@@ -1,5 +1,12 @@
 const participantInfo = require("./onboard.json");
-const { InitialSetup, CreateAsset, BuyFromBankA, BuyFromBankB, RelistAsset, SettleAsset } = require("./lib/utils.js");
+const {
+  InitialSetup,
+  CreateAsset,
+  BuyFromBankA,
+  BuyFromBankB,
+  RelistAsset,
+  SettleAsset,
+} = require("./lib/utils.js");
 
 async function main() {
   const { tokenContractAddress: bankATokenAddress } =
@@ -29,7 +36,13 @@ async function main() {
 
   const id = 552;
 
-  await InitialSetup(treasuryWalletPK, buyerPK, addressBankBPK, bankATokenAddress, bankBTokenAddress);
+  await InitialSetup(
+    treasuryWalletPK,
+    buyerPK,
+    addressBankBPK,
+    bankATokenAddress,
+    bankBTokenAddress
+  );
   await CreateAsset(addressBankA, id, "10", "10000", 1);
 
   setTimeout(async function () {
@@ -48,8 +61,6 @@ async function main() {
     await SettleAsset(id, addressBankB);
     await SettleAsset(id, buyerAddress);
   }, 60000);
-
-
 }
 
 // We recommend this pattern to be able to use async/await everywhere

@@ -8,5 +8,5 @@ module.exports = {
   treasuryWallet,
   feeWallet,
   mtnAssetAddress,
-  mtnMarketplaceAddress
+  mtnMarketplaceAddress,
 };

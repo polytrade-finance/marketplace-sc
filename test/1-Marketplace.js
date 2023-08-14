@@ -858,7 +858,10 @@ describe("Marketplace", function () {
   });
 
   it("Should add bank account", async function () {
-    await marketplaceContract.addBankAccount(1, stableTokenContract.getAddress())
+    await marketplaceContract.addBankAccount(
+      1,
+      stableTokenContract.getAddress()
+    );
   });
 
   it("Should create asset and selling it to buyer through Marketplace", async function () {
@@ -1027,7 +1030,6 @@ describe("Marketplace", function () {
         .buy(2, 1, 1, asset.minFraction, user1.getAddress())
     ).to.revertedWith("Bank is not defined");
   });
-
 
   it("Should create an asset settle the asset after due date", async function () {
     await assetContract.grantRole(
