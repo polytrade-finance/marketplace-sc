@@ -58,9 +58,9 @@ contract Asset is
         if (!_msgSender().supportsInterface(_MARKETPLACE_INTERFACE_ID)) {
             revert UnsupportedInterface();
         }
-        _mint(owner, mainId, subId, 1);
-        _approve(owner, _msgSender(), mainId, subId, 1);
-        emit AssetCreated(owner, mainId, subId);
+        _mint(owner, mainId, subId, 10000);
+        _approve(owner, _msgSender(), mainId, subId, 10000);
+        emit AssetCreated(owner, mainId, subId, 10000);
     }
 
     /**
@@ -69,13 +69,14 @@ contract Asset is
     function burnAsset(
         address owner,
         uint256 mainId,
-        uint256 subId
+        uint256 subId,
+        uint256 amount
     ) external onlyRole(MARKETPLACE_ROLE) {
         if (!_msgSender().supportsInterface(_MARKETPLACE_INTERFACE_ID)) {
             revert UnsupportedInterface();
         }
-        _burn(owner, mainId, subId, 1);
-        emit AssetBurnt(owner, mainId, subId);
+        _burn(owner, mainId, subId, amount);
+        emit AssetBurnt(owner, mainId, subId, amount);
     }
 
     /**

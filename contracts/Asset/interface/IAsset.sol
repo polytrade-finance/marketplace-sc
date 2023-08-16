@@ -19,16 +19,28 @@ interface IAsset is IDLT, IDLTEnumerable, IDLTPermit {
      * @param owner, address of the owner of asset
      * @param mainId, unique identifier of asset type
      * @param subId, unique identifier of asset
+     * @param amount, amount if burnt asset
      */
-    event AssetCreated(address owner, uint256 mainId, uint256 subId);
+    event AssetCreated(
+        address owner,
+        uint256 mainId,
+        uint256 subId,
+        uint256 amount
+    );
 
     /**
      * @dev Emitted when an asset is burnt
      * @param owner, address of the owner of asset
      * @param mainId, unique identifier of asset type
      * @param subId, unique identifier of asset
+     * @param amount, amount if burnt asset
      */
-    event AssetBurnt(address owner, uint256 mainId, uint256 subId);
+    event AssetBurnt(
+        address owner,
+        uint256 mainId,
+        uint256 subId,
+        uint256 amount
+    );
 
     /**
      * @dev Reverted on unsupported interface detection
@@ -49,9 +61,15 @@ interface IAsset is IDLT, IDLTEnumerable, IDLTPermit {
      * @param owner, initial owner of asset
      * @param mainId, unique identifier of asset type
      * @param subId, unique identifier of asset
+     * @param amount, amount of asset to burn
      * @dev Needs marketplace access to create an asset
      */
-    function burnAsset(address owner, uint256 mainId, uint256 subId) external;
+    function burnAsset(
+        address owner,
+        uint256 mainId,
+        uint256 subId,
+        uint256 amount
+    ) external;
 
     /**
      * @dev Set a new baseURI for assets

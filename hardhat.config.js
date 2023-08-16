@@ -1,9 +1,7 @@
 require("@nomicfoundation/hardhat-toolbox");
+require("@openzeppelin/hardhat-upgrades");
 require("hardhat-contract-sizer");
 require("dotenv").config();
-
-require("@nomiclabs/hardhat-ethers");
-require("@nomiclabs/hardhat-etherscan");
 
 const {
   TESTNET_PRIVATE_KEY,
@@ -20,6 +18,9 @@ module.exports = {
       optimizer: {
         enabled: true,
         runs: 10000,
+        details: {
+          yul: true,
+        },
       },
     },
   },

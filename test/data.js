@@ -6,17 +6,18 @@ const DECIMALS = {
   EIGHTEEN: 18,
 };
 
-const MarketplaceAccess = ethers.utils.keccak256(
-  ethers.utils.toUtf8Bytes("MARKETPLACE_ROLE")
+const MarketplaceAccess = ethers.keccak256(
+  ethers.toUtf8Bytes("MARKETPLACE_ROLE")
 );
 
-const DAY = 24 * 60 * 60;
-const YEAR = 360 * DAY;
+const DAY = 24n * 60n * 60n;
+const YEAR = 360n * DAY;
 
 const asset = {
-  assetPrice: ethers.utils.parseUnits("10", DECIMALS.SIX),
-  rewardApr: ethers.utils.parseUnits("10", DECIMALS.TWO), // with 2 decimals
+  assetPrice: ethers.parseUnits("10", DECIMALS.SIX),
+  rewardApr: ethers.parseUnits("10", DECIMALS.TWO), // with 2 decimals
   dueDate: Number(new Date("2023-11-12").getTime() / 1000), // in seconds
+  minFraction: 1000, // from 10000
   lastSale: 0,
   lastClaim: 0,
 };
@@ -33,8 +34,8 @@ const property = {
 };
 
 const offer = {
-  offerPrice: ethers.utils.parseUnits("5", DECIMALS.SIX),
-  deadline: 3 * DAY, // in seconds
+  offerPrice: ethers.parseUnits("5", DECIMALS.SIX),
+  deadline: 3n * DAY, // in seconds
 };
 
 module.exports = {
