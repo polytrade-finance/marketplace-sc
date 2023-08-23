@@ -720,7 +720,7 @@ contract Marketplace is
         address tokenAddress = _bankAddress[bankId];
         uint256 payPrice = (salePrice * fractionToBuy) / 1e4;
         uint256 fee = asset.owner != owner ? _buyingFee : _initialFee;
-        address receiver = asset.owner != owner ? asset.owner : _treasuryWallet;
+        address receiver = asset.owner != owner ? owner : _treasuryWallet;
         fee = (payPrice * fee) / 1e4;
 
         if (asset.purchaseDate == 0) {
