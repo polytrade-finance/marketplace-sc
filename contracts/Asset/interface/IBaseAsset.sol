@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "dual-layer-token/contracts/DLT/interfaces/IDLT.sol";
-import "dual-layer-token/contracts/DLT/interfaces/IDLTEnumerable.sol";
-import "dual-layer-token/contracts/DLT/interfaces/IDLTPermit.sol";
+import {IDLT} from "dual-layer-token/contracts/DLT/interfaces/IDLT.sol";
+import {IDLTEnumerable} from "dual-layer-token/contracts/DLT/interfaces/IDLTEnumerable.sol";
+import {IDLTPermit} from "dual-layer-token/contracts/DLT/interfaces/IDLTPermit.sol";
+import {AssetInfo} from "contracts/lib/structs.sol";
 
-interface IAsset is IDLT, IDLTEnumerable, IDLTPermit {
+interface IBaseAsset is IDLT, IDLTEnumerable, IDLTPermit {
     /**
      * @dev Emitted when `newURI` is set to the assets instead of `oldURI`
      * @param mainId, Asset main id for the URI
@@ -21,12 +22,7 @@ interface IAsset is IDLT, IDLTEnumerable, IDLTPermit {
      * @param subId, unique identifier of asset
      * @param amount, amount if burnt asset
      */
-    event AssetCreated(
-        address owner,
-        uint256 mainId,
-        uint256 subId,
-        uint256 amount
-    );
+    event AssetCreated(address owner, uint256 mainId, uint256 subId, uint256 amount);
 
     /**
      * @dev Emitted when an asset is burnt
@@ -35,17 +31,9 @@ interface IAsset is IDLT, IDLTEnumerable, IDLTPermit {
      * @param subId, unique identifier of asset
      * @param amount, amount if burnt asset
      */
-    event AssetBurnt(
-        address owner,
-        uint256 mainId,
-        uint256 subId,
-        uint256 amount
-    );
+    event AssetBurnt(address owner, uint256 mainId, uint256 subId, uint256 amount);
 
-    /**
-     * @dev Reverted on unsupported interface detection
-     */
-    error UnsupportedInterface();
+    function updatePurchaseDate(uint256 mainId, uint256 subId) external;
 
     /**
      * @dev Creates an asset with its parameters
@@ -54,7 +42,7 @@ interface IAsset is IDLT, IDLTEnumerable, IDLTPermit {
      * @param subId, unique identifier of asset
      * @dev Needs marketplace access to create an asset
      */
-    function createAsset(address owner, uint256 mainId, uint256 subId) external;
+    function createAsset(address owner, uint256 mainId, uint256 subId, uint256 amount) external;
 
     /**
      * @dev Burns an asset with its parameters
@@ -64,12 +52,7 @@ interface IAsset is IDLT, IDLTEnumerable, IDLTPermit {
      * @param amount, amount of asset to burn
      * @dev Needs marketplace access to create an asset
      */
-    function burnAsset(
-        address owner,
-        uint256 mainId,
-        uint256 subId,
-        uint256 amount
-    ) external;
+    function burnAsset(address owner, uint256 mainId, uint256 subId, uint256 amount) external;
 
     /**
      * @dev Set a new baseURI for assets
@@ -84,8 +67,7 @@ interface IAsset is IDLT, IDLTEnumerable, IDLTPermit {
      * @param subId, unique identifier of asset
      * @return string value of asset URI
      */
-    function tokenURI(
-        uint256 mainId,
-        uint256 subId
-    ) external view returns (string memory);
+    function tokenURI(uint256 mainId, uint256 subId) external view returns (string memory);
+
+    function getAssetInfo(uint256 mainId, uint256 subId) external view returns (AssetInfo memory);
 }
