@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {InvoiceInfo} from "contracts/lib/structs.sol";
+import { InvoiceInfo } from "contracts/lib/structs.sol";
 
 interface IInvoiceAsset {
     /**
@@ -11,7 +11,12 @@ interface IInvoiceAsset {
      * @param invoiceSubId, unique number of the invoice
      * @param settlePrice, paid amount for settlement
      */
-    event InvoiceSettled(address indexed owner, uint256 invoiceMainId, uint256 invoiceSubId, uint256 settlePrice);
+    event InvoiceSettled(
+        address indexed owner,
+        uint256 invoiceMainId,
+        uint256 invoiceSubId,
+        uint256 settlePrice
+    );
 
     /**
      * @dev Emitted when new rewards claimed by current owner
@@ -20,7 +25,12 @@ interface IInvoiceAsset {
      * @param invoiceSubId, invoice unique identifier
      * @param reward, Amount of rewards received
      */
-    event RewardsClaimed(address indexed receiver, uint256 invoiceMainId, uint256 invoiceSubId, uint256 reward);
+    event RewardsClaimed(
+        address indexed receiver,
+        uint256 invoiceMainId,
+        uint256 invoiceSubId,
+        uint256 reward
+    );
 
     /**
      * @dev Reverted on unsupported interface detection
@@ -35,8 +45,12 @@ interface IInvoiceAsset {
      * @param invoiceInfo, all related invoice information
      * @dev Needs asset originator access to create an invoice
      */
-    function createInvoice(address owner, uint256 invoiceMainId, uint256 invoiceSubId, InvoiceInfo calldata invoiceInfo)
-        external;
+    function createInvoice(
+        address owner,
+        uint256 invoiceMainId,
+        uint256 invoiceSubId,
+        InvoiceInfo calldata invoiceInfo
+    ) external;
 
     function batchCreateInvoice(
         address[] calldata owners,
@@ -45,7 +59,11 @@ interface IInvoiceAsset {
         InvoiceInfo[] calldata invoiceInfos
     ) external;
 
-    function settleInvoice(uint256 invoiceMainId, uint256 invoiceSubId, address owner) external;
+    function settleInvoice(
+        uint256 invoiceMainId,
+        uint256 invoiceSubId,
+        address owner
+    ) external;
 
     function batchSettleInvoice(
         uint256[] calldata invoiceMainIds,
@@ -59,11 +77,22 @@ interface IInvoiceAsset {
      * @param invoiceSubId, unique identifier of invoice
      * @dev Needs admin access to burn an invoice
      */
-    function burnInvoice(address owner, uint256 invoiceMainId, uint256 invoiceSubId, uint256 amount) external;
+    function burnInvoice(
+        address owner,
+        uint256 invoiceMainId,
+        uint256 invoiceSubId,
+        uint256 amount
+    ) external;
 
-    function getAvailableReward(uint256 invoiceMainId, uint256 invoiceSubId) external view returns (uint256);
+    function getAvailableReward(
+        uint256 invoiceMainId,
+        uint256 invoiceSubId
+    ) external view returns (uint256);
 
-    function getRemainingReward(uint256 invoiceMainId, uint256 invoiceSubId) external view returns (uint256 reward);
+    function getRemainingReward(
+        uint256 invoiceMainId,
+        uint256 invoiceSubId
+    ) external view returns (uint256 reward);
 
     /**
      * @dev Gets the invoice information
@@ -71,5 +100,8 @@ interface IInvoiceAsset {
      * @param invoiceSubId, unique identifier of invoice
      * @return InvoiceInfo struct
      */
-    function getInvoiceInfo(uint256 invoiceMainId, uint256 invoiceSubId) external view returns (InvoiceInfo memory);
+    function getInvoiceInfo(
+        uint256 invoiceMainId,
+        uint256 invoiceSubId
+    ) external view returns (InvoiceInfo memory);
 }

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {ListedInfo} from "contracts/lib/structs.sol";
+import { ListedInfo } from "contracts/lib/structs.sol";
+
 /**
  * @title The main interface to define the main marketplace
  * @author Polytrade.Finance
@@ -14,7 +15,10 @@ interface IMarketplace {
      * @param oldTreasuryWallet, Address of the old treasury wallet
      * @param newTreasuryWallet, Address of the new treasury wallet
      */
-    event TreasuryWalletSet(address oldTreasuryWallet, address newTreasuryWallet);
+    event TreasuryWalletSet(
+        address oldTreasuryWallet,
+        address newTreasuryWallet
+    );
 
     /**
      * @dev Emitted when new `Fee Wallet` has been set
@@ -65,7 +69,11 @@ interface IMarketplace {
      * @param minFraction, minimum fraction needed to buy
      */
     event AssetListed(
-        address indexed owner, uint256 indexed mainId, uint256 indexed subId, uint256 salePrice, uint256 minFraction
+        address indexed owner,
+        uint256 indexed mainId,
+        uint256 indexed subId,
+        uint256 salePrice,
+        uint256 minFraction
     );
 
     /**
@@ -84,7 +92,12 @@ interface IMarketplace {
      * @param fractionToBuy, amount of fraction for buying
      * @param owner, address of the owner of asset
      */
-    function buy(uint256 mainId, uint256 subId, uint256 fractionToBuy, address owner) external;
+    function buy(
+        uint256 mainId,
+        uint256 subId,
+        uint256 fractionToBuy,
+        address owner
+    ) external;
 
     /**
      * @dev Batch buy assets from owners
@@ -108,7 +121,12 @@ interface IMarketplace {
      * @param salePrice, new price for asset sale
      * @param minFraction, minFraction owner set for buyers
      */
-    function list(uint256 mainId, uint256 subId, uint256 salePrice, uint256 minFraction) external;
+    function list(
+        uint256 mainId,
+        uint256 subId,
+        uint256 salePrice,
+        uint256 minFraction
+    ) external;
 
     /**
      * @dev Set new initial fee
@@ -228,8 +246,9 @@ interface IMarketplace {
      * @param assetSubId, unique identifier of asset
      * @return ListedInfo struct
      */
-    function getListedInfo(address owner, uint256 assetMainId, uint256 assetSubId)
-        external
-        view
-        returns (ListedInfo memory);
+    function getListedInfo(
+        address owner,
+        uint256 assetMainId,
+        uint256 assetSubId
+    ) external view returns (ListedInfo memory);
 }

@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
-import {Context} from "@openzeppelin/contracts/utils/Context.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {InvoiceInfo, IInvoiceAsset} from "contracts/Asset/interface/IInvoiceAsset.sol";
-import {IBaseAsset} from "contracts/Asset/interface/IBaseAsset.sol";
-import {IToken} from "contracts/Token/interface/IToken.sol";
-import {IMarketplace} from "contracts/Marketplace/interface/IMarketplace.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
+import { Context } from "@openzeppelin/contracts/utils/Context.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { InvoiceInfo, IInvoiceAsset } from "contracts/Asset/interface/IInvoiceAsset.sol";
+import { IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
+import { IToken } from "contracts/Token/interface/IToken.sol";
+import { IMarketplace } from "contracts/Marketplace/interface/IMarketplace.sol";
 
 /**
  * @title The asset contract based on EIP6960
@@ -29,9 +29,11 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
     mapping(uint256 => mapping(uint256 => InvoiceInfo)) private _invoiceInfo;
 
     // Create a new role identifier for the asset originator
-    bytes32 public constant ASSET_ORIGINATOR = 0x6515eccc42cea4c6b51e4cf769f86c1580ce4efeb1d5bee305af7f36bbb6ce6e;
+    bytes32 public constant ASSET_ORIGINATOR =
+        0x6515eccc42cea4c6b51e4cf769f86c1580ce4efeb1d5bee305af7f36bbb6ce6e;
 
-    bytes4 private constant _MARKETPLACE_INTERFACE_ID = type(IMarketplace).interfaceId;
+    bytes4 private constant _MARKETPLACE_INTERFACE_ID =
+        type(IMarketplace).interfaceId;
 
     bytes4 private constant _ASSET_INTERFACE_ID = type(IBaseAsset).interfaceId;
 
@@ -40,7 +42,11 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
      * @param assetCollection_, Address of the asset collection used in the type contract
      * @param tokenAddress_, Address of the ERC20 token address
      */
-    function initialize(address marketplace_, address assetCollection_, address tokenAddress_) external initializer {
+    function initialize(
+        address marketplace_,
+        address assetCollection_,
+        address tokenAddress_
+    ) external initializer {
         if (!assetCollection_.supportsInterface(_ASSET_INTERFACE_ID)) {
             revert UnsupportedInterface();
         }
@@ -60,10 +66,12 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
     /**
      * @dev See {IInvoiceAsset-createInvoice}.
      */
-    function createInvoice(address owner, uint256 invoiceMainId, uint256 invoiceSubId, InvoiceInfo calldata invoiceInfo)
-        external
-        onlyRole(ASSET_ORIGINATOR)
-    {
+    function createInvoice(
+        address owner,
+        uint256 invoiceMainId,
+        uint256 invoiceSubId,
+        InvoiceInfo calldata invoiceInfo
+    ) external onlyRole(ASSET_ORIGINATOR) {
         _createInvoice(owner, invoiceMainId, invoiceSubId, invoiceInfo);
     }
 
@@ -78,12 +86,19 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
     ) external onlyRole(ASSET_ORIGINATOR) {
         uint256 length = owners.length;
         require(
-            invoiceMainIds.length == length && length == invoiceInfos.length && length == invoiceSubIds.length,
+            invoiceMainIds.length == length &&
+                length == invoiceInfos.length &&
+                length == invoiceSubIds.length,
             "No array parity"
         );
 
-        for (uint256 i = 0; i < length;) {
-            _createInvoice(owners[i], invoiceMainIds[i], invoiceSubIds[i], invoiceInfos[i]);
+        for (uint256 i = 0; i < length; ) {
+            _createInvoice(
+                owners[i],
+                invoiceMainIds[i],
+                invoiceSubIds[i],
+                invoiceInfos[i]
+            );
 
             unchecked {
                 ++i;
@@ -94,10 +109,11 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
     /**
      * @dev See {IInvoiceAsset-settleInvoice}.
      */
-    function settleInvoice(uint256 invoiceMainId, uint256 invoiceSubId, address owner)
-        external
-        onlyRole(ASSET_ORIGINATOR)
-    {
+    function settleInvoice(
+        uint256 invoiceMainId,
+        uint256 invoiceSubId,
+        address owner
+    ) external onlyRole(ASSET_ORIGINATOR) {
         _claimReward(invoiceMainId, invoiceSubId, owner);
         _settleInvoice(invoiceMainId, invoiceSubId, owner);
     }
@@ -111,8 +127,11 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         address[] calldata owners
     ) external onlyRole(ASSET_ORIGINATOR) {
         uint256 length = invoiceMainIds.length;
-        require(owners.length == length && length == invoiceSubIds.length, "No array parity");
-        for (uint256 i = 0; i < length;) {
+        require(
+            owners.length == length && length == invoiceSubIds.length,
+            "No array parity"
+        );
+        for (uint256 i = 0; i < length; ) {
             _claimReward(invoiceMainIds[i], invoiceSubIds[i], owners[i]);
             _settleInvoice(invoiceMainIds[i], invoiceSubIds[i], owners[i]);
 
@@ -125,38 +144,51 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
     /**
      * @dev See {IInvoiceAsset-burnInvoice}.
      */
-    function burnInvoice(address owner, uint256 invoiceMainId, uint256 invoiceSubId, uint256 amount)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function burnInvoice(
+        address owner,
+        uint256 invoiceMainId,
+        uint256 invoiceSubId,
+        uint256 amount
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         delete _invoiceInfo[invoiceMainId][invoiceSubId];
         _assetCollection.burnAsset(owner, invoiceMainId, invoiceSubId, amount);
     }
 
-    
-
-    function getAvailableReward(uint256 invoiceMainId, uint256 invoiceSubId) external view returns (uint256) {
+    function getAvailableReward(
+        uint256 invoiceMainId,
+        uint256 invoiceSubId
+    ) external view returns (uint256) {
         return _getAvailableReward(invoiceMainId, invoiceSubId);
     }
 
-    function getRemainingReward(uint256 invoiceMainId, uint256 invoiceSubId) external view returns (uint256 reward) {
+    function getRemainingReward(
+        uint256 invoiceMainId,
+        uint256 invoiceSubId
+    ) external view returns (uint256 reward) {
         InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId][invoiceSubId];
-        uint256 purchaseDate = _assetCollection.getAssetInfo(invoiceMainId, invoiceSubId).purchaseDate;
+        uint256 purchaseDate = _assetCollection
+            .getAssetInfo(invoiceMainId, invoiceSubId)
+            .purchaseDate;
         uint256 tenure;
 
-        if (purchaseDate!= 0) {
+        if (purchaseDate != 0) {
             tenure = invoice.dueDate - purchaseDate;
         } else if (invoice.price != 0) {
-            tenure = invoice.dueDate - (block.timestamp > invoice.dueDate ? invoice.dueDate : block.timestamp);
+            tenure =
+                invoice.dueDate -
+                (
+                    block.timestamp > invoice.dueDate
+                        ? invoice.dueDate
+                        : block.timestamp
+                );
         }
         reward = _calculateFormula(invoice.price, tenure, invoice.rewardApr);
     }
 
-    function getInvoiceInfo(uint256 invoiceMainId, uint256 invoiceSubId)
-        external
-        view
-        returns (InvoiceInfo memory info)
-    {
+    function getInvoiceInfo(
+        uint256 invoiceMainId,
+        uint256 invoiceSubId
+    ) external view returns (InvoiceInfo memory info) {
         info = _invoiceInfo[invoiceMainId][invoiceSubId];
     }
 
@@ -166,17 +198,35 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
      * @param invoiceSubId, unique identifier of invoice
      * @param owner, address of the owner for settlement
      */
-    function _settleInvoice(uint256 invoiceMainId, uint256 invoiceSubId, address owner) private {
+    function _settleInvoice(
+        uint256 invoiceMainId,
+        uint256 invoiceSubId,
+        address owner
+    ) private {
         InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId][invoiceSubId];
-        uint256 subBalanceOf = _assetCollection.subBalanceOf(owner, invoiceMainId, invoiceSubId);
+        uint256 subBalanceOf = _assetCollection.subBalanceOf(
+            owner,
+            invoiceMainId,
+            invoiceSubId
+        );
 
         require(invoice.dueDate != 0, "Invalid asset id");
         require(subBalanceOf != 0, "Not enough balance");
         require(block.timestamp > invoice.dueDate, "Due date not passed");
 
-        uint256 settlePrice = (invoice.price * subBalanceOf) / invoice.fractions;
-        _assetCollection.burnAsset(owner, invoiceMainId, invoiceSubId, subBalanceOf);
-        _stableToken.safeTransferFrom(_marketplace.getTreasuryWallet(), owner, settlePrice);
+        uint256 settlePrice = (invoice.price * subBalanceOf) /
+            invoice.fractions;
+        _assetCollection.burnAsset(
+            owner,
+            invoiceMainId,
+            invoiceSubId,
+            subBalanceOf
+        );
+        _stableToken.safeTransferFrom(
+            _marketplace.getTreasuryWallet(),
+            owner,
+            settlePrice
+        );
         if (_assetCollection.totalSubSupply(invoiceMainId, invoiceSubId) == 0) {
             delete _invoiceInfo[invoiceMainId][invoiceSubId];
         }
@@ -197,10 +247,18 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         uint256 invoiceSubId,
         InvoiceInfo calldata invoiceInfo
     ) private {
-        require(_assetCollection.totalSubSupply(invoiceMainId, invoiceSubId) == 0, "Invoice already created");
+        require(
+            _assetCollection.totalSubSupply(invoiceMainId, invoiceSubId) == 0,
+            "Invoice already created"
+        );
 
         _invoiceInfo[invoiceMainId][invoiceSubId] = invoiceInfo;
-        _assetCollection.createAsset(owner, invoiceMainId, invoiceSubId, invoiceInfo.fractions);
+        _assetCollection.createAsset(
+            owner,
+            invoiceMainId,
+            invoiceSubId,
+            invoiceInfo.fractions
+        );
     }
 
     /**
@@ -210,13 +268,26 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
      * @param receiver, address of receiver reward
      */
 
-    function _claimReward(uint256 invoiceMainId, uint256 invoiceSubId, address receiver) private {
+    function _claimReward(
+        uint256 invoiceMainId,
+        uint256 invoiceSubId,
+        address receiver
+    ) private {
         InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId][invoiceSubId];
 
-        uint256 subBalanceOf = _assetCollection.subBalanceOf(receiver, invoiceMainId, invoiceSubId);
-        uint256 reward = (_getAvailableReward(invoiceMainId, invoiceSubId) * subBalanceOf) / invoice.fractions;
+        uint256 subBalanceOf = _assetCollection.subBalanceOf(
+            receiver,
+            invoiceMainId,
+            invoiceSubId
+        );
+        uint256 reward = (_getAvailableReward(invoiceMainId, invoiceSubId) *
+            subBalanceOf) / invoice.fractions;
 
-        _stableToken.safeTransferFrom(_marketplace.getTreasuryWallet(), receiver, reward);
+        _stableToken.safeTransferFrom(
+            _marketplace.getTreasuryWallet(),
+            receiver,
+            reward
+        );
 
         emit RewardsClaimed(receiver, invoiceMainId, invoiceSubId, reward);
     }
@@ -226,15 +297,27 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
      * @param invoiceMainId, unique identifier of invoice
      * @param invoiceSubId, unique identifier of invoice
      */
-    function _getAvailableReward(uint256 invoiceMainId, uint256 invoiceSubId) private view returns (uint256 reward) {
+    function _getAvailableReward(
+        uint256 invoiceMainId,
+        uint256 invoiceSubId
+    ) private view returns (uint256 reward) {
         InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId][invoiceSubId];
-        uint256 purchaseDate = _assetCollection.getAssetInfo(invoiceMainId, invoiceSubId).purchaseDate;
+        uint256 purchaseDate = _assetCollection
+            .getAssetInfo(invoiceMainId, invoiceSubId)
+            .purchaseDate;
 
         if (purchaseDate != 0) {
-            uint256 tenure =
-                (block.timestamp > invoice.dueDate ? invoice.dueDate : block.timestamp) - purchaseDate;
+            uint256 tenure = (
+                block.timestamp > invoice.dueDate
+                    ? invoice.dueDate
+                    : block.timestamp
+            ) - purchaseDate;
 
-            reward = _calculateFormula(invoice.price, tenure, invoice.rewardApr);
+            reward = _calculateFormula(
+                invoice.price,
+                tenure,
+                invoice.rewardApr
+            );
         }
     }
 
@@ -244,7 +327,11 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
      * @param tenure is the duration from last updated rewards
      * @param apr is the annual percentage rate of rewards for assets
      */
-    function _calculateFormula(uint256 price, uint256 tenure, uint256 apr) private pure returns (uint256) {
+    function _calculateFormula(
+        uint256 price,
+        uint256 tenure,
+        uint256 apr
+    ) private pure returns (uint256) {
         return ((price * tenure * apr) / 1e4) / _YEAR;
     }
 }

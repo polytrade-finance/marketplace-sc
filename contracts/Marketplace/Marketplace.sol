@@ -1,24 +1,31 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {EIP712Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {ListedInfo, IMarketplace} from "contracts/Marketplace/interface/IMarketplace.sol";
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
-import {Context} from "@openzeppelin/contracts/utils/Context.sol";
-import {IToken} from "contracts/Token/interface/IToken.sol";
-import {AssetInfo, IBaseAsset} from "contracts/Asset/interface/IBaseAsset.sol";
+import { EIP712Upgradeable } from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { ListedInfo, IMarketplace } from "contracts/Marketplace/interface/IMarketplace.sol";
+import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
+import { Context } from "@openzeppelin/contracts/utils/Context.sol";
+import { IToken } from "contracts/Token/interface/IToken.sol";
+import { AssetInfo, IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
 
 /**
  * @title The common marketplace for the assets
  * @author Polytrade.Finance
  * @dev Implementation of all assets trading operations
  */
-contract Marketplace is Initializable, Context, ERC165, EIP712Upgradeable, AccessControl, IMarketplace {
+contract Marketplace is
+    Initializable,
+    Context,
+    ERC165,
+    EIP712Upgradeable,
+    AccessControl,
+    IMarketplace
+{
     using SafeERC20 for IToken;
     using ERC165Checker for address;
 
@@ -31,24 +38,26 @@ contract Marketplace is Initializable, Context, ERC165, EIP712Upgradeable, Acces
     address private _treasuryWallet;
     address private _feeWallet;
 
-    mapping(uint256 => mapping(uint256 => mapping(address => ListedInfo))) private _listedInfo;
+    mapping(uint256 => mapping(uint256 => mapping(address => ListedInfo)))
+        private _listedInfo;
     mapping(address => uint256) private _currentNonce;
 
     // solhint-disable-next-line var-name-mixedcase
-    bytes32 private constant _OFFER_TYPEHASH = keccak256(
-        abi.encodePacked(
-            "CounterOffer(",
-            "address owner,",
-            "address offeror,",
-            "uint256 offerPrice,",
-            "uint256 mainId,",
-            "uint256 subId,",
-            "uint256 fractionsToBuy,",
-            "uint256 nonce,",
-            "uint256 deadline",
-            ")"
-        )
-    );
+    bytes32 private constant _OFFER_TYPEHASH =
+        keccak256(
+            abi.encodePacked(
+                "CounterOffer(",
+                "address owner,",
+                "address offeror,",
+                "uint256 offerPrice,",
+                "uint256 mainId,",
+                "uint256 subId,",
+                "uint256 fractionsToBuy,",
+                "uint256 nonce,",
+                "uint256 deadline",
+                ")"
+            )
+        );
     bytes4 private constant _ASSET_INTERFACE_ID = type(IBaseAsset).interfaceId;
 
     /**
@@ -58,10 +67,12 @@ contract Marketplace is Initializable, Context, ERC165, EIP712Upgradeable, Acces
      * @param treasuryWallet_, Address of the treasury wallet
      * @param feeWallet_, Address of the fee wallet
      */
-    function initialize(address assetCollection_, address tokenAddress_, address treasuryWallet_, address feeWallet_)
-        external
-        initializer
-    {
+    function initialize(
+        address assetCollection_,
+        address tokenAddress_,
+        address treasuryWallet_,
+        address feeWallet_
+    ) external initializer {
         __EIP712_init("Polytrade", "2.2");
         if (!assetCollection_.supportsInterface(_ASSET_INTERFACE_ID)) {
             revert UnsupportedInterface();
@@ -81,13 +92,25 @@ contract Marketplace is Initializable, Context, ERC165, EIP712Upgradeable, Acces
     /**
      * @dev See {IMarketplace-list}.
      */
-    function list(uint256 mainId, uint256 subId, uint256 salePrice, uint256 minFraction) external {
-        uint256 subBalanceOf = _assetCollection.subBalanceOf(_msgSender(), mainId, subId);
+    function list(
+        uint256 mainId,
+        uint256 subId,
+        uint256 salePrice,
+        uint256 minFraction
+    ) external {
+        uint256 subBalanceOf = _assetCollection.subBalanceOf(
+            _msgSender(),
+            mainId,
+            subId
+        );
         require(minFraction != 0, "Min. fraction can not be zero");
         require(subBalanceOf != 0, "Not enough balance");
         require(subBalanceOf >= minFraction, "Min. fraction > Balance");
 
-        _listedInfo[mainId][subId][_msgSender()] = ListedInfo(salePrice, minFraction);
+        _listedInfo[mainId][subId][_msgSender()] = ListedInfo(
+            salePrice,
+            minFraction
+        );
 
         emit AssetListed(_msgSender(), mainId, subId, salePrice, minFraction);
     }
@@ -112,7 +135,17 @@ contract Marketplace is Initializable, Context, ERC165, EIP712Upgradeable, Acces
             require(offeror == _msgSender(), "You are not the offeror");
             uint256 nonce = _useNonce(owner);
             bytes32 offerHash = keccak256(
-                abi.encode(_OFFER_TYPEHASH, owner, offeror, offerPrice, mainId, subId, fractionsToBuy, nonce, deadline)
+                abi.encode(
+                    _OFFER_TYPEHASH,
+                    owner,
+                    offeror,
+                    offerPrice,
+                    mainId,
+                    subId,
+                    fractionsToBuy,
+                    nonce,
+                    deadline
+                )
             );
 
             bytes32 hash = _hashTypedDataV4(offerHash);
@@ -128,8 +161,19 @@ contract Marketplace is Initializable, Context, ERC165, EIP712Upgradeable, Acces
     /**
      * @dev See {IMarketplace-buy}.
      */
-    function buy(uint256 mainId, uint256 subId, uint256 fractionToBuy, address owner) external {
-        _buy(mainId, subId, _listedInfo[mainId][subId][owner].salePrice, fractionToBuy, owner);
+    function buy(
+        uint256 mainId,
+        uint256 subId,
+        uint256 fractionToBuy,
+        address owner
+    ) external {
+        _buy(
+            mainId,
+            subId,
+            _listedInfo[mainId][subId][owner].salePrice,
+            fractionToBuy,
+            owner
+        );
     }
 
     /**
@@ -143,9 +187,12 @@ contract Marketplace is Initializable, Context, ERC165, EIP712Upgradeable, Acces
     ) external {
         uint256 length = subIds.length;
         require(
-            mainIds.length == length && length == fractionsToBuy.length && length == owners.length, "No array parity"
+            mainIds.length == length &&
+                length == fractionsToBuy.length &&
+                length == owners.length,
+            "No array parity"
         );
-        for (uint256 i = 0; i < length;) {
+        for (uint256 i = 0; i < length; ) {
             _buy(
                 mainIds[i],
                 subIds[i],
@@ -163,7 +210,9 @@ contract Marketplace is Initializable, Context, ERC165, EIP712Upgradeable, Acces
     /**
      * @dev See {IMarketplace-setInitialFee}.
      */
-    function setInitialFee(uint256 initialFee_) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setInitialFee(
+        uint256 initialFee_
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         uint256 oldFee = _initialFee;
         _initialFee = initialFee_;
 
@@ -173,7 +222,9 @@ contract Marketplace is Initializable, Context, ERC165, EIP712Upgradeable, Acces
     /**
      * @dev See {IMarketplace-setBuyingFee}.
      */
-    function setBuyingFee(uint256 buyingFee_) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setBuyingFee(
+        uint256 buyingFee_
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         uint256 oldFee = _buyingFee;
         _buyingFee = buyingFee_;
 
@@ -183,14 +234,18 @@ contract Marketplace is Initializable, Context, ERC165, EIP712Upgradeable, Acces
     /**
      * @dev See {IMarketplace-setTreasuryWallet}.
      */
-    function setTreasuryWallet(address newTreasuryWallet) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setTreasuryWallet(
+        address newTreasuryWallet
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _setTreasuryWallet(newTreasuryWallet);
     }
 
     /**
      * @dev See {IMarketplace-setFeeWallet}.
      */
-    function setFeeWallet(address newFeeWallet) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setFeeWallet(
+        address newFeeWallet
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _setFeeWallet(newFeeWallet);
     }
 
@@ -254,25 +309,31 @@ contract Marketplace is Initializable, Context, ERC165, EIP712Upgradeable, Acces
     /**
      * @dev See {IMarketplace-getPropertyInfo}.
      */
-    function getListedInfo(address owner, uint256 assetMainId, uint256 assetSubId)
-        external
-        view
-        returns (ListedInfo memory)
-    {
+    function getListedInfo(
+        address owner,
+        uint256 assetMainId,
+        uint256 assetSubId
+    ) external view returns (ListedInfo memory) {
         return _listedInfo[assetMainId][assetSubId][owner];
     }
 
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, AccessControl) returns (bool) {
-        return interfaceId == type(IMarketplace).interfaceId || super.supportsInterface(interfaceId);
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(ERC165, AccessControl) returns (bool) {
+        return
+            interfaceId == type(IMarketplace).interfaceId ||
+            super.supportsInterface(interfaceId);
     }
 
     /**
      * @dev "Consume a nonce": return the current value and increment
      */
-    function _useNonce(address owner) internal virtual returns (uint256 current) {
+    function _useNonce(
+        address owner
+    ) internal virtual returns (uint256 current) {
         current = _currentNonce[owner];
         _currentNonce[owner]++;
     }
@@ -315,18 +376,38 @@ contract Marketplace is Initializable, Context, ERC165, EIP712Upgradeable, Acces
      * @param fractionToBuy, number of fractions to buy from owner address
      * @param owner, address of owner of the fraction of asset
      */
-    function _buy(uint256 mainId, uint256 subId, uint256 salePrice, uint256 fractionToBuy, address owner) private {
-        uint256 ownerBalance = _assetCollection.subBalanceOf(owner, mainId, subId);
+    function _buy(
+        uint256 mainId,
+        uint256 subId,
+        uint256 salePrice,
+        uint256 fractionToBuy,
+        address owner
+    ) private {
+        uint256 ownerBalance = _assetCollection.subBalanceOf(
+            owner,
+            mainId,
+            subId
+        );
 
-        AssetInfo memory assetInfo = _assetCollection.getAssetInfo(mainId, subId);
+        AssetInfo memory assetInfo = _assetCollection.getAssetInfo(
+            mainId,
+            subId
+        );
 
-        require(fractionToBuy >= _listedInfo[mainId][subId][owner].minFraction, "Fraction to buy < Min. fraction");
+        require(
+            fractionToBuy >= _listedInfo[mainId][subId][owner].minFraction,
+            "Fraction to buy < Min. fraction"
+        );
         require(fractionToBuy <= ownerBalance, "Not enough fraction to buy");
         require(salePrice != 0, "Asset is not listed");
 
         uint256 payPrice = (salePrice * fractionToBuy) / 1e4;
-        uint256 fee = assetInfo.initialOwner != owner ? _buyingFee : _initialFee;
-        address receiver = assetInfo.initialOwner != owner ? owner : _treasuryWallet;
+        uint256 fee = assetInfo.initialOwner != owner
+            ? _buyingFee
+            : _initialFee;
+        address receiver = assetInfo.initialOwner != owner
+            ? owner
+            : _treasuryWallet;
         fee = (payPrice * fee) / 1e4;
         if (assetInfo.purchaseDate == 0) {
             _assetCollection.updatePurchaseDate(mainId, subId);
@@ -335,9 +416,23 @@ contract Marketplace is Initializable, Context, ERC165, EIP712Upgradeable, Acces
             delete _listedInfo[mainId][subId][owner];
         }
 
-        _assetCollection.safeTransferFrom(owner, _msgSender(), mainId, subId, fractionToBuy, "");
+        _assetCollection.safeTransferFrom(
+            owner,
+            _msgSender(),
+            mainId,
+            subId,
+            fractionToBuy,
+            ""
+        );
         _stableToken.safeTransferFrom(_msgSender(), receiver, payPrice);
         _stableToken.safeTransferFrom(_msgSender(), _feeWallet, fee);
-        emit AssetBought(owner, _msgSender(), mainId, subId, salePrice, payPrice);
+        emit AssetBought(
+            owner,
+            _msgSender(),
+            mainId,
+            subId,
+            salePrice,
+            payPrice
+        );
     }
 }
