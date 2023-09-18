@@ -210,7 +210,6 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
             invoiceSubId
         );
 
-        require(invoice.dueDate != 0, "Invalid asset id");
         require(subBalanceOf != 0, "Not enough balance");
         require(block.timestamp > invoice.dueDate, "Due date not passed");
 
@@ -274,6 +273,7 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         address receiver
     ) private {
         InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId][invoiceSubId];
+        require(invoice.dueDate != 0, "Invalid invoice id");
 
         uint256 subBalanceOf = _assetCollection.subBalanceOf(
             receiver,
