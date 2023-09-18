@@ -12,9 +12,8 @@ import { IToken } from "contracts/Token/interface/IToken.sol";
 import { IMarketplace } from "contracts/Marketplace/interface/IMarketplace.sol";
 
 /**
- * @title The asset contract based on EIP6960
+ * @title The property asset contract based on EIP6960
  * @author Polytrade.Finance
- * @dev Manages creation of asset and rewards distribution
  */
 contract PropertyAsset is
     Initializable,
@@ -28,8 +27,6 @@ contract PropertyAsset is
     IBaseAsset private _assetCollection;
     IMarketplace private _marketplace;
     IToken private _stableToken;
-
-    uint256 private constant _YEAR = 360 days;
 
     mapping(uint256 => mapping(uint256 => PropertyInfo)) private _propertyInfo;
 
@@ -199,7 +196,8 @@ contract PropertyAsset is
             propertySubId
         );
 
-        require(property.dueDate != 0, "Invalid asset id");
+        require(settlePrice != 0, "Invalid settle amount");
+        require(property.dueDate != 0, "Invalid property id");
         require(subBalanceOf != 0, "Not enough balance");
         require(block.timestamp > property.dueDate, "Due date not passed");
 
