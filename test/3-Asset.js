@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { MarketplaceAccess } = require("./data");
+const { AssetManagerAccess } = require("./data");
 
 describe("Asset", function () {
   let assetContract;
@@ -10,7 +10,7 @@ describe("Asset", function () {
   beforeEach(async () => {
     [deployer, user1] = await ethers.getSigners();
 
-    const AssetFactory = await ethers.getContractFactory("Asset");
+    const AssetFactory = await ethers.getContractFactory("BaseAsset");
     assetContract = await AssetFactory.deploy(
       "Polytrade Asset Collection",
       "PAC",
@@ -23,11 +23,13 @@ describe("Asset", function () {
 
   it("Should revert on creating asset by invalid caller", async function () {
     await expect(
-      assetContract.connect(deployer).createAsset(deployer.getAddress(), 1, 1)
+      assetContract
+        .connect(deployer)
+        .createAsset(deployer.getAddress(), 1, 1, 10000)
     ).to.be.revertedWith(
       `AccessControl: account ${(
         await deployer.getAddress()
-      ).toLowerCase()} is missing role ${MarketplaceAccess}`
+      ).toLowerCase()} is missing role ${AssetManagerAccess}`
     );
   });
 
@@ -39,19 +41,12 @@ describe("Asset", function () {
     ).to.be.revertedWith(
       `AccessControl: account ${(
         await deployer.getAddress()
-      ).toLowerCase()} is missing role ${MarketplaceAccess}`
+      ).toLowerCase()} is missing role ${AssetManagerAccess}`
     );
   });
 
-  it("Should revert on calling `createAsset` without interface support", async function () {
-    await assetContract.grantRole(MarketplaceAccess, deployer.getAddress());
-
-    await expect(assetContract.createAsset(deployer.getAddress(), 1, 1)).to.be
-      .reverted;
-  });
-
   it("Should revert on calling `burnAsset` without interface support", async function () {
-    await assetContract.grantRole(MarketplaceAccess, deployer.getAddress());
+    await assetContract.grantRole(AssetManagerAccess, deployer.getAddress());
 
     await expect(assetContract.burnAsset(deployer.getAddress(), 1, 1, 10000)).to
       .be.reverted;
