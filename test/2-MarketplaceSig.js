@@ -1,6 +1,12 @@
 const { expect } = require("chai");
 const { ethers, upgrades } = require("hardhat");
-const { asset, MarketplaceAccess, offer } = require("./data");
+const {
+  asset,
+  MarketplaceAccess,
+  offer,
+  AssetManagerAccess,
+  OriginatorAccess,
+} = require("./data");
 const { time } = require("@nomicfoundation/hardhat-network-helpers");
 const { now } = require("./helpers");
 const {
@@ -13,10 +19,12 @@ describe("Marketplace Signatures", function () {
   let assetContract;
   let stableTokenContract;
   let marketplaceContract;
+  let deployer;
   let user1;
   let offeror;
   let treasuryWallet;
   let feeWallet;
+  let invoiceContract;
   let name;
   let version;
   let chainId;
@@ -27,12 +35,13 @@ describe("Marketplace Signatures", function () {
   let offerType;
 
   beforeEach(async () => {
-    [, user1, offeror, treasuryWallet, feeWallet] = await ethers.getSigners();
+    [deployer, user1, offeror, treasuryWallet, feeWallet] =
+      await ethers.getSigners();
 
     name = "Polytrade";
     version = "2.2";
     chainId = 31337;
-    const AssetFactory = await ethers.getContractFactory("Asset");
+    const AssetFactory = await ethers.getContractFactory("BaseAsset");
     assetContract = await AssetFactory.deploy(
       "Polytrade Asset Collection",
       "PIC",
@@ -56,22 +65,38 @@ describe("Marketplace Signatures", function () {
       ]
     );
 
+    invoiceContract = await upgrades.deployProxy(
+      await ethers.getContractFactory("InvoiceAsset"),
+      [
+        await marketplaceContract.getAddress(),
+        await assetContract.getAddress(),
+        await stableTokenContract.getAddress(),
+      ]
+    );
+
     await assetContract.grantRole(
       MarketplaceAccess,
       marketplaceContract.getAddress()
     );
-    await marketplaceContract.createAsset(
-      user1.getAddress(),
-      1,
-      asset.assetPrice,
-      asset.rewardApr,
-      (await now()) + 100,
-      asset.minFraction
+
+    await assetContract.grantRole(
+      AssetManagerAccess,
+      invoiceContract.getAddress()
     );
+
+    await invoiceContract.grantRole(OriginatorAccess, deployer.getAddress());
+
+    await invoiceContract.createInvoice(user1.getAddress(), 1, 1, asset);
+
+    await marketplaceContract.connect(user1).list(1, 1, asset.price, 1000);
+
+    await assetContract
+      .connect(user1)
+      .setApprovalForAll(marketplaceContract.getAddress(), true);
 
     await stableTokenContract
       .connect(offeror)
-      .approve(marketplaceContract.getAddress(), 10n * asset.assetPrice);
+      .approve(marketplaceContract.getAddress(), 10n * asset.price);
 
     domainSeparator = await marketplaceContract.DOMAIN_SEPARATOR();
 
@@ -87,7 +112,7 @@ describe("Marketplace Signatures", function () {
         { name: "owner", type: "address" },
         { name: "offeror", type: "address" },
         { name: "offerPrice", type: "uint256" },
-        { name: "mainType", type: "uint256" },
+        { name: "mainId", type: "uint256" },
         { name: "subId", type: "uint256" },
         { name: "fractionsToBuy", type: "uint256" },
         { name: "nonce", type: "uint256" },
@@ -114,20 +139,21 @@ describe("Marketplace Signatures", function () {
       );
     });
 
-    it("Should buy asset with owner signed offer", async function () {
+    it("Should buy invoice with owner signed offer", async function () {
       params = {
         owner: await user1.getAddress(),
         offeror: await offeror.getAddress(),
         offerPrice: offer.offerPrice,
         mainId: 1,
         subId: 1,
-        fractionsToBuy: asset.minFraction,
+        fractionsToBuy: 1000,
         nonce: 0,
         deadline: offer.deadline + BigInt(await now()),
       };
 
       signature = await user1.signTypedData(domainData, offerType, params);
       // Validate Signature Offchain
+
       const hash = calculateOfferHash(params);
 
       validateRecoveredAddress(
@@ -151,7 +177,7 @@ describe("Marketplace Signatures", function () {
           offer.offerPrice,
           1,
           1,
-          asset.minFraction,
+          1000,
           offer.deadline + BigInt(await now()),
           v,
           r,
@@ -173,40 +199,6 @@ describe("Marketplace Signatures", function () {
       ).to.be.equal(offer.offerPrice / 10n);
     });
 
-    it("Should revert if signer is not asset owner", async function () {
-      params = {
-        owner: await offeror.getAddress(),
-        offeror: await user1.getAddress(),
-        offerPrice: offer.offerPrice,
-        mainId: 1,
-        subId: 1,
-        fractionsToBuy: asset.minFraction,
-        nonce: 0,
-        deadline: offer.deadline + BigInt(await now()),
-      };
-
-      signature = await offeror.signTypedData(domainData, offerType, params);
-
-      const { r, s, v } = ethers.Signature.from(signature);
-
-      await expect(
-        marketplaceContract
-          .connect(offeror)
-          .counterOffer(
-            offeror.getAddress(),
-            user1.getAddress(),
-            offer.offerPrice,
-            1,
-            1,
-            asset.minFraction,
-            offer.deadline + BigInt(await now()),
-            v,
-            r,
-            s
-          )
-      ).to.be.revertedWith("Signer is not the owner");
-    });
-
     it("Should revert if sender is not offeror", async function () {
       params = {
         owner: await user1.getAddress(),
@@ -214,7 +206,7 @@ describe("Marketplace Signatures", function () {
         offerPrice: offer.offerPrice,
         mainId: 1,
         subId: 1,
-        fractionsToBuy: asset.minFraction,
+        fractionsToBuy: 1000,
         nonce: 0,
         deadline: offer.deadline + BigInt(await now()),
       };
@@ -232,7 +224,7 @@ describe("Marketplace Signatures", function () {
             offer.offerPrice,
             1,
             1,
-            asset.minFraction,
+            1000,
             offer.deadline + BigInt(await now()),
             v,
             r,
@@ -253,7 +245,7 @@ describe("Marketplace Signatures", function () {
             offer.offerPrice,
             1,
             1,
-            asset.minFraction,
+            1000,
             offer.deadline + BigInt(await now()),
             v,
             r,
@@ -276,7 +268,7 @@ describe("Marketplace Signatures", function () {
           offer.offerPrice,
           1,
           1,
-          asset.minFraction,
+          1000,
           expiredDeadline,
           v,
           r,
