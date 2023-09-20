@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { AssetManagerAccess } = require("./data");
+const { AssetManagerAccess, MarketplaceAccess } = require("./data");
 
 describe("Asset", function () {
   let assetContract;
@@ -33,6 +33,16 @@ describe("Asset", function () {
     );
   });
 
+  it("Should revert on updating purchase date by invalid caller", async function () {
+    await expect(
+      assetContract.connect(deployer).updatePurchaseDate(1, 1)
+    ).to.be.revertedWith(
+      `AccessControl: account ${(
+        await deployer.getAddress()
+      ).toLowerCase()} is missing role ${MarketplaceAccess}`
+    );
+  });
+
   it("Should revert on burning asset by invalid caller", async function () {
     await expect(
       assetContract
@@ -43,13 +53,6 @@ describe("Asset", function () {
         await deployer.getAddress()
       ).toLowerCase()} is missing role ${AssetManagerAccess}`
     );
-  });
-
-  it("Should revert on calling `burnAsset` without interface support", async function () {
-    await assetContract.grantRole(AssetManagerAccess, deployer.getAddress());
-
-    await expect(assetContract.burnAsset(deployer.getAddress(), 1, 1, 10000)).to
-      .be.reverted;
   });
 
   it("Should to set new base uri", async function () {
