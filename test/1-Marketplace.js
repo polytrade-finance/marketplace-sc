@@ -142,6 +142,34 @@ describe("Marketplace", function () {
     );
   });
 
+  it("Should revert on burning asset by invalid caller", async function () {
+    await expect(
+      invoiceContract
+        .connect(buyer)
+        .burnInvoice(buyer.getAddress(), 1, 1, 10000)
+    ).to.be.revertedWith(
+      `AccessControl: account ${(
+        await buyer.getAddress()
+      ).toLowerCase()} is missing role ${ethers.zeroPadValue(
+        ethers.toBeHex(0),
+        32
+      )}`
+    );
+
+    await expect(
+      propertyContract
+        .connect(buyer)
+        .burnProperty(buyer.getAddress(), 1, 1, 10000)
+    ).to.be.revertedWith(
+      `AccessControl: account ${(
+        await buyer.getAddress()
+      ).toLowerCase()} is missing role ${ethers.zeroPadValue(
+        ethers.toBeHex(0),
+        32
+      )}`
+    );
+  });
+
   it("Should revert to initialize the contract twice", async function () {
     await expect(
       marketplaceContract.initialize(
@@ -323,6 +351,72 @@ describe("Marketplace", function () {
         await stableTokenContract.getAddress(),
         await treasuryWallet.getAddress(),
         await feeWallet.getAddress(),
+      ])
+    ).to.be.reverted;
+  });
+
+  it("Should revert on passing invalid asset collection Address to Asset contracts", async function () {
+    const factory = await ethers.getContractFactory("InvoiceAsset");
+
+    await expect(
+      upgrades.deployProxy(factory, [
+        await marketplaceContract.getAddress(),
+        ethers.ZeroAddress,
+        await stableTokenContract.getAddress(),
+      ])
+    ).to.be.reverted;
+
+    const factory2 = await ethers.getContractFactory("PropertyAsset");
+
+    await expect(
+      upgrades.deployProxy(factory2, [
+        await marketplaceContract.getAddress(),
+        ethers.ZeroAddress,
+        await stableTokenContract.getAddress(),
+      ])
+    ).to.be.reverted;
+  });
+
+  it("Should revert on passing invalid marketpalce Address to Asset contracts", async function () {
+    const factory = await ethers.getContractFactory("InvoiceAsset");
+
+    await expect(
+      upgrades.deployProxy(factory, [
+        ethers.ZeroAddress,
+        await assetContract.getAddress(),
+        await stableTokenContract.getAddress(),
+      ])
+    ).to.be.reverted;
+
+    const factory2 = await ethers.getContractFactory("PropertyAsset");
+
+    await expect(
+      upgrades.deployProxy(factory2, [
+        ethers.ZeroAddress,
+        await assetContract.getAddress(),
+        await stableTokenContract.getAddress(),
+      ])
+    ).to.be.reverted;
+  });
+
+  it("Should revert on passing invalid token Address to Asset contracts", async function () {
+    const factory = await ethers.getContractFactory("InvoiceAsset");
+
+    await expect(
+      upgrades.deployProxy(factory, [
+        await marketplaceContract.getAddress(),
+        await assetContract.getAddress(),
+        ethers.ZeroAddress,
+      ])
+    ).to.be.reverted;
+
+    const factory2 = await ethers.getContractFactory("PropertyAsset");
+
+    await expect(
+      upgrades.deployProxy(factory2, [
+        await marketplaceContract.getAddress(),
+        await assetContract.getAddress(),
+        ethers.ZeroAddress,
       ])
     ).to.be.reverted;
   });
@@ -530,6 +624,21 @@ describe("Marketplace", function () {
         ethers.ZeroAddress,
       ])
     ).to.revertedWith("Invalid wallet address");
+  });
+
+  it("Should return the listed info struct", async function () {
+    await invoiceContract.createInvoice(user1.getAddress(), 1, 1, asset);
+
+    await marketplaceContract.connect(user1).list(1, 1, asset.price, 1000);
+
+    const info = await marketplaceContract.getListedInfo(
+      user1.getAddress(),
+      1,
+      1
+    );
+
+    expect(info.salePrice).to.eq(asset.price);
+    expect(info.minFraction).to.eq(1000);
   });
 
   it("Should return the invoice info struct", async function () {
@@ -791,6 +900,27 @@ describe("Marketplace", function () {
     expect(await assetContract.subBalanceOf(buyer.getAddress(), 1, 1)).to.eq(
       1000
     );
+  });
+
+  it("Should create asset and burn", async function () {
+    await invoiceContract.createInvoice(user1.getAddress(), 1, 1, asset);
+    await propertyContract.createProperty(user1.getAddress(), 2, 1, property);
+
+    await invoiceContract
+      .connect(deployer)
+      .burnInvoice(user1.getAddress(), 1, 1, 5000);
+
+    await invoiceContract
+      .connect(deployer)
+      .burnInvoice(user1.getAddress(), 1, 1, 5000);
+
+    await propertyContract
+      .connect(deployer)
+      .burnProperty(user1.getAddress(), 2, 1, 1000);
+
+    await propertyContract
+      .connect(deployer)
+      .burnProperty(user1.getAddress(), 2, 1, 9000);
   });
 
   it("Should create invoice and selling it to buyer (before due date)", async function () {
