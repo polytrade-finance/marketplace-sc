@@ -150,8 +150,17 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         uint256 invoiceSubId,
         uint256 amount
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        delete _invoiceInfo[invoiceMainId][invoiceSubId];
         _assetCollection.burnAsset(owner, invoiceMainId, invoiceSubId, amount);
+        uint256 totalSubSupply = _assetCollection.totalSubSupply(
+            invoiceMainId,
+            invoiceSubId
+        );
+
+        _invoiceInfo[invoiceMainId][invoiceSubId].fractions = totalSubSupply;
+
+        if (totalSubSupply == 0) {
+            delete _invoiceInfo[invoiceMainId][invoiceSubId];
+        }
     }
 
     function getAvailableReward(
