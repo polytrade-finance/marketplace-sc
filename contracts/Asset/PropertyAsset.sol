@@ -159,13 +159,23 @@ contract PropertyAsset is
         uint256 propertySubId,
         uint256 amount
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        delete _propertyInfo[propertyMainId][propertySubId];
         _assetCollection.burnAsset(
             owner,
             propertyMainId,
             propertySubId,
             amount
         );
+
+        uint256 totalSubSupply = _assetCollection.totalSubSupply(
+            propertyMainId,
+            propertySubId
+        );
+
+        _propertyInfo[propertyMainId][propertySubId].fractions = totalSubSupply;
+
+        if (totalSubSupply == 0) {
+            delete _propertyInfo[propertyMainId][propertySubId];
+        }
     }
 
     function getPropertyInfo(
