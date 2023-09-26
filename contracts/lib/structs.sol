@@ -38,11 +38,4 @@ struct PropertyInfo {
     uint256 price;
     uint256 dueDate;
     uint256 fractions;
-    uint256 size;
-    uint256 rooms;
-    uint256 bathrooms;
-    uint256 constructionDate;
-    string country;
-    string city;
-    string location;
 }
