@@ -212,7 +212,6 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         uint256 invoiceSubId,
         address owner
     ) private {
-        InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId][invoiceSubId];
         uint256 subBalanceOf = _assetCollection.subBalanceOf(
             owner,
             invoiceMainId,
@@ -220,6 +219,7 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         );
 
         require(subBalanceOf != 0, "Not enough balance");
+        InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId][invoiceSubId];
         require(block.timestamp > invoice.dueDate, "Due date not passed");
 
         uint256 settlePrice = (invoice.price * subBalanceOf) /
