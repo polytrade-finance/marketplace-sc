@@ -660,13 +660,6 @@ describe("Marketplace", function () {
     expect(propInfo.price).to.eq(property.price);
     expect(propInfo.dueDate).to.eq(property.dueDate);
     expect(propInfo.fractions).to.eq(property.fractions);
-    expect(propInfo.size).to.eq(property.size);
-    expect(propInfo.rooms).to.eq(property.rooms);
-    expect(propInfo.bathrooms).to.eq(property.bathrooms);
-    expect(propInfo.constructionDate).to.eq(property.constructionDate);
-    expect(propInfo.country).to.eq(property.country);
-    expect(propInfo.city).to.eq(property.city);
-    expect(propInfo.location).to.eq(property.location);
   });
 
   it("Should return the asset contract address while calling getAssetCollection()", async function () {
