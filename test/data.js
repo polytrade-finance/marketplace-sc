@@ -50,13 +50,6 @@ const nearSettleProperty = async () => {
     price: ethers.parseUnits("10", DECIMALS.SIX),
     dueDate: (await now()) + 100,
     fractions: 10000,
-    size: 200,
-    bathrooms: 2,
-    rooms: 3,
-    constructionDate: Number(new Date("2020-11-12").getTime() / 1000),
-    country: "Italy",
-    city: "Rome",
-    location: "https://goo.gl/maps/bEBPrewmyJB8v6CG8",
   };
 };
 
@@ -64,13 +57,6 @@ const property = {
   price: ethers.parseUnits("10", DECIMALS.SIX),
   dueDate: Number(new Date("2023-11-12").getTime() / 1000),
   fractions: 10000,
-  size: 200,
-  bathrooms: 2,
-  rooms: 3,
-  constructionDate: Number(new Date("2020-11-12").getTime() / 1000),
-  country: "Italy",
-  city: "Rome",
-  location: "https://goo.gl/maps/bEBPrewmyJB8v6CG8",
 };
 
 const offer = {
