@@ -11,16 +11,6 @@ import { ListedInfo } from "contracts/lib/structs.sol";
 
 interface IMarketplace {
     /**
-     * @dev Emitted when new `Treasury Wallet` has been set
-     * @param oldTreasuryWallet, Address of the old treasury wallet
-     * @param newTreasuryWallet, Address of the new treasury wallet
-     */
-    event TreasuryWalletSet(
-        address oldTreasuryWallet,
-        address newTreasuryWallet
-    );
-
-    /**
      * @dev Emitted when new `Fee Wallet` has been set
      * @param oldFeeWallet, Address of the old fee wallet
      * @param newFeeWallet, Address of the new fee wallet
@@ -145,12 +135,6 @@ interface IMarketplace {
     function setBuyingFee(uint256 buyingFee_) external;
 
     /**
-     * @dev Allows to set a new treasury wallet address where funds will be allocated.
-     * @param newTreasuryWallet, Address of the new treasury wallet
-     */
-    function setTreasuryWallet(address newTreasuryWallet) external;
-
-    /**
      * @dev Allows to set a new fee wallet address where buying fees will be allocated.
      * @param newFeeWallet, Address of the new fee wallet
      */
@@ -198,12 +182,6 @@ interface IMarketplace {
      * @return address, Address of the stable token contract
      */
     function getStableToken() external view returns (address);
-
-    /**
-     * @dev Gets current treasury wallet address
-     * @return address, Address of the treasury wallet
-     */
-    function getTreasuryWallet() external view returns (address);
 
     /**
      * @dev Gets current fee wallet address

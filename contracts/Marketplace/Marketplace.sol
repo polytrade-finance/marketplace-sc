@@ -5,7 +5,6 @@ import { EIP712Upgradeable } from "@openzeppelin/contracts-upgradeable/utils/cry
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { ListedInfo, IMarketplace } from "contracts/Marketplace/interface/IMarketplace.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
@@ -21,7 +20,6 @@ import { AssetInfo, IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol"
 contract Marketplace is
     Initializable,
     Context,
-    ERC165,
     EIP712Upgradeable,
     AccessControl,
     IMarketplace
@@ -35,7 +33,6 @@ contract Marketplace is
     IBaseAsset private _assetCollection;
     IToken private _stableToken;
 
-    address private _treasuryWallet;
     address private _feeWallet;
 
     mapping(uint256 => mapping(uint256 => mapping(address => ListedInfo)))
@@ -64,13 +61,11 @@ contract Marketplace is
      * @dev Initializer for the main Marketplace
      * @param assetCollection_, Address of the asset collection used in the marketplace
      * @param tokenAddress_, Address of the ERC20 token address
-     * @param treasuryWallet_, Address of the treasury wallet
      * @param feeWallet_, Address of the fee wallet
      */
     function initialize(
         address assetCollection_,
         address tokenAddress_,
-        address treasuryWallet_,
         address feeWallet_
     ) external initializer {
         __EIP712_init("Polytrade", "2.2");
@@ -83,7 +78,6 @@ contract Marketplace is
         _assetCollection = IBaseAsset(assetCollection_);
         _stableToken = IToken(tokenAddress_);
 
-        _setTreasuryWallet(treasuryWallet_);
         _setFeeWallet(feeWallet_);
 
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
@@ -232,15 +226,6 @@ contract Marketplace is
     }
 
     /**
-     * @dev See {IMarketplace-setTreasuryWallet}.
-     */
-    function setTreasuryWallet(
-        address newTreasuryWallet
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _setTreasuryWallet(newTreasuryWallet);
-    }
-
-    /**
      * @dev See {IMarketplace-setFeeWallet}.
      */
     function setFeeWallet(
@@ -261,13 +246,6 @@ contract Marketplace is
      */
     function getStableToken() external view returns (address) {
         return address(_stableToken);
-    }
-
-    /**
-     * @dev See {IMarketplace-getTreasuryWallet}.
-     */
-    function getTreasuryWallet() external view returns (address) {
-        return address(_treasuryWallet);
     }
 
     /**
@@ -318,17 +296,6 @@ contract Marketplace is
     }
 
     /**
-     * @dev See {IERC165-supportsInterface}.
-     */
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual override(ERC165, AccessControl) returns (bool) {
-        return
-            interfaceId == type(IMarketplace).interfaceId ||
-            super.supportsInterface(interfaceId);
-    }
-
-    /**
      * @dev "Consume a nonce": return the current value and increment
      */
     function _useNonce(
@@ -336,20 +303,6 @@ contract Marketplace is
     ) internal virtual returns (uint256 current) {
         current = _currentNonce[owner];
         _currentNonce[owner]++;
-    }
-
-    /**
-     * @dev Allows to set a new treasury wallet address where funds will be allocated.
-     * @dev Wallet can be EOA or multisig
-     * @param newTreasuryWallet, Address of the new treasury wallet
-     */
-    function _setTreasuryWallet(address newTreasuryWallet) private {
-        require(newTreasuryWallet != address(0), "Invalid wallet address");
-
-        address oldTreasuryWallet = address(_treasuryWallet);
-        _treasuryWallet = newTreasuryWallet;
-
-        emit TreasuryWalletSet(oldTreasuryWallet, newTreasuryWallet);
     }
 
     /**
@@ -367,7 +320,7 @@ contract Marketplace is
     }
 
     /**
-     * @dev Safe transfer asset to marketplace and transfer the price to treasury wallet if it is the first buy
+     * @dev Safe transfer asset to marketplace and transfer the price to the prev owner
      * @dev Transfer the price to previous owner if it is not the first buy
      * @dev Transfer buying fee or initial fee to fee wallet based on asset status
      * @param mainId, unique identifier of the asset
@@ -405,9 +358,6 @@ contract Marketplace is
         uint256 fee = assetInfo.initialOwner != owner
             ? _buyingFee
             : _initialFee;
-        address receiver = assetInfo.initialOwner != owner
-            ? owner
-            : _treasuryWallet;
         fee = (payPrice * fee) / 1e4;
         if (assetInfo.purchaseDate == 0) {
             _assetCollection.updatePurchaseDate(mainId, subId);
@@ -424,7 +374,7 @@ contract Marketplace is
             fractionToBuy,
             ""
         );
-        _stableToken.safeTransferFrom(_msgSender(), receiver, payPrice);
+        _stableToken.safeTransferFrom(_msgSender(), owner, payPrice);
         _stableToken.safeTransferFrom(_msgSender(), _feeWallet, fee);
         emit AssetBought(
             owner,
