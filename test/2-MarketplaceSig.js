@@ -60,7 +60,6 @@ describe("Marketplace Signatures", function () {
       [
         await assetContract.getAddress(),
         await stableTokenContract.getAddress(),
-        await treasuryWallet.getAddress(),
         await feeWallet.getAddress(),
       ]
     );
@@ -68,9 +67,9 @@ describe("Marketplace Signatures", function () {
     invoiceContract = await upgrades.deployProxy(
       await ethers.getContractFactory("InvoiceAsset"),
       [
-        await marketplaceContract.getAddress(),
         await assetContract.getAddress(),
         await stableTokenContract.getAddress(),
+        await treasuryWallet.getAddress(),
       ]
     );
 
@@ -195,7 +194,7 @@ describe("Marketplace Signatures", function () {
         "1"
       );
       expect(
-        await stableTokenContract.balanceOf(treasuryWallet.getAddress())
+        await stableTokenContract.balanceOf(user1.getAddress())
       ).to.be.equal(offer.offerPrice / 10n);
     });
 

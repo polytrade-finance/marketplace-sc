@@ -61,7 +61,6 @@ describe("Marketplace", function () {
       [
         await assetContract.getAddress(),
         await stableTokenContract.getAddress(),
-        await treasuryWallet.getAddress(),
         await feeWallet.getAddress(),
       ]
     );
@@ -69,18 +68,18 @@ describe("Marketplace", function () {
     invoiceContract = await upgrades.deployProxy(
       await ethers.getContractFactory("InvoiceAsset"),
       [
-        await marketplaceContract.getAddress(),
         await assetContract.getAddress(),
         await stableTokenContract.getAddress(),
+        await treasuryWallet.getAddress(),
       ]
     );
 
     propertyContract = await upgrades.deployProxy(
       await ethers.getContractFactory("PropertyAsset"),
       [
-        await marketplaceContract.getAddress(),
         await assetContract.getAddress(),
         await stableTokenContract.getAddress(),
+        await treasuryWallet.getAddress(),
       ]
     );
 
@@ -175,24 +174,23 @@ describe("Marketplace", function () {
       marketplaceContract.initialize(
         await assetContract.getAddress(),
         await stableTokenContract.getAddress(),
-        await treasuryWallet.getAddress(),
         await feeWallet.getAddress()
       )
     ).to.revertedWith("Initializable: contract is already initialized");
 
     await expect(
       invoiceContract.initialize(
-        await marketplaceContract.getAddress(),
         await assetContract.getAddress(),
-        await stableTokenContract.getAddress()
+        await stableTokenContract.getAddress(),
+        await treasuryWallet.getAddress()
       )
     ).to.revertedWith("Initializable: contract is already initialized");
 
     await expect(
       propertyContract.initialize(
-        await marketplaceContract.getAddress(),
         await assetContract.getAddress(),
-        await stableTokenContract.getAddress()
+        await stableTokenContract.getAddress(),
+        await treasuryWallet.getAddress()
       )
     ).to.revertedWith("Initializable: contract is already initialized");
   });
@@ -342,49 +340,14 @@ describe("Marketplace", function () {
     ).to.revertedWith("Property already created");
   });
 
-  it("Should revert on passing invalid asset collection Address", async function () {
-    const factory = await ethers.getContractFactory("Marketplace");
+  it("Should revert on passing invalid asset collection Address to Asset contracts", async function () {
+    const factory = await ethers.getContractFactory("InvoiceAsset");
 
     await expect(
       upgrades.deployProxy(factory, [
         ethers.ZeroAddress,
         await stableTokenContract.getAddress(),
         await treasuryWallet.getAddress(),
-        await feeWallet.getAddress(),
-      ])
-    ).to.be.reverted;
-  });
-
-  it("Should revert on passing invalid asset collection Address to Asset contracts", async function () {
-    const factory = await ethers.getContractFactory("InvoiceAsset");
-
-    await expect(
-      upgrades.deployProxy(factory, [
-        await marketplaceContract.getAddress(),
-        ethers.ZeroAddress,
-        await stableTokenContract.getAddress(),
-      ])
-    ).to.be.reverted;
-
-    const factory2 = await ethers.getContractFactory("PropertyAsset");
-
-    await expect(
-      upgrades.deployProxy(factory2, [
-        await marketplaceContract.getAddress(),
-        ethers.ZeroAddress,
-        await stableTokenContract.getAddress(),
-      ])
-    ).to.be.reverted;
-  });
-
-  it("Should revert on passing invalid marketpalce Address to Asset contracts", async function () {
-    const factory = await ethers.getContractFactory("InvoiceAsset");
-
-    await expect(
-      upgrades.deployProxy(factory, [
-        ethers.ZeroAddress,
-        await assetContract.getAddress(),
-        await stableTokenContract.getAddress(),
       ])
     ).to.be.reverted;
 
@@ -393,8 +356,8 @@ describe("Marketplace", function () {
     await expect(
       upgrades.deployProxy(factory2, [
         ethers.ZeroAddress,
-        await assetContract.getAddress(),
         await stableTokenContract.getAddress(),
+        await treasuryWallet.getAddress(),
       ])
     ).to.be.reverted;
   });
@@ -404,9 +367,9 @@ describe("Marketplace", function () {
 
     await expect(
       upgrades.deployProxy(factory, [
-        await marketplaceContract.getAddress(),
         await assetContract.getAddress(),
         ethers.ZeroAddress,
+        await treasuryWallet.getAddress(),
       ])
     ).to.be.reverted;
 
@@ -414,9 +377,9 @@ describe("Marketplace", function () {
 
     await expect(
       upgrades.deployProxy(factory2, [
-        await marketplaceContract.getAddress(),
         await assetContract.getAddress(),
         ethers.ZeroAddress,
+        await treasuryWallet.getAddress(),
       ])
     ).to.be.reverted;
   });
@@ -426,7 +389,6 @@ describe("Marketplace", function () {
       upgrades.deployProxy(await ethers.getContractFactory("Marketplace"), [
         await stableTokenContract.getAddress(), // non compatible to asset contract
         await stableTokenContract.getAddress(),
-        await treasuryWallet.getAddress(),
         await feeWallet.getAddress(),
       ])
     ).to.be.reverted;
@@ -437,10 +399,27 @@ describe("Marketplace", function () {
       upgrades.deployProxy(await ethers.getContractFactory("Marketplace"), [
         await assetContract.getAddress(),
         ethers.ZeroAddress,
-        await treasuryWallet.getAddress(),
         await feeWallet.getAddress(),
       ])
     ).to.revertedWith("Invalid address");
+  });
+
+  it("Should revert on passing invalid treasury wallet Address", async function () {
+    await expect(
+      upgrades.deployProxy(await ethers.getContractFactory("InvoiceAsset"), [
+        await assetContract.getAddress(),
+        await stableTokenContract.getAddress(),
+        ethers.ZeroAddress,
+      ])
+    ).to.revertedWith("Invalid wallet address");
+
+    await expect(
+      upgrades.deployProxy(await ethers.getContractFactory("PropertyAsset"), [
+        await assetContract.getAddress(),
+        await stableTokenContract.getAddress(),
+        ethers.ZeroAddress,
+      ])
+    ).to.revertedWith("Invalid wallet address");
   });
 
   it("Should revert on listing an asset without ownership", async function () {
@@ -604,23 +583,11 @@ describe("Marketplace", function () {
     ).to.be.revertedWith("Not enough fraction to buy");
   });
 
-  it("Should revert on passing invalid treasury wallet Address", async function () {
-    await expect(
-      upgrades.deployProxy(await ethers.getContractFactory("Marketplace"), [
-        await assetContract.getAddress(),
-        await stableTokenContract.getAddress(),
-        ethers.ZeroAddress,
-        await feeWallet.getAddress(),
-      ])
-    ).to.revertedWith("Invalid wallet address");
-  });
-
   it("Should revert on passing invalid fee wallet Address", async function () {
     await expect(
       upgrades.deployProxy(await ethers.getContractFactory("Marketplace"), [
         await assetContract.getAddress(),
         await stableTokenContract.getAddress(),
-        await treasuryWallet.getAddress(),
         ethers.ZeroAddress,
       ])
     ).to.revertedWith("Invalid wallet address");
@@ -675,7 +642,11 @@ describe("Marketplace", function () {
   });
 
   it("Should return the treasury wallet address while calling getTreasuryWallet()", async function () {
-    expect(await marketplaceContract.getTreasuryWallet()).to.eq(
+    expect(await invoiceContract.getTreasuryWallet()).to.eq(
+      await treasuryWallet.getAddress()
+    );
+
+    expect(await propertyContract.getTreasuryWallet()).to.eq(
       await treasuryWallet.getAddress()
     );
   });
@@ -702,19 +673,35 @@ describe("Marketplace", function () {
 
   it("Should set a new treasury wallet address while calling setTreasuryWallet()", async function () {
     await expect(
-      await marketplaceContract.setTreasuryWallet(
+      await invoiceContract.setTreasuryWallet(
         await newTreasuryWallet.getAddress()
       )
     ).not.to.be.reverted;
 
-    expect(await marketplaceContract.getTreasuryWallet()).to.eq(
+    expect(await invoiceContract.getTreasuryWallet()).to.eq(
+      await newTreasuryWallet.getAddress()
+    );
+
+    await expect(
+      await propertyContract.setTreasuryWallet(
+        await newTreasuryWallet.getAddress()
+      )
+    ).not.to.be.reverted;
+
+    expect(await propertyContract.getTreasuryWallet()).to.eq(
       await newTreasuryWallet.getAddress()
     );
   });
 
   it("Should revert when setting a new treasury wallet by invalid sender address while calling setTreasuryWallet()", async function () {
     await expect(
-      marketplaceContract
+      invoiceContract
+        .connect(user1)
+        .setTreasuryWallet(newTreasuryWallet.getAddress())
+    ).to.be.reverted;
+
+    await expect(
+      propertyContract
         .connect(user1)
         .setTreasuryWallet(newTreasuryWallet.getAddress())
     ).to.be.reverted;
@@ -886,9 +873,9 @@ describe("Marketplace", function () {
         .buy(1, 1, 1000, user1.getAddress())
     ).not.to.be.reverted;
 
-    expect(
-      await stableTokenContract.balanceOf(treasuryWallet.getAddress())
-    ).to.eq(asset.price / 10n);
+    expect(await stableTokenContract.balanceOf(user1.getAddress())).to.eq(
+      asset.price / 10n
+    );
 
     expect(await assetContract.subBalanceOf(buyer.getAddress(), 1, 1)).to.eq(
       1000
@@ -996,6 +983,10 @@ describe("Marketplace", function () {
       .approve(marketplaceContract.getAddress(), asset.price);
 
     await stableTokenContract
+      .connect(buyer)
+      .transfer(treasuryWallet.getAddress(), asset.price);
+
+    await stableTokenContract
       .connect(treasuryWallet)
       .approve(invoiceContract.getAddress(), asset.price);
 
@@ -1033,6 +1024,10 @@ describe("Marketplace", function () {
     await stableTokenContract
       .connect(buyer)
       .approve(marketplaceContract.getAddress(), asset.price);
+
+    await stableTokenContract
+      .connect(buyer)
+      .transfer(treasuryWallet.getAddress(), asset.price);
 
     await stableTokenContract
       .connect(treasuryWallet)
@@ -1195,9 +1190,9 @@ describe("Marketplace", function () {
         )
     ).not.to.be.reverted;
 
-    expect(
-      await stableTokenContract.balanceOf(treasuryWallet.getAddress())
-    ).to.eq(totalStableTokenAmount / 10n);
+    expect(await stableTokenContract.balanceOf(user1.getAddress())).to.eq(
+      totalStableTokenAmount / 10n
+    );
 
     expect(await assetContract.subBalanceOf(buyer.getAddress(), 1, 1)).to.eq(
       1000
@@ -1234,7 +1229,7 @@ describe("Marketplace", function () {
 
     await stableTokenContract
       .connect(buyer)
-      .transfer(treasuryWallet.getAddress(), totalStableTokenAmount);
+      .transfer(treasuryWallet.getAddress(), 2n * totalStableTokenAmount);
 
     await stableTokenContract
       .connect(treasuryWallet)
@@ -1265,6 +1260,10 @@ describe("Marketplace", function () {
     expect(
       await stableTokenContract.balanceOf(treasuryWallet.getAddress())
     ).to.eq(2n * totalStableTokenAmount);
+
+    expect(await stableTokenContract.balanceOf(user1.getAddress())).to.eq(
+      totalStableTokenAmount
+    );
 
     expect(await assetContract.subBalanceOf(buyer.getAddress(), 1, 1)).to.eq(
       1000 * 10
@@ -1320,7 +1319,7 @@ describe("Marketplace", function () {
 
     await stableTokenContract
       .connect(buyer)
-      .transfer(treasuryWallet.getAddress(), totalStableTokenAmount);
+      .transfer(treasuryWallet.getAddress(), 2n * totalStableTokenAmount);
 
     await stableTokenContract
       .connect(treasuryWallet)
@@ -1351,6 +1350,10 @@ describe("Marketplace", function () {
     expect(
       await stableTokenContract.balanceOf(treasuryWallet.getAddress())
     ).to.eq(2n * totalStableTokenAmount);
+
+    expect(await stableTokenContract.balanceOf(user1.getAddress())).to.eq(
+      totalStableTokenAmount
+    );
 
     expect(await assetContract.subBalanceOf(buyer.getAddress(), 1, 1)).to.eq(
       1000 * 10
