@@ -9,7 +9,6 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { PropertyInfo, IPropertyAsset } from "contracts/Asset/interface/IPropertyAsset.sol";
 import { IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
 import { IToken } from "contracts/Token/interface/IToken.sol";
-import { IMarketplace } from "contracts/Marketplace/interface/IMarketplace.sol";
 
 /**
  * @title The property asset contract based on EIP6960
@@ -25,8 +24,9 @@ contract PropertyAsset is
     using ERC165Checker for address;
 
     IBaseAsset private _assetCollection;
-    IMarketplace private _marketplace;
     IToken private _stableToken;
+
+    address private _treasuryWallet;
 
     mapping(uint256 => mapping(uint256 => PropertyInfo)) private _propertyInfo;
 
@@ -34,35 +34,40 @@ contract PropertyAsset is
     bytes32 public constant ASSET_ORIGINATOR =
         0x6515eccc42cea4c6b51e4cf769f86c1580ce4efeb1d5bee305af7f36bbb6ce6e;
 
-    bytes4 private constant _MARKETPLACE_INTERFACE_ID =
-        type(IMarketplace).interfaceId;
-
     bytes4 private constant _ASSET_INTERFACE_ID = type(IBaseAsset).interfaceId;
 
     /**
      * @dev Initializer for the type contract
      * @param assetCollection_, Address of the asset collection used in the type contract
      * @param tokenAddress_, Address of the ERC20 token address
+     * @param treasuryWallet_, Address of the treasury wallet
      */
     function initialize(
-        address marketplace_,
         address assetCollection_,
-        address tokenAddress_
+        address tokenAddress_,
+        address treasuryWallet_
     ) external initializer {
         if (!assetCollection_.supportsInterface(_ASSET_INTERFACE_ID)) {
-            revert UnsupportedInterface();
-        }
-        if (!marketplace_.supportsInterface(_MARKETPLACE_INTERFACE_ID)) {
             revert UnsupportedInterface();
         }
         require(tokenAddress_ != address(0), "Invalid address");
 
         _assetCollection = IBaseAsset(assetCollection_);
-        _marketplace = IMarketplace(marketplace_);
         _stableToken = IToken(tokenAddress_);
+
+        _setTreasuryWallet(treasuryWallet_);
 
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _grantRole(ASSET_ORIGINATOR, _msgSender());
+    }
+
+    /**
+     * @dev See {IPropertyAsset-setTreasuryWallet}.
+     */
+    function setTreasuryWallet(
+        address newTreasuryWallet
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _setTreasuryWallet(newTreasuryWallet);
     }
 
     /**
@@ -178,11 +183,32 @@ contract PropertyAsset is
         }
     }
 
+    /**
+     * @dev See {IPropertyAsset-getTreasuryWallet}.
+     */
+    function getTreasuryWallet() external view returns (address) {
+        return address(_treasuryWallet);
+    }
+
     function getPropertyInfo(
         uint256 propertyMainId,
         uint256 propertySubId
     ) external view returns (PropertyInfo memory) {
         return _propertyInfo[propertyMainId][propertySubId];
+    }
+
+    /**
+     * @dev Allows to set a new treasury wallet address where funds will be allocated.
+     * @dev Wallet can be EOA or multisig
+     * @param newTreasuryWallet, Address of the new treasury wallet
+     */
+    function _setTreasuryWallet(address newTreasuryWallet) private {
+        require(newTreasuryWallet != address(0), "Invalid wallet address");
+
+        address oldTreasuryWallet = address(_treasuryWallet);
+        _treasuryWallet = newTreasuryWallet;
+
+        emit TreasuryWalletSet(oldTreasuryWallet, newTreasuryWallet);
     }
 
     /**
@@ -218,11 +244,7 @@ contract PropertyAsset is
             propertySubId,
             subBalanceOf
         );
-        _stableToken.safeTransferFrom(
-            _marketplace.getTreasuryWallet(),
-            owner,
-            settlePrice
-        );
+        _stableToken.safeTransferFrom(_treasuryWallet, owner, settlePrice);
         if (
             _assetCollection.totalSubSupply(propertyMainId, propertySubId) == 0
         ) {
