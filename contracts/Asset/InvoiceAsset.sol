@@ -9,7 +9,6 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { InvoiceInfo, IInvoiceAsset } from "contracts/Asset/interface/IInvoiceAsset.sol";
 import { IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
 import { IToken } from "contracts/Token/interface/IToken.sol";
-import { IMarketplace } from "contracts/Marketplace/interface/IMarketplace.sol";
 
 /**
  * @title The asset contract based on EIP6960
@@ -21,8 +20,9 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
     using ERC165Checker for address;
 
     IBaseAsset private _assetCollection;
-    IMarketplace private _marketplace;
     IToken private _stableToken;
+
+    address private _treasuryWallet;
 
     uint256 private constant _YEAR = 360 days;
 
@@ -32,35 +32,40 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
     bytes32 public constant ASSET_ORIGINATOR =
         0x6515eccc42cea4c6b51e4cf769f86c1580ce4efeb1d5bee305af7f36bbb6ce6e;
 
-    bytes4 private constant _MARKETPLACE_INTERFACE_ID =
-        type(IMarketplace).interfaceId;
-
     bytes4 private constant _ASSET_INTERFACE_ID = type(IBaseAsset).interfaceId;
 
     /**
      * @dev Initializer for the type contract
      * @param assetCollection_, Address of the asset collection used in the type contract
      * @param tokenAddress_, Address of the ERC20 token address
+     * @param treasuryWallet_, Address of the treasury wallet
      */
     function initialize(
-        address marketplace_,
         address assetCollection_,
-        address tokenAddress_
+        address tokenAddress_,
+        address treasuryWallet_
     ) external initializer {
         if (!assetCollection_.supportsInterface(_ASSET_INTERFACE_ID)) {
-            revert UnsupportedInterface();
-        }
-        if (!marketplace_.supportsInterface(_MARKETPLACE_INTERFACE_ID)) {
             revert UnsupportedInterface();
         }
         require(tokenAddress_ != address(0), "Invalid address");
 
         _assetCollection = IBaseAsset(assetCollection_);
-        _marketplace = IMarketplace(marketplace_);
         _stableToken = IToken(tokenAddress_);
+
+        _setTreasuryWallet(treasuryWallet_);
 
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _grantRole(ASSET_ORIGINATOR, _msgSender());
+    }
+
+    /**
+     * @dev See {IInvoiceAsset-setTreasuryWallet}.
+     */
+    function setTreasuryWallet(
+        address newTreasuryWallet
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _setTreasuryWallet(newTreasuryWallet);
     }
 
     /**
@@ -194,11 +199,32 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         reward = _calculateFormula(invoice.price, tenure, invoice.rewardApr);
     }
 
+    /**
+     * @dev See {IInvoiceAsset-getTreasuryWallet}.
+     */
+    function getTreasuryWallet() external view returns (address) {
+        return address(_treasuryWallet);
+    }
+
     function getInvoiceInfo(
         uint256 invoiceMainId,
         uint256 invoiceSubId
     ) external view returns (InvoiceInfo memory info) {
         info = _invoiceInfo[invoiceMainId][invoiceSubId];
+    }
+
+    /**
+     * @dev Allows to set a new treasury wallet address where funds will be allocated.
+     * @dev Wallet can be EOA or multisig
+     * @param newTreasuryWallet, Address of the new treasury wallet
+     */
+    function _setTreasuryWallet(address newTreasuryWallet) private {
+        require(newTreasuryWallet != address(0), "Invalid wallet address");
+
+        address oldTreasuryWallet = address(_treasuryWallet);
+        _treasuryWallet = newTreasuryWallet;
+
+        emit TreasuryWalletSet(oldTreasuryWallet, newTreasuryWallet);
     }
 
     /**
@@ -230,11 +256,7 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
             invoiceSubId,
             subBalanceOf
         );
-        _stableToken.safeTransferFrom(
-            _marketplace.getTreasuryWallet(),
-            owner,
-            settlePrice
-        );
+        _stableToken.safeTransferFrom(_treasuryWallet, owner, settlePrice);
         if (_assetCollection.totalSubSupply(invoiceMainId, invoiceSubId) == 0) {
             delete _invoiceInfo[invoiceMainId][invoiceSubId];
         }
@@ -292,11 +314,7 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         uint256 reward = (_getAvailableReward(invoiceMainId, invoiceSubId) *
             subBalanceOf) / invoice.fractions;
 
-        _stableToken.safeTransferFrom(
-            _marketplace.getTreasuryWallet(),
-            receiver,
-            reward
-        );
+        _stableToken.safeTransferFrom(_treasuryWallet, receiver, reward);
 
         emit RewardsClaimed(receiver, invoiceMainId, invoiceSubId, reward);
     }
