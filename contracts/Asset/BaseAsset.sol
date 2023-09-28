@@ -1,41 +1,39 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import "dual-layer-token/contracts/DLT/extensions/DLTEnumerable.sol";
-import "dual-layer-token/contracts/DLT/extensions/DLTPermit.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "contracts/Marketplace/interface/IMarketplace.sol";
-import "@openzeppelin/contracts/utils/Context.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "dual-layer-token/contracts/DLT/DLT.sol";
-import "contracts/Asset/interface/IAsset.sol";
+import { DLTEnumerable } from "dual-layer-token/contracts/DLT/extensions/DLTEnumerable.sol";
+import { DLTPermit } from "dual-layer-token/contracts/DLT/extensions/DLTPermit.sol";
+import { ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
+import { Context } from "@openzeppelin/contracts/utils/Context.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { DLT } from "dual-layer-token/contracts/DLT/DLT.sol";
+import { AssetInfo, IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
 
 /**
  * @title The asset contract based on EIP6960
  * @author Polytrade.Finance
  * @dev Manages creation of asset and rewards distribution
  */
-contract Asset is
+contract BaseAsset is
     Context,
     ERC165,
     DLT,
     DLTEnumerable,
     DLTPermit,
     AccessControl,
-    IAsset
+    IBaseAsset
 {
-    using ERC165Checker for address;
+    // Create a new role identifier for the marketplace role
+    bytes32 public constant ASSET_MANAGER =
+        0x9c6e3ae929b539a99db03120eac7d9f862d68479b44f1eec05ab6036fcf56830;
 
     // Create a new role identifier for the marketplace role
     bytes32 public constant MARKETPLACE_ROLE =
         0x0ea61da3a8a09ad801432653699f8c1860b1ae9d2ea4a141fadfd63227717bc8;
 
+    mapping(uint256 => mapping(uint256 => AssetInfo)) private _assetInfo;
     mapping(uint256 => string) private _assetBaseURI;
-
-    bytes4 private constant _MARKETPLACE_INTERFACE_ID =
-        type(IMarketplace).interfaceId;
 
     constructor(
         string memory name,
@@ -48,39 +46,44 @@ contract Asset is
     }
 
     /**
-     * @dev See {IAsset-createAsset}.
+     * @dev See {IBaseAsset-updatePurchaseDate}.
+     */
+    function updatePurchaseDate(
+        uint256 mainId,
+        uint256 subId
+    ) external onlyRole(MARKETPLACE_ROLE) {
+        _assetInfo[mainId][subId].purchaseDate = block.timestamp;
+    }
+
+    /**
+     * @dev See {IBaseAsset-createAsset}.
      */
     function createAsset(
         address owner,
         uint256 mainId,
-        uint256 subId
-    ) external onlyRole(MARKETPLACE_ROLE) {
-        if (!_msgSender().supportsInterface(_MARKETPLACE_INTERFACE_ID)) {
-            revert UnsupportedInterface();
-        }
-        _mint(owner, mainId, subId, 10000);
-        _approve(owner, _msgSender(), mainId, subId, 10000);
-        emit AssetCreated(owner, mainId, subId, 10000);
+        uint256 subId,
+        uint256 amount
+    ) external onlyRole(ASSET_MANAGER) {
+        _assetInfo[mainId][subId].initialOwner = owner;
+        _mint(owner, mainId, subId, amount);
+        emit AssetCreated(owner, mainId, subId, amount);
     }
 
     /**
-     * @dev See {IAsset-burnAsset}.
+     * @dev See {IBaseAsset-burnAsset}.
      */
     function burnAsset(
         address owner,
         uint256 mainId,
         uint256 subId,
         uint256 amount
-    ) external onlyRole(MARKETPLACE_ROLE) {
-        if (!_msgSender().supportsInterface(_MARKETPLACE_INTERFACE_ID)) {
-            revert UnsupportedInterface();
-        }
+    ) external onlyRole(ASSET_MANAGER) {
         _burn(owner, mainId, subId, amount);
         emit AssetBurnt(owner, mainId, subId, amount);
     }
 
     /**
-     * @dev See {IAsset-setBaseURI}.
+     * @dev See {IBaseAsset-setBaseURI}.
      */
     function setBaseURI(
         uint256 mainId,
@@ -90,7 +93,7 @@ contract Asset is
     }
 
     /**
-     * @dev See {IAsset-tokenURI}.
+     * @dev See {IBaseAsset-tokenURI}.
      */
     function tokenURI(
         uint256 mainId,
@@ -100,6 +103,13 @@ contract Asset is
         return string.concat(_assetBaseURI[mainId], stringAssetSubId);
     }
 
+    function getAssetInfo(
+        uint256 mainId,
+        uint256 subId
+    ) external view returns (AssetInfo memory) {
+        return _assetInfo[mainId][subId];
+    }
+
     /**
      * @dev See {IERC165-supportsInterface}.
      */
@@ -107,7 +117,7 @@ contract Asset is
         bytes4 interfaceId
     ) public view virtual override(ERC165, AccessControl) returns (bool) {
         return
-            interfaceId == type(IAsset).interfaceId ||
+            interfaceId == type(IBaseAsset).interfaceId ||
             super.supportsInterface(interfaceId);
     }
 
