@@ -3,7 +3,6 @@ pragma solidity ^0.8.17;
 
 /**
  * @title Listed information for each asset owner and asset id
- * @param salePrice, is the sale price of asset
  * @param minFraction, minimum fraction required for buying an asset
  */
 struct ListedInfo {
@@ -11,6 +10,13 @@ struct ListedInfo {
     uint256 minFraction;
 }
 
+/**
+ * @title storing invoice information
+ * @param price, is the initial owner of asset
+ * @param dueDate, timestamp of which originator can not settle before it
+ * @param rewardApr, reward apr of invoice usied in reward calculations
+ * @param fractions, number of fractions
+ */
 struct InvoiceInfo {
     uint256 price;
     uint256 dueDate;
@@ -18,6 +24,11 @@ struct InvoiceInfo {
     uint256 fractions;
 }
 
+/**
+ * @title storing asset information
+ * @param initialOwner, is the initial owner of asset
+ * @param purchaseDate, date that first time a fraction of asset is purchased
+ */
 struct AssetInfo {
     address initialOwner;
     uint256 purchaseDate;
