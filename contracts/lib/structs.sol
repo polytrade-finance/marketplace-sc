@@ -25,14 +25,9 @@ struct AssetInfo {
 
 /**
  * @title storing property information
- * @param value, is the value of the property
- * @param size, is the size of the property is sq2
- * @param rooms, is the number of the rooms
- * @param bathrooms, is the number of the bathrooms
- * @param constructionDate, is the date of property construction
- * @param country, is the location country
- * @param city, is the location city
- * @param location, is the google map location
+ * @param price, is the value of the property
+ * @param dueDate, timestamp of which originator can not settle before it
+ * @param frations, number of fractions
  */
 struct PropertyInfo {
     uint256 price;

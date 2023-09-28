@@ -297,7 +297,6 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
      * @param invoiceSubId, invoice unique identifier
      * @param receiver, address of receiver reward
      */
-
     function _claimReward(
         uint256 invoiceMainId,
         uint256 invoiceSubId,
