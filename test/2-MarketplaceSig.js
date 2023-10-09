@@ -1,5 +1,5 @@
 const { expect } = require("chai");
-const { ethers, upgrades } = require("hardhat");
+const { ethers, upgrades, network } = require("hardhat");
 const {
   asset,
   MarketplaceAccess,
@@ -27,25 +27,31 @@ describe("Marketplace Signatures", function () {
   let invoiceContract;
   let name;
   let version;
-  let chainId;
   let domainSeparator;
   let signature;
   let params;
   let domainData;
   let offerType;
+  let id;
+  const chainId = network.config.chainId;
+
+
+  const getId = async (contract) => {
+    const nonce = await contract.getNonce();
+    return BigInt(ethers.solidityPackedKeccak256(["uint256", "address", "uint256"], [chainId, await contract.getAddress(), nonce]))
+  }
 
   beforeEach(async () => {
     [deployer, user1, offeror, treasuryWallet, feeWallet] =
       await ethers.getSigners();
 
     name = "Polytrade";
-    version = "2.2";
-    chainId = 31337;
+    version = "2.3";
     const AssetFactory = await ethers.getContractFactory("BaseAsset");
     assetContract = await AssetFactory.deploy(
       "Polytrade Asset Collection",
       "PIC",
-      "2.2",
+      "2.3",
       "https://ipfs.io/ipfs"
     );
 
@@ -82,12 +88,12 @@ describe("Marketplace Signatures", function () {
       AssetManagerAccess,
       invoiceContract.getAddress()
     );
-
+    id = await getId(invoiceContract);
     await invoiceContract.grantRole(OriginatorAccess, deployer.getAddress());
 
-    await invoiceContract.createInvoice(user1.getAddress(), 1, 1, asset);
+    await invoiceContract.createInvoice(user1.getAddress(), asset);
 
-    await marketplaceContract.connect(user1).list(1, 1, asset.price, 1000);
+    await marketplaceContract.connect(user1).list(id, 1, asset.price, 1000);
 
     await assetContract
       .connect(user1)
@@ -143,7 +149,7 @@ describe("Marketplace Signatures", function () {
         owner: await user1.getAddress(),
         offeror: await offeror.getAddress(),
         offerPrice: offer.offerPrice,
-        mainId: 1,
+        mainId: id,
         subId: 1,
         fractionsToBuy: 1000,
         nonce: 0,
@@ -174,7 +180,7 @@ describe("Marketplace Signatures", function () {
           user1.getAddress(),
           offeror.getAddress(),
           offer.offerPrice,
-          1,
+          id,
           1,
           1000,
           offer.deadline + BigInt(await now()),
@@ -203,7 +209,7 @@ describe("Marketplace Signatures", function () {
         owner: await user1.getAddress(),
         offeror: await offeror.getAddress(),
         offerPrice: offer.offerPrice,
-        mainId: 1,
+        mainId: id,
         subId: 1,
         fractionsToBuy: 1000,
         nonce: 0,
@@ -221,7 +227,7 @@ describe("Marketplace Signatures", function () {
             user1.getAddress(),
             offeror.getAddress(),
             offer.offerPrice,
-            1,
+            id,
             1,
             1000,
             offer.deadline + BigInt(await now()),
@@ -242,7 +248,7 @@ describe("Marketplace Signatures", function () {
             user1.getAddress(),
             offeror.getAddress(),
             offer.offerPrice,
-            1,
+            id,
             1,
             1000,
             offer.deadline + BigInt(await now()),
@@ -265,7 +271,7 @@ describe("Marketplace Signatures", function () {
           user1.getAddress(),
           offeror.getAddress(),
           offer.offerPrice,
-          1,
+          id,
           1,
           1000,
           expiredDeadline,
