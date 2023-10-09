@@ -10,7 +10,7 @@ async function main() {
   const asset = await AssetFactory.deploy(
     "PolytradeAssetManager",
     "PAM",
-    "2.2",
+    "2.3",
     "https://polytrade.finance"
   );
   await asset.waitForDeployment();
@@ -44,7 +44,7 @@ async function main() {
     constructorArguments: [
       "PolytradeAssetManager",
       "PAM",
-      "2.2",
+      "2.3",
       "https://polytrade.finance",
     ],
   });
