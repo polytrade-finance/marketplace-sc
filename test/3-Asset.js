@@ -14,7 +14,7 @@ describe("Asset", function () {
     assetContract = await AssetFactory.deploy(
       "Polytrade Asset Collection",
       "PAC",
-      "2.2",
+      "2.3",
       "https://ipfs.io/ipfs"
     );
 
