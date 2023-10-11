@@ -2,13 +2,13 @@ const { expect } = require("chai");
 const { network, ethers, upgrades } = require("hardhat");
 const { AssetManagerAccess } = require("./data");
 const {
-  Enjin1155,
+  Sand1155,
   Ens721,
   Ens721Signer,
-  EnsTokenId,
-  EnjinTokenId,
-  Enjin1155Signer,
+  Sand1155Signer,
 } = require("./addresses");
+
+const { EnsTokenId, SandTokenId } = require("./data");
 const chainId = network.config.chainId;
 
 const getSigner = async (address) => {
@@ -63,11 +63,11 @@ describe("Wrapper Contract", function () {
   beforeEach(async () => {
     [, user1] = await ethers.getSigners();
     signer721 = await getSigner(Ens721Signer);
-    signer1155 = await getSigner(Enjin1155Signer);
+    signer1155 = await getSigner(Sand1155Signer);
 
     erc721 = await ethers.getContractAt("IERC721", Ens721);
 
-    erc1155 = await ethers.getContractAt("IERC1155", Enjin1155);
+    erc1155 = await ethers.getContractAt("IERC1155", Sand1155);
 
     const AssetFactory = await ethers.getContractFactory("BaseAsset");
     assetContract = await AssetFactory.deploy(
@@ -84,7 +84,7 @@ describe("Wrapper Contract", function () {
     );
 
     await wrapperContract.whitelist(Ens721, true);
-    await wrapperContract.whitelist(Enjin1155, true);
+    await wrapperContract.whitelist(Sand1155, true);
     await assetContract.grantRole(
       AssetManagerAccess,
       wrapperContract.getAddress()
@@ -127,7 +127,7 @@ describe("Wrapper Contract", function () {
   });
 
   it("Should whitelist ERC1155 address", async function () {
-    await wrapperContract.whitelist(Enjin1155, true);
+    await wrapperContract.whitelist(Sand1155, true);
   });
 
   it("Should revert to wrap erc721 if not owner", async function () {
@@ -260,22 +260,22 @@ describe("Wrapper Contract", function () {
 
   it("Should revert to wrap erc1155 if not owner", async function () {
     await expect(
-      wrapperContract.wrapERC1155(Enjin1155, EnjinTokenId, 10000)
+      wrapperContract.wrapERC1155(Sand1155, SandTokenId, 10000)
     ).to.be.revertedWith("Not enough balance");
   });
 
   it("Should revert to wrap erc1155 contract address is wrong", async function () {
     await expect(
-      wrapperContract.wrapERC1155(ethers.ZeroAddress, EnjinTokenId, 10000)
+      wrapperContract.wrapERC1155(ethers.ZeroAddress, SandTokenId, 10000)
     ).to.be.revertedWith("contract not whitelisted");
   });
 
   it("Should wrap erc1155 token and get info", async function () {
-    const id = await get1155Id(signer1155, erc1155, EnjinTokenId);
+    const id = await get1155Id(signer1155, erc1155, SandTokenId);
 
     const balance = await erc1155.balanceOf(
       signer1155.getAddress(),
-      EnjinTokenId
+      SandTokenId
     );
 
     await erc1155
@@ -283,21 +283,21 @@ describe("Wrapper Contract", function () {
       .setApprovalForAll(await wrapperContract.getAddress(), true);
     await wrapperContract
       .connect(signer1155)
-      .wrapERC1155(Enjin1155, EnjinTokenId, 10000);
+      .wrapERC1155(Sand1155, SandTokenId, 10000);
 
     expect(
       await assetContract.subBalanceOf(signer1155.getAddress(), id, 1)
     ).to.be.eq(10000);
 
     expect(
-      await erc1155.balanceOf(wrapperContract.getAddress(), EnjinTokenId)
+      await erc1155.balanceOf(wrapperContract.getAddress(), SandTokenId)
     ).to.be.eq(balance);
 
     const info = await wrapperContract.getWrappedInfo(id);
-    expect(info[0]).to.be.eq(EnjinTokenId);
+    expect(info[0]).to.be.eq(SandTokenId);
     expect(info[1]).to.be.eq(10000);
     expect(info[2]).to.be.eq(balance);
-    expect(info[3]).to.be.eq(Enjin1155);
+    expect(info[3]).to.be.eq(Sand1155);
 
     await resetFork();
   });
@@ -311,20 +311,20 @@ describe("Wrapper Contract", function () {
       .safeTransferFrom(
         await signer1155.getAddress(),
         await user1.getAddress(),
-        EnjinTokenId,
+        SandTokenId,
         1,
         "0x"
       );
     await wrapperContract
       .connect(signer1155)
-      .wrapERC1155(Enjin1155, EnjinTokenId, 10000);
+      .wrapERC1155(Sand1155, SandTokenId, 10000);
 
     await erc1155
       .connect(user1)
       .safeTransferFrom(
         await user1.getAddress(),
         await signer1155.getAddress(),
-        EnjinTokenId,
+        SandTokenId,
         1,
         "0x"
       );
@@ -332,21 +332,21 @@ describe("Wrapper Contract", function () {
     await expect(
       wrapperContract
         .connect(signer1155)
-        .wrapERC1155(Enjin1155, EnjinTokenId, 10000)
+        .wrapERC1155(Sand1155, SandTokenId, 10000)
     ).to.be.revertedWith("Asset already created");
 
     await resetFork();
   });
 
   it("Should revert to unwrap erc1155 token without complete ownership", async function () {
-    const id = await get1155Id(signer1155, erc1155, EnjinTokenId);
+    const id = await get1155Id(signer1155, erc1155, SandTokenId);
 
     await erc1155
       .connect(signer1155)
       .setApprovalForAll(await wrapperContract.getAddress(), true);
     await wrapperContract
       .connect(signer1155)
-      .wrapERC1155(Enjin1155, EnjinTokenId, 10000);
+      .wrapERC1155(Sand1155, SandTokenId, 10000);
     await assetContract
       .connect(signer1155)
       .transferFrom(signer1155.getAddress(), user1.getAddress(), id, 1, 1);
@@ -359,11 +359,11 @@ describe("Wrapper Contract", function () {
   });
 
   it("Should unwrap erc1155 token", async function () {
-    const id = await get1155Id(signer1155, erc1155, EnjinTokenId);
+    const id = await get1155Id(signer1155, erc1155, SandTokenId);
 
     const balance = await erc1155.balanceOf(
       await signer1155.getAddress(),
-      EnjinTokenId
+      SandTokenId
     );
 
     await erc1155
@@ -371,14 +371,14 @@ describe("Wrapper Contract", function () {
       .setApprovalForAll(await wrapperContract.getAddress(), true);
     await wrapperContract
       .connect(signer1155)
-      .wrapERC1155(Enjin1155, EnjinTokenId, 10000);
+      .wrapERC1155(Sand1155, SandTokenId, 10000);
 
     await wrapperContract.connect(signer1155).unwrapERC1155(id);
 
     expect(await assetContract.totalSubSupply(id, 1)).to.be.eq(0);
 
     expect(
-      await erc1155.balanceOf(await signer1155.getAddress(), EnjinTokenId)
+      await erc1155.balanceOf(await signer1155.getAddress(), SandTokenId)
     ).to.be.eq(balance);
 
     await resetFork();
@@ -388,16 +388,16 @@ describe("Wrapper Contract", function () {
     await expect(
       wrapperContract
         .connect(signer1155)
-        .batchWrapERC1155([Enjin1155], [EnjinTokenId], [10000, 1])
+        .batchWrapERC1155([Sand1155], [SandTokenId], [10000, 1])
     ).to.be.revertedWith("No array parity");
   });
 
   it("Should batch wrap erc1155 token", async function () {
-    const id = await get1155Id(signer1155, erc1155, EnjinTokenId);
+    const id = await get1155Id(signer1155, erc1155, SandTokenId);
 
     const balance = await erc1155.balanceOf(
       await signer1155.getAddress(),
-      EnjinTokenId
+      SandTokenId
     );
 
     await erc1155
@@ -405,14 +405,14 @@ describe("Wrapper Contract", function () {
       .setApprovalForAll(await wrapperContract.getAddress(), true);
     await wrapperContract
       .connect(signer1155)
-      .batchWrapERC1155([Enjin1155], [EnjinTokenId], [10000]);
+      .batchWrapERC1155([Sand1155], [SandTokenId], [10000]);
 
     expect(
       await assetContract.subBalanceOf(signer1155.getAddress(), id, 1)
     ).to.be.eq(10000);
 
     expect(
-      await erc1155.balanceOf(wrapperContract.getAddress(), EnjinTokenId)
+      await erc1155.balanceOf(wrapperContract.getAddress(), SandTokenId)
     ).to.be.eq(balance);
   });
 
@@ -436,7 +436,7 @@ describe("Wrapper Contract", function () {
         .safeTransferFrom(
           await signer1155.getAddress(),
           await wrapperContract.getAddress(),
-          EnjinTokenId,
+          SandTokenId,
           1,
           "0x"
         )
@@ -451,7 +451,7 @@ describe("Wrapper Contract", function () {
         .safeBatchTransferFrom(
           await signer1155.getAddress(),
           await wrapperContract.getAddress(),
-          [EnjinTokenId],
+          [SandTokenId],
           [1],
           "0x"
         )
