@@ -29,7 +29,7 @@ contract WrappedAsset is
     IBaseAsset private _assetCollection;
 
     // solhint-disable-next-line
-    uint256 private immutable CHAIN_ID;
+    uint256 private CHAIN_ID;
 
     mapping(uint256 => WrappedInfo) private _wrappedInfo;
 
@@ -44,10 +44,6 @@ contract WrappedAsset is
         _;
     }
 
-    constructor() {
-        CHAIN_ID = block.chainid;
-    }
-
     /**
      * @dev Initializer for the type contract
      * @param assetCollection_, Address of the asset collection used in the type contract
@@ -58,6 +54,8 @@ contract WrappedAsset is
         }
 
         _assetCollection = IBaseAsset(assetCollection_);
+        CHAIN_ID = block.chainid;
+
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
@@ -66,8 +64,8 @@ contract WrappedAsset is
         bool status
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (
-            !IERC721(contractAddress).supportsInterface(_ERC721_INTERFACE_ID) &&
-            !IERC1155(contractAddress).supportsInterface(_ERC1155_INTERFACE_ID)
+            !contractAddress.supportsInterface(_ERC721_INTERFACE_ID) &&
+            !contractAddress.supportsInterface(_ERC1155_INTERFACE_ID)
         ) {
             revert UnsupportedInterface();
         }
@@ -83,8 +81,8 @@ contract WrappedAsset is
         address contractAddress,
         uint256 tokenId,
         uint256 fractions
-    ) external {
-        _wrapERC721(contractAddress, tokenId, fractions);
+    ) external returns (uint256) {
+        return _wrapERC721(contractAddress, tokenId, fractions);
     }
 
     /**
@@ -94,20 +92,24 @@ contract WrappedAsset is
         address[] calldata contractAddresses,
         uint256[] calldata tokenIds,
         uint256[] calldata fractions
-    ) external {
+    ) external returns (uint256[] memory) {
         uint256 length = contractAddresses.length;
         require(
             tokenIds.length == length && length == fractions.length,
             "No array parity"
         );
-
+        uint256[] memory ids = new uint256[](length);
         for (uint256 i = 0; i < length; ) {
-            _wrapERC721(contractAddresses[i], tokenIds[i], fractions[i]);
-
+            ids[i] = _wrapERC721(
+                contractAddresses[i],
+                tokenIds[i],
+                fractions[i]
+            );
             unchecked {
                 ++i;
             }
         }
+        return ids;
     }
 
     /**
@@ -117,8 +119,8 @@ contract WrappedAsset is
         address contractAddress,
         uint256 tokenId,
         uint256 fractions
-    ) external {
-        _wrapERC1155(contractAddress, tokenId, fractions);
+    ) external returns (uint256) {
+        return _wrapERC1155(contractAddress, tokenId, fractions);
     }
 
     /**
@@ -128,20 +130,25 @@ contract WrappedAsset is
         address[] calldata contractAddresses,
         uint256[] calldata tokenIds,
         uint256[] calldata fractions
-    ) external {
+    ) external returns (uint256[] memory) {
         uint256 length = contractAddresses.length;
         require(
             tokenIds.length == length && length == fractions.length,
             "No array parity"
         );
-
+        uint256[] memory ids = new uint256[](length);
         for (uint256 i = 0; i < length; ) {
-            _wrapERC1155(contractAddresses[i], tokenIds[i], fractions[i]);
+            ids[i] = _wrapERC1155(
+                contractAddresses[i],
+                tokenIds[i],
+                fractions[i]
+            );
 
             unchecked {
                 ++i;
             }
         }
+        return ids;
     }
 
     /**
@@ -177,15 +184,13 @@ contract WrappedAsset is
     }
 
     function onERC1155BatchReceived(
-        address operator,
+        address,
         address,
         uint256[] calldata,
         uint256[] calldata,
         bytes calldata
     ) external view override returns (bytes4) {
-        if (operator == address(this)) {
-            return IERC1155Receiver.onERC1155BatchReceived.selector;
-        }
+        revert UnableToReceive();
     }
 
     function onERC721Received(
@@ -203,14 +208,14 @@ contract WrappedAsset is
         address contractAddress,
         uint256 tokenId,
         uint256 fractions
-    ) private isWhitelisted(contractAddress) {
+    ) private isWhitelisted(contractAddress) returns (uint256 mainId) {
         IERC721 token = IERC721(contractAddress);
         require(
             _msgSender() == token.ownerOf(tokenId),
             "You are not the owner"
         );
 
-        uint256 mainId = uint256(
+        mainId = uint256(
             keccak256(abi.encodePacked(CHAIN_ID, contractAddress, tokenId))
         );
 
@@ -236,12 +241,12 @@ contract WrappedAsset is
         address contractAddress,
         uint256 tokenId,
         uint256 fractions
-    ) private isWhitelisted(contractAddress) {
+    ) private isWhitelisted(contractAddress) returns (uint256 mainId) {
         IERC1155 token = IERC1155(contractAddress);
         uint256 balance = token.balanceOf(_msgSender(), tokenId);
         require(balance != 0, "Not enough balance");
 
-        uint256 mainId = uint256(
+        mainId = uint256(
             keccak256(
                 abi.encodePacked(
                     CHAIN_ID,

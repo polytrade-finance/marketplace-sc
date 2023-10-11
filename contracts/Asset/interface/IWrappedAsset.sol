@@ -71,6 +71,10 @@ interface IWrappedAsset {
      */
     error UnsupportedInterface();
 
+    error UnableToReceive();
+
+    function whitelist(address contractAddress, bool status) external;
+
     /**
      * @dev Wrapps an ERC721 token into DLT
      * @param contractAddress, address of ERC721 contract
@@ -83,7 +87,13 @@ interface IWrappedAsset {
         address contractAddress,
         uint256 tokenId,
         uint256 fractions
-    ) external;
+    ) external returns (uint256);
+
+    function batchWrapERC721(
+        address[] calldata contractAddresses,
+        uint256[] calldata tokenIds,
+        uint256[] calldata fractions
+    ) external returns (uint256[] memory);
 
     /**
      * @dev Wrapps an ERC1155 token into DLT
@@ -97,7 +107,13 @@ interface IWrappedAsset {
         address contractAddress,
         uint256 tokenId,
         uint256 fractions
-    ) external;
+    ) external returns (uint256);
+
+    function batchWrapERC1155(
+        address[] calldata contractAddresses,
+        uint256[] calldata tokenIds,
+        uint256[] calldata fractions
+    ) external returns (uint256[] memory);
 
     /**
      * @dev Unwrapps a DLT to ERC721 token
