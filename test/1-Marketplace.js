@@ -16,20 +16,31 @@ const { time } = require("@nomicfoundation/hardhat-network-helpers");
 const { now } = require("./helpers");
 const chainId = network.config.chainId;
 
-
 const getId = async (contract) => {
   const nonce = await contract.getNonce();
-  return BigInt(ethers.solidityPackedKeccak256(["uint256", "address", "uint256"], [chainId, await contract.getAddress(), nonce]))
-}
+  return BigInt(
+    ethers.solidityPackedKeccak256(
+      ["uint256", "address", "uint256"],
+      [chainId, await contract.getAddress(), nonce]
+    )
+  );
+};
 
 const getIds = async (contract, num) => {
   const nonce = await contract.getNonce();
-  let arr = [];
+  const arr = [];
   for (let i = 0; i < num; i++) {
-    arr.push(BigInt(ethers.solidityPackedKeccak256(["uint256", "address", "uint256"], [chainId, await contract.getAddress(), nonce + BigInt(i)])))
+    arr.push(
+      BigInt(
+        ethers.solidityPackedKeccak256(
+          ["uint256", "address", "uint256"],
+          [chainId, await contract.getAddress(), nonce + BigInt(i)]
+        )
+      )
+    );
   }
   return arr;
-}
+};
 
 describe("Marketplace", function () {
   let assetContract;
@@ -46,7 +57,6 @@ describe("Marketplace", function () {
   let newFeeWallet;
 
   beforeEach(async () => {
-
     [
       deployer,
       user1,
@@ -132,10 +142,7 @@ describe("Marketplace", function () {
   it("Should create property successfully", async function () {
     const id = await getId(propertyContract);
 
-    await propertyContract.createProperty(
-      await user1.getAddress(),
-      property
-    );
+    await propertyContract.createProperty(await user1.getAddress(), property);
     await assetContract.setBaseURI(id, "https://ipfs.io/ipfs");
 
     expect(await assetContract.subIdBalanceOf(user1.getAddress(), id)).to.eq(
@@ -164,9 +171,7 @@ describe("Marketplace", function () {
 
   it("Should revert on burning asset by invalid caller", async function () {
     await expect(
-      invoiceContract
-        .connect(buyer)
-        .burnInvoice(buyer.getAddress(), 1, 10000)
+      invoiceContract.connect(buyer).burnInvoice(buyer.getAddress(), 1, 10000)
     ).to.be.revertedWith(
       `AccessControl: account ${(
         await buyer.getAddress()
@@ -177,9 +182,7 @@ describe("Marketplace", function () {
     );
 
     await expect(
-      propertyContract
-        .connect(buyer)
-        .burnProperty(buyer.getAddress(), 1, 10000)
+      propertyContract.connect(buyer).burnProperty(buyer.getAddress(), 1, 10000)
     ).to.be.revertedWith(
       `AccessControl: account ${(
         await buyer.getAddress()
@@ -233,17 +236,17 @@ describe("Marketplace", function () {
       [asset, asset, asset]
     );
 
-    expect(await assetContract.subBalanceOf(user1.getAddress(), ids[0], 1)).to.eq(
-      10000
-    );
+    expect(
+      await assetContract.subBalanceOf(user1.getAddress(), ids[0], 1)
+    ).to.eq(10000);
 
-    expect(await assetContract.subBalanceOf(user1.getAddress(), ids[1], 1)).to.eq(
-      10000
-    );
+    expect(
+      await assetContract.subBalanceOf(user1.getAddress(), ids[1], 1)
+    ).to.eq(10000);
 
-    expect(await assetContract.subBalanceOf(user1.getAddress(), ids[2], 1)).to.eq(
-      10000
-    );
+    expect(
+      await assetContract.subBalanceOf(user1.getAddress(), ids[2], 1)
+    ).to.eq(10000);
   });
 
   it("Batch create property", async function () {
@@ -258,17 +261,17 @@ describe("Marketplace", function () {
       [property, property, property]
     );
 
-    expect(await assetContract.subBalanceOf(user1.getAddress(), ids[0], 1)).to.eq(
-      10000
-    );
+    expect(
+      await assetContract.subBalanceOf(user1.getAddress(), ids[0], 1)
+    ).to.eq(10000);
 
-    expect(await assetContract.subBalanceOf(user1.getAddress(), ids[1], 1)).to.eq(
-      10000
-    );
+    expect(
+      await assetContract.subBalanceOf(user1.getAddress(), ids[1], 1)
+    ).to.eq(10000);
 
-    expect(await assetContract.subBalanceOf(user1.getAddress(), ids[2], 1)).to.eq(
-      10000
-    );
+    expect(
+      await assetContract.subBalanceOf(user1.getAddress(), ids[2], 1)
+    ).to.eq(10000);
   });
 
   it("Should revert Batch create assets on wrong array parity", async function () {
@@ -321,7 +324,7 @@ describe("Marketplace", function () {
 
   it("Should return zero rewards for minted invoice with zero price", async function () {
     const id = await getId(propertyContract);
-    
+
     await invoiceContract.createInvoice(
       await user1.getAddress(),
       zeroPriceAsset
@@ -334,10 +337,7 @@ describe("Marketplace", function () {
   });
 
   it("Should revert on creating minted asset", async function () {
-    await assetContract.grantRole(
-      AssetManagerAccess,
-      deployer.getAddress()
-    );
+    await assetContract.grantRole(AssetManagerAccess, deployer.getAddress());
     const iId = await getId(invoiceContract);
     const pId = await getId(propertyContract);
 
@@ -521,7 +521,9 @@ describe("Marketplace", function () {
       .connect(treasuryWallet)
       .approve(invoiceContract.getAddress(), 2n * asset.price);
 
-    await marketplaceContract.connect(buyer).buy(id, 1, 100, user1.getAddress());
+    await marketplaceContract
+      .connect(buyer)
+      .buy(id, 1, 100, user1.getAddress());
 
     await expect(
       marketplaceContract.connect(buyer).list(id, 1, asset.price, 2 * 100)
@@ -583,7 +585,9 @@ describe("Marketplace", function () {
       .connect(treasuryWallet)
       .approve(marketplaceContract.getAddress(), 2n * asset.price);
 
-    await marketplaceContract.connect(buyer).buy(id, 1, 100, user1.getAddress());
+    await marketplaceContract
+      .connect(buyer)
+      .buy(id, 1, 100, user1.getAddress());
 
     await marketplaceContract.connect(buyer).list(id, 1, asset.price, 100);
 
@@ -1123,7 +1127,9 @@ describe("Marketplace", function () {
       .connect(buyer)
       .buy(id, 1, 1000, user1.getAddress());
 
-    await marketplaceContract.connect(buyer).list(id, 1, asset.price, 1000 / 10);
+    await marketplaceContract
+      .connect(buyer)
+      .list(id, 1, asset.price, 1000 / 10);
     const after1stBuy = await stableTokenContract.balanceOf(
       feeWallet.getAddress()
     );
@@ -1206,12 +1212,12 @@ describe("Marketplace", function () {
       totalStableTokenAmount / 10n
     );
 
-    expect(await assetContract.subBalanceOf(buyer.getAddress(), ids[0], 1)).to.eq(
-      1000
-    );
-    expect(await assetContract.subBalanceOf(buyer.getAddress(), ids[1], 1)).to.eq(
-      1000
-    );
+    expect(
+      await assetContract.subBalanceOf(buyer.getAddress(), ids[0], 1)
+    ).to.eq(1000);
+    expect(
+      await assetContract.subBalanceOf(buyer.getAddress(), ids[1], 1)
+    ).to.eq(1000);
   });
 
   it("Should create multiple invoices and batch settle all after due date", async function () {
@@ -1274,12 +1280,12 @@ describe("Marketplace", function () {
       totalStableTokenAmount
     );
 
-    expect(await assetContract.subBalanceOf(buyer.getAddress(), ids[0], 1)).to.eq(
-      1000 * 10
-    );
-    expect(await assetContract.subBalanceOf(buyer.getAddress(), ids[1], 1)).to.eq(
-      1000 * 10
-    );
+    expect(
+      await assetContract.subBalanceOf(buyer.getAddress(), ids[0], 1)
+    ).to.eq(1000 * 10);
+    expect(
+      await assetContract.subBalanceOf(buyer.getAddress(), ids[1], 1)
+    ).to.eq(1000 * 10);
 
     await time.increase(1000);
 
@@ -1295,8 +1301,12 @@ describe("Marketplace", function () {
       [buyer.getAddress(), buyer.getAddress()]
     );
 
-    expect(await assetContract.subBalanceOf(buyer.getAddress(), ids[0], 1)).to.eq(0);
-    expect(await assetContract.subBalanceOf(buyer.getAddress(), ids[1], 1)).to.eq(0);
+    expect(
+      await assetContract.subBalanceOf(buyer.getAddress(), ids[0], 1)
+    ).to.eq(0);
+    expect(
+      await assetContract.subBalanceOf(buyer.getAddress(), ids[1], 1)
+    ).to.eq(0);
   });
 
   it("Should create multiple properties and batch settle all after due date", async function () {
@@ -1306,14 +1316,18 @@ describe("Marketplace", function () {
       await nearSettleProperty()
     );
 
-    await marketplaceContract.connect(user1).list(ids[0], 1, property.price, 1000);
+    await marketplaceContract
+      .connect(user1)
+      .list(ids[0], 1, property.price, 1000);
 
     await propertyContract.createProperty(
       user1.getAddress(),
       await nearSettleProperty()
     );
 
-    await marketplaceContract.connect(user1).list(ids[1], 1, property.price, 1000);
+    await marketplaceContract
+      .connect(user1)
+      .list(ids[1], 1, property.price, 1000);
 
     const totalStableTokenAmount = property.price + property.price;
 
@@ -1359,12 +1373,12 @@ describe("Marketplace", function () {
       totalStableTokenAmount
     );
 
-    expect(await assetContract.subBalanceOf(buyer.getAddress(), ids[0], 1)).to.eq(
-      1000 * 10
-    );
-    expect(await assetContract.subBalanceOf(buyer.getAddress(), ids[1], 1)).to.eq(
-      1000 * 10
-    );
+    expect(
+      await assetContract.subBalanceOf(buyer.getAddress(), ids[0], 1)
+    ).to.eq(1000 * 10);
+    expect(
+      await assetContract.subBalanceOf(buyer.getAddress(), ids[1], 1)
+    ).to.eq(1000 * 10);
 
     await time.increase(1000);
 
@@ -1382,8 +1396,12 @@ describe("Marketplace", function () {
       [buyer.getAddress(), buyer.getAddress()]
     );
 
-    expect(await assetContract.subBalanceOf(buyer.getAddress(), ids[0], 1)).to.eq(0);
-    expect(await assetContract.subBalanceOf(buyer.getAddress(), ids[1], 1)).to.eq(0);
+    expect(
+      await assetContract.subBalanceOf(buyer.getAddress(), ids[0], 1)
+    ).to.eq(0);
+    expect(
+      await assetContract.subBalanceOf(buyer.getAddress(), ids[1], 1)
+    ).to.eq(0);
   });
 
   it("Should revert to buy when asset is not listed", async function () {
