@@ -1,5 +1,5 @@
 const { expect } = require("chai");
-const { ethers } = require("hardhat");
+const { ethers, network } = require("hardhat");
 const { AssetManagerAccess, MarketplaceAccess } = require("./data");
 
 describe("Asset", function () {
@@ -64,5 +64,17 @@ describe("Asset", function () {
     await expect(
       assetContract.connect(user1).setBaseURI(1, "https://ipfs2.io/ipfs")
     ).to.be.reverted;
+
+    await network.provider.request({
+      method: "hardhat_reset",
+      params: [
+        {
+          forking: {
+            jsonRpcUrl: "https://rpc.ankr.com/eth",
+            blockNumber: 18314577,
+          },
+        },
+      ],
+    });
   });
 });

@@ -35,11 +35,15 @@ describe("Marketplace Signatures", function () {
   let id;
   const chainId = network.config.chainId;
 
-
   const getId = async (contract) => {
     const nonce = await contract.getNonce();
-    return BigInt(ethers.solidityPackedKeccak256(["uint256", "address", "uint256"], [chainId, await contract.getAddress(), nonce]))
-  }
+    return BigInt(
+      ethers.solidityPackedKeccak256(
+        ["uint256", "address", "uint256"],
+        [chainId, await contract.getAddress(), nonce]
+      )
+    );
+  };
 
   beforeEach(async () => {
     [deployer, user1, offeror, treasuryWallet, feeWallet] =
