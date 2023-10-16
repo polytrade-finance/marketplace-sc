@@ -5,6 +5,7 @@ import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/I
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
+import { Counters } from "@openzeppelin/contracts/utils/Counters.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { InvoiceInfo, IInvoiceAsset } from "contracts/Asset/interface/IInvoiceAsset.sol";
 import { IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
@@ -18,15 +19,20 @@ import { IToken } from "contracts/Token/interface/IToken.sol";
 contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
     using SafeERC20 for IToken;
     using ERC165Checker for address;
+    using Counters for Counters.Counter;
 
     IBaseAsset private _assetCollection;
     IToken private _stableToken;
+    Counters.Counter private _nonce;
 
     address private _treasuryWallet;
 
+    // solhint-disable-next-line
+    uint256 private CHAIN_ID;
+
     uint256 private constant _YEAR = 360 days;
 
-    mapping(uint256 => mapping(uint256 => InvoiceInfo)) private _invoiceInfo;
+    mapping(uint256 => InvoiceInfo) private _invoiceInfo;
 
     // Create a new role identifier for the asset originator
     bytes32 public constant ASSET_ORIGINATOR =
@@ -52,6 +58,7 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
 
         _assetCollection = IBaseAsset(assetCollection_);
         _stableToken = IToken(tokenAddress_);
+        CHAIN_ID = block.chainid;
 
         _setTreasuryWallet(treasuryWallet_);
 
@@ -73,11 +80,9 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
      */
     function createInvoice(
         address owner,
-        uint256 invoiceMainId,
-        uint256 invoiceSubId,
         InvoiceInfo calldata invoiceInfo
-    ) external onlyRole(ASSET_ORIGINATOR) {
-        _createInvoice(owner, invoiceMainId, invoiceSubId, invoiceInfo);
+    ) external onlyRole(ASSET_ORIGINATOR) returns (uint256) {
+        return _createInvoice(owner, invoiceInfo);
     }
 
     /**
@@ -85,30 +90,19 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
      */
     function batchCreateInvoice(
         address[] calldata owners,
-        uint256[] calldata invoiceMainIds,
-        uint256[] calldata invoiceSubIds,
         InvoiceInfo[] calldata invoiceInfos
-    ) external onlyRole(ASSET_ORIGINATOR) {
+    ) external onlyRole(ASSET_ORIGINATOR) returns (uint256[] memory) {
         uint256 length = owners.length;
-        require(
-            invoiceMainIds.length == length &&
-                length == invoiceInfos.length &&
-                length == invoiceSubIds.length,
-            "No array parity"
-        );
-
+        require(length == invoiceInfos.length, "No array parity");
+        uint256[] memory ids = new uint256[](length);
         for (uint256 i = 0; i < length; ) {
-            _createInvoice(
-                owners[i],
-                invoiceMainIds[i],
-                invoiceSubIds[i],
-                invoiceInfos[i]
-            );
+            ids[i] = _createInvoice(owners[i], invoiceInfos[i]);
 
             unchecked {
                 ++i;
             }
         }
+        return ids;
     }
 
     /**
@@ -116,11 +110,10 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
      */
     function settleInvoice(
         uint256 invoiceMainId,
-        uint256 invoiceSubId,
         address owner
     ) external onlyRole(ASSET_ORIGINATOR) {
-        _claimReward(invoiceMainId, invoiceSubId, owner);
-        _settleInvoice(invoiceMainId, invoiceSubId, owner);
+        _claimReward(invoiceMainId, owner);
+        _settleInvoice(invoiceMainId, owner);
     }
 
     /**
@@ -128,17 +121,13 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
      */
     function batchSettleInvoice(
         uint256[] calldata invoiceMainIds,
-        uint256[] calldata invoiceSubIds,
         address[] calldata owners
     ) external onlyRole(ASSET_ORIGINATOR) {
         uint256 length = invoiceMainIds.length;
-        require(
-            owners.length == length && length == invoiceSubIds.length,
-            "No array parity"
-        );
+        require(owners.length == length, "No array parity");
         for (uint256 i = 0; i < length; ) {
-            _claimReward(invoiceMainIds[i], invoiceSubIds[i], owners[i]);
-            _settleInvoice(invoiceMainIds[i], invoiceSubIds[i], owners[i]);
+            _claimReward(invoiceMainIds[i], owners[i]);
+            _settleInvoice(invoiceMainIds[i], owners[i]);
 
             unchecked {
                 ++i;
@@ -152,36 +141,37 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
     function burnInvoice(
         address owner,
         uint256 invoiceMainId,
-        uint256 invoiceSubId,
         uint256 amount
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _assetCollection.burnAsset(owner, invoiceMainId, invoiceSubId, amount);
+        _assetCollection.burnAsset(owner, invoiceMainId, 1, amount);
         uint256 totalSubSupply = _assetCollection.totalSubSupply(
             invoiceMainId,
-            invoiceSubId
+            1
         );
 
-        _invoiceInfo[invoiceMainId][invoiceSubId].fractions = totalSubSupply;
+        _invoiceInfo[invoiceMainId].fractions = totalSubSupply;
 
         if (totalSubSupply == 0) {
-            delete _invoiceInfo[invoiceMainId][invoiceSubId];
+            delete _invoiceInfo[invoiceMainId];
         }
     }
 
+    function getNonce() external view returns (uint256) {
+        return _nonce.current();
+    }
+
     function getAvailableReward(
-        uint256 invoiceMainId,
-        uint256 invoiceSubId
+        uint256 invoiceMainId
     ) external view returns (uint256) {
-        return _getAvailableReward(invoiceMainId, invoiceSubId);
+        return _getAvailableReward(invoiceMainId);
     }
 
     function getRemainingReward(
-        uint256 invoiceMainId,
-        uint256 invoiceSubId
+        uint256 invoiceMainId
     ) external view returns (uint256 reward) {
-        InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId][invoiceSubId];
+        InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId];
         uint256 purchaseDate = _assetCollection
-            .getAssetInfo(invoiceMainId, invoiceSubId)
+            .getAssetInfo(invoiceMainId, 1)
             .purchaseDate;
         uint256 tenure;
 
@@ -207,10 +197,9 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
     }
 
     function getInvoiceInfo(
-        uint256 invoiceMainId,
-        uint256 invoiceSubId
+        uint256 invoiceMainId
     ) external view returns (InvoiceInfo memory info) {
-        info = _invoiceInfo[invoiceMainId][invoiceSubId];
+        info = _invoiceInfo[invoiceMainId];
     }
 
     /**
@@ -230,63 +219,55 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
     /**
      * @dev Called in settleInvoice and batchSettleInvoice functions
      * @param invoiceMainId, unique identifier of invoice
-     * @param invoiceSubId, unique identifier of invoice
      * @param owner, address of the owner for settlement
      */
-    function _settleInvoice(
-        uint256 invoiceMainId,
-        uint256 invoiceSubId,
-        address owner
-    ) private {
+    function _settleInvoice(uint256 invoiceMainId, address owner) private {
         uint256 subBalanceOf = _assetCollection.subBalanceOf(
             owner,
             invoiceMainId,
-            invoiceSubId
+            1
         );
 
         require(subBalanceOf != 0, "Not enough balance");
-        InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId][invoiceSubId];
+        InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId];
         require(block.timestamp > invoice.dueDate, "Due date not passed");
 
         uint256 settlePrice = (invoice.price * subBalanceOf) /
             invoice.fractions;
-        _assetCollection.burnAsset(
-            owner,
-            invoiceMainId,
-            invoiceSubId,
-            subBalanceOf
-        );
+        _assetCollection.burnAsset(owner, invoiceMainId, 1, subBalanceOf);
         _stableToken.safeTransferFrom(_treasuryWallet, owner, settlePrice);
-        if (_assetCollection.totalSubSupply(invoiceMainId, invoiceSubId) == 0) {
-            delete _invoiceInfo[invoiceMainId][invoiceSubId];
+        if (_assetCollection.totalSubSupply(invoiceMainId, 1) == 0) {
+            delete _invoiceInfo[invoiceMainId];
         }
 
-        emit InvoiceSettled(owner, invoiceMainId, invoiceSubId, settlePrice);
+        emit InvoiceSettled(owner, invoiceMainId, settlePrice);
     }
 
     /**
      * @dev Called in createInvoice and batchCreateInvoice functions
      * @param owner, initial owner of invoice
-     * @param invoiceMainId, unique identifier of invoice
-     * @param invoiceSubId, unique identifier of invoice
      * @param invoiceInfo, related information for the invoice
      */
     function _createInvoice(
         address owner,
-        uint256 invoiceMainId,
-        uint256 invoiceSubId,
         InvoiceInfo calldata invoiceInfo
-    ) private {
+    ) private returns (uint256 invoiceMainId) {
+        invoiceMainId = uint256(
+            keccak256(
+                abi.encodePacked(CHAIN_ID, address(this), _nonce.current())
+            )
+        );
         require(
-            _assetCollection.totalSubSupply(invoiceMainId, invoiceSubId) == 0,
+            _assetCollection.totalSubSupply(invoiceMainId, 1) == 0,
             "Invoice already created"
         );
 
-        _invoiceInfo[invoiceMainId][invoiceSubId] = invoiceInfo;
+        _invoiceInfo[invoiceMainId] = invoiceInfo;
+        _nonce.increment();
         _assetCollection.createAsset(
             owner,
             invoiceMainId,
-            invoiceSubId,
+            1,
             invoiceInfo.fractions
         );
     }
@@ -294,42 +275,35 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
     /**
      * @dev Transfers rewards to owner and updates purchaseDate
      * @param invoiceMainId, invoice unique identifier
-     * @param invoiceSubId, invoice unique identifier
      * @param receiver, address of receiver reward
      */
-    function _claimReward(
-        uint256 invoiceMainId,
-        uint256 invoiceSubId,
-        address receiver
-    ) private {
-        InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId][invoiceSubId];
+    function _claimReward(uint256 invoiceMainId, address receiver) private {
+        InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId];
         require(invoice.dueDate != 0, "Invalid invoice id");
 
         uint256 subBalanceOf = _assetCollection.subBalanceOf(
             receiver,
             invoiceMainId,
-            invoiceSubId
+            1
         );
-        uint256 reward = (_getAvailableReward(invoiceMainId, invoiceSubId) *
-            subBalanceOf) / invoice.fractions;
+        uint256 reward = (_getAvailableReward(invoiceMainId) * subBalanceOf) /
+            invoice.fractions;
 
         _stableToken.safeTransferFrom(_treasuryWallet, receiver, reward);
 
-        emit RewardsClaimed(receiver, invoiceMainId, invoiceSubId, reward);
+        emit RewardsClaimed(receiver, invoiceMainId, reward);
     }
 
     /**
      * @dev Calculates accumulated rewards based on rewardApr if the asset has an owner
      * @param invoiceMainId, unique identifier of invoice
-     * @param invoiceSubId, unique identifier of invoice
      */
     function _getAvailableReward(
-        uint256 invoiceMainId,
-        uint256 invoiceSubId
+        uint256 invoiceMainId
     ) private view returns (uint256 reward) {
-        InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId][invoiceSubId];
+        InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId];
         uint256 purchaseDate = _assetCollection
-            .getAssetInfo(invoiceMainId, invoiceSubId)
+            .getAssetInfo(invoiceMainId, 1)
             .purchaseDate;
 
         if (purchaseDate != 0) {

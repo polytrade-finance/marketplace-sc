@@ -25,6 +25,20 @@ struct InvoiceInfo {
 }
 
 /**
+ * @title storing wrapped asset information
+ * @param tokenId, is the identifier of asset
+ * @param fractions, number of fractions of asset
+ * @param balance, balance of asset
+ * @param contractAddress, asset contract address
+ */
+struct WrappedInfo {
+    uint256 tokenId;
+    uint256 fractions;
+    uint256 balance;
+    address contractAddress;
+}
+
+/**
  * @title storing asset information
  * @param initialOwner, is the initial owner of asset
  * @param purchaseDate, date that first time a fraction of asset is purchased

@@ -5,6 +5,7 @@ import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/I
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
+import { Counters } from "@openzeppelin/contracts/utils/Counters.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { PropertyInfo, IPropertyAsset } from "contracts/Asset/interface/IPropertyAsset.sol";
 import { IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
@@ -22,13 +23,18 @@ contract PropertyAsset is
 {
     using SafeERC20 for IToken;
     using ERC165Checker for address;
+    using Counters for Counters.Counter;
 
     IBaseAsset private _assetCollection;
     IToken private _stableToken;
+    Counters.Counter private _nonce;
 
     address private _treasuryWallet;
 
-    mapping(uint256 => mapping(uint256 => PropertyInfo)) private _propertyInfo;
+    // solhint-disable-next-line
+    uint256 private CHAIN_ID;
+
+    mapping(uint256 => PropertyInfo) private _propertyInfo;
 
     // Create a new role identifier for the asset originator
     bytes32 public constant ASSET_ORIGINATOR =
@@ -54,6 +60,7 @@ contract PropertyAsset is
 
         _assetCollection = IBaseAsset(assetCollection_);
         _stableToken = IToken(tokenAddress_);
+        CHAIN_ID = block.chainid;
 
         _setTreasuryWallet(treasuryWallet_);
 
@@ -75,11 +82,9 @@ contract PropertyAsset is
      */
     function createProperty(
         address owner,
-        uint256 propertyMainId,
-        uint256 propertySubId,
         PropertyInfo calldata propertyInfo
-    ) external onlyRole(ASSET_ORIGINATOR) {
-        _createProperty(owner, propertyMainId, propertySubId, propertyInfo);
+    ) external onlyRole(ASSET_ORIGINATOR) returns (uint256) {
+        return _createProperty(owner, propertyInfo);
     }
 
     /**
@@ -87,30 +92,20 @@ contract PropertyAsset is
      */
     function batchCreateProperty(
         address[] calldata owners,
-        uint256[] calldata propertyMainIds,
-        uint256[] calldata propertySubIds,
         PropertyInfo[] calldata propertyInfos
-    ) external onlyRole(ASSET_ORIGINATOR) {
+    ) external onlyRole(ASSET_ORIGINATOR) returns (uint256[] memory) {
         uint256 length = owners.length;
-        require(
-            propertyMainIds.length == length &&
-                length == propertyInfos.length &&
-                length == propertySubIds.length,
-            "No array parity"
-        );
+        require(length == propertyInfos.length, "No array parity");
 
+        uint256[] memory ids = new uint256[](length);
         for (uint256 i = 0; i < length; ) {
-            _createProperty(
-                owners[i],
-                propertyMainIds[i],
-                propertySubIds[i],
-                propertyInfos[i]
-            );
+            ids[i] = _createProperty(owners[i], propertyInfos[i]);
 
             unchecked {
                 ++i;
             }
         }
+        return ids;
     }
 
     /**
@@ -118,11 +113,10 @@ contract PropertyAsset is
      */
     function settleProperty(
         uint256 propertyMainId,
-        uint256 propertySubId,
         uint256 settlePrice,
         address owner
     ) external onlyRole(ASSET_ORIGINATOR) {
-        _settleProperty(settlePrice, propertyMainId, propertySubId, owner);
+        _settleProperty(settlePrice, propertyMainId, owner);
     }
 
     /**
@@ -130,24 +124,16 @@ contract PropertyAsset is
      */
     function batchSettleProperty(
         uint256[] calldata propertyMainIds,
-        uint256[] calldata propertySubIds,
         uint256[] calldata settlePrices,
         address[] calldata owners
     ) external onlyRole(ASSET_ORIGINATOR) {
         uint256 length = propertyMainIds.length;
         require(
-            owners.length == length &&
-                length == propertySubIds.length &&
-                length == settlePrices.length,
+            owners.length == length && length == settlePrices.length,
             "No array parity"
         );
         for (uint256 i = 0; i < length; ) {
-            _settleProperty(
-                settlePrices[i],
-                propertyMainIds[i],
-                propertySubIds[i],
-                owners[i]
-            );
+            _settleProperty(settlePrices[i], propertyMainIds[i], owners[i]);
 
             unchecked {
                 ++i;
@@ -161,25 +147,19 @@ contract PropertyAsset is
     function burnProperty(
         address owner,
         uint256 propertyMainId,
-        uint256 propertySubId,
         uint256 amount
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _assetCollection.burnAsset(
-            owner,
-            propertyMainId,
-            propertySubId,
-            amount
-        );
+        _assetCollection.burnAsset(owner, propertyMainId, 1, amount);
 
         uint256 totalSubSupply = _assetCollection.totalSubSupply(
             propertyMainId,
-            propertySubId
+            1
         );
 
-        _propertyInfo[propertyMainId][propertySubId].fractions = totalSubSupply;
+        _propertyInfo[propertyMainId].fractions = totalSubSupply;
 
         if (totalSubSupply == 0) {
-            delete _propertyInfo[propertyMainId][propertySubId];
+            delete _propertyInfo[propertyMainId];
         }
     }
 
@@ -191,10 +171,13 @@ contract PropertyAsset is
     }
 
     function getPropertyInfo(
-        uint256 propertyMainId,
-        uint256 propertySubId
+        uint256 propertyMainId
     ) external view returns (PropertyInfo memory) {
-        return _propertyInfo[propertyMainId][propertySubId];
+        return _propertyInfo[propertyMainId];
+    }
+
+    function getNonce() external view returns (uint256) {
+        return _nonce.current();
     }
 
     /**
@@ -214,22 +197,18 @@ contract PropertyAsset is
     /**
      * @dev Called in settleProperty and batchSettleProperty functions
      * @param propertyMainId, unique identifier of property
-     * @param propertySubId, unique identifier of property
      * @param owner, address of the owner for settlement
      */
     function _settleProperty(
         uint256 settlePrice,
         uint256 propertyMainId,
-        uint256 propertySubId,
         address owner
     ) private {
-        PropertyInfo memory property = _propertyInfo[propertyMainId][
-            propertySubId
-        ];
+        PropertyInfo memory property = _propertyInfo[propertyMainId];
         uint256 subBalanceOf = _assetCollection.subBalanceOf(
             owner,
             propertyMainId,
-            propertySubId
+            1
         );
 
         require(settlePrice != 0, "Invalid settle amount");
@@ -238,45 +217,41 @@ contract PropertyAsset is
         require(block.timestamp > property.dueDate, "Due date not passed");
 
         settlePrice = (settlePrice * subBalanceOf) / property.fractions;
-        _assetCollection.burnAsset(
-            owner,
-            propertyMainId,
-            propertySubId,
-            subBalanceOf
-        );
+        _assetCollection.burnAsset(owner, propertyMainId, 1, subBalanceOf);
         _stableToken.safeTransferFrom(_treasuryWallet, owner, settlePrice);
-        if (
-            _assetCollection.totalSubSupply(propertyMainId, propertySubId) == 0
-        ) {
-            delete _propertyInfo[propertyMainId][propertySubId];
+        if (_assetCollection.totalSubSupply(propertyMainId, 1) == 0) {
+            delete _propertyInfo[propertyMainId];
         }
 
-        emit PropertySettled(owner, propertyMainId, propertySubId, settlePrice);
+        emit PropertySettled(owner, propertyMainId, settlePrice);
     }
 
     /**
      * @dev Called in createProperty and batchCreateProperty functions
      * @param owner, initial owner of property
-     * @param propertyMainId, unique identifier of property
-     * @param propertySubId, unique identifier of property
      * @param propertyInfo, related information for the property
      */
     function _createProperty(
         address owner,
-        uint256 propertyMainId,
-        uint256 propertySubId,
         PropertyInfo calldata propertyInfo
-    ) private {
+    ) private returns (uint256 propertyMainId) {
+        propertyMainId = uint256(
+            keccak256(
+                abi.encodePacked(CHAIN_ID, address(this), _nonce.current())
+            )
+        );
         require(
-            _assetCollection.totalSubSupply(propertyMainId, propertySubId) == 0,
+            _assetCollection.totalSubSupply(propertyMainId, 1) == 0,
             "Property already created"
         );
 
-        _propertyInfo[propertyMainId][propertySubId] = propertyInfo;
+        _propertyInfo[propertyMainId] = propertyInfo;
+        _nonce.increment();
+
         _assetCollection.createAsset(
             owner,
             propertyMainId,
-            propertySubId,
+            1,
             propertyInfo.fractions
         );
     }

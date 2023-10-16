@@ -18,13 +18,11 @@ interface IPropertyAsset {
      * @dev Emitted when an asset is settled
      * @param owner, address of the asset owner
      * @param propertyMainId, propertyMainId identifier
-     * @param propertySubId, unique number of the property
      * @param settlePrice, paid amount for settlement
      */
     event PropertySettled(
         address indexed owner,
         uint256 propertyMainId,
-        uint256 propertySubId,
         uint256 settlePrice
     );
 
@@ -42,35 +40,27 @@ interface IPropertyAsset {
     /**
      * @dev Creates an property with its parameters
      * @param owner, address of the initial owner
-     * @param propertyMainId, unique identifier of property
-     * @param propertySubId, unique identifier of property
      * @param propertyInfo, all related property information
      * @dev Needs asset originator access to create an property
      */
     function createProperty(
         address owner,
-        uint256 propertyMainId,
-        uint256 propertySubId,
         PropertyInfo calldata propertyInfo
-    ) external;
+    ) external returns (uint256);
 
     function batchCreateProperty(
         address[] calldata owners,
-        uint256[] calldata propertyMainIds,
-        uint256[] calldata propertySubIds,
         PropertyInfo[] calldata propertyInfos
-    ) external;
+    ) external returns (uint256[] memory);
 
     function settleProperty(
         uint256 propertyMainId,
-        uint256 propertySubId,
         uint256 settlePrice,
         address owner
     ) external;
 
     function batchSettleProperty(
         uint256[] calldata propertyMainIds,
-        uint256[] calldata propertySubIds,
         uint256[] calldata settlePrices,
         address[] calldata owners
     ) external;
@@ -78,13 +68,11 @@ interface IPropertyAsset {
     /**
      * @dev Burns an property with its parameters
      * @param propertyMainId, unique identifier of property
-     * @param propertySubId, unique identifier of property
      * @dev Needs admin access to burn an property
      */
     function burnProperty(
         address owner,
         uint256 propertyMainId,
-        uint256 propertySubId,
         uint256 amount
     ) external;
 
@@ -97,11 +85,9 @@ interface IPropertyAsset {
     /**
      * @dev Gets the property information
      * @param propertyMainId, unique identifier of property
-     * @param propertySubId, unique identifier of property
      * @return propertyInfo struct
      */
     function getPropertyInfo(
-        uint256 propertyMainId,
-        uint256 propertySubId
+        uint256 propertyMainId
     ) external view returns (PropertyInfo memory);
 }

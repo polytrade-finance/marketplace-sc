@@ -25,6 +25,23 @@ module.exports = {
     },
   },
   networks: {
+    hardhat: {
+      forking: {
+        url: process.env.RPC_URL || "https://rpc.ankr.com/eth",
+        ignoreUnknownTxType: true,
+        blockNumber: 18314577,
+      },
+      chainId: Number(process.env.CHAIN_ID) || 1,
+      accounts: {
+        mnemonic:
+          "dice shove sheriff police boss indoor hospital vivid tenant method game matter",
+        path: "m/44'/60'/0'/0",
+        initialIndex: 0,
+      },
+      initialBaseFeePerGas: 0,
+      gasPrice: 0,
+      gas: 30000000,
+    },
     mumbai: {
       url: `${TESTNET_ARCHIVAL_RPC}`,
       accounts: [
