@@ -3,10 +3,13 @@ pragma solidity ^0.8.17;
 
 /**
  * @title Listed information for each asset owner and asset id
+ * @param salePrice, sale price for the asset
+ * @param listedFractions, number of fractions listed by owner
  * @param minFraction, minimum fraction required for buying an asset
  */
 struct ListedInfo {
     uint256 salePrice;
+    uint256 listedFractions;
     uint256 minFraction;
 }
 
