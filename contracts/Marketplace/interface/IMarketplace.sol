@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {ListedInfo} from "contracts/lib/structs.sol";
+import { ListedInfo } from "contracts/lib/structs.sol";
 
 /**
  * @title The main interface to define the main marketplace
@@ -86,7 +86,12 @@ interface IMarketplace {
      * @param fractionToBuy, amount of fraction for buying
      * @param owner, address of the owner of asset
      */
-    function buy(uint256 mainId, uint256 subId, uint256 fractionToBuy, address owner) external;
+    function buy(
+        uint256 mainId,
+        uint256 subId,
+        uint256 fractionToBuy,
+        address owner
+    ) external;
 
     /**
      * @dev Batch buy assets from owners
@@ -111,7 +116,13 @@ interface IMarketplace {
      * @param listedFractions, number of fractions listed by owner
      * @param minFraction, minFraction owner set for buyers
      */
-    function list(uint256 mainId, uint256 subId, uint256 salePrice, uint256 listedFractions, uint256 minFraction) external;
+    function list(
+        uint256 mainId,
+        uint256 subId,
+        uint256 salePrice,
+        uint256 listedFractions,
+        uint256 minFraction
+    ) external;
 
     /**
      * @dev Set new initial fee
@@ -191,7 +202,7 @@ interface IMarketplace {
      * Every successful call to {counterOffer} increases ``owner``'s nonce by one. This
      * prevents a signature from being used multiple times
      */
-    function nonces(address owner) external view returns (uint256);
+    function getNonce(address owner) external view returns (uint256);
 
     /**
      * @dev Gets the domain separator used in the encoding of the signature for {counterOffer}, as defined by {EIP712}.
@@ -219,8 +230,9 @@ interface IMarketplace {
      * @param assetSubId, unique identifier of asset
      * @return ListedInfo struct
      */
-    function getListedInfo(address owner, uint256 assetMainId, uint256 assetSubId)
-        external
-        view
-        returns (ListedInfo memory);
+    function getListedInfo(
+        address owner,
+        uint256 assetMainId,
+        uint256 assetSubId
+    ) external view returns (ListedInfo memory);
 }

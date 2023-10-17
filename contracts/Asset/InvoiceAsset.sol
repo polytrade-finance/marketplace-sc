@@ -5,11 +5,11 @@ import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/I
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
-import { Counters } from "@openzeppelin/contracts/utils/Counters.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { InvoiceInfo, IInvoiceAsset } from "contracts/Asset/interface/IInvoiceAsset.sol";
 import { IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
 import { IToken } from "contracts/Token/interface/IToken.sol";
+import { Counters } from "../lib/Counters.sol";
 
 /**
  * @title The asset contract based on EIP6960
@@ -156,8 +156,8 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         }
     }
 
-    function getNonce() external view returns (uint256) {
-        return _nonce.current();
+    function getNonce(address account) external view returns (uint256) {
+        return _nonce.current(account);
     }
 
     function getAvailableReward(
@@ -254,7 +254,11 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
     ) private returns (uint256 invoiceMainId) {
         invoiceMainId = uint256(
             keccak256(
-                abi.encodePacked(CHAIN_ID, address(this), _nonce.current())
+                abi.encodePacked(
+                    CHAIN_ID,
+                    address(this),
+                    _nonce.useNonce(owner)
+                )
             )
         );
         require(
@@ -263,7 +267,6 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         );
 
         _invoiceInfo[invoiceMainId] = invoiceInfo;
-        _nonce.increment();
         _assetCollection.createAsset(
             owner,
             invoiceMainId,

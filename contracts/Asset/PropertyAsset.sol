@@ -5,11 +5,11 @@ import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/I
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
-import { Counters } from "@openzeppelin/contracts/utils/Counters.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { PropertyInfo, IPropertyAsset } from "contracts/Asset/interface/IPropertyAsset.sol";
 import { IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
 import { IToken } from "contracts/Token/interface/IToken.sol";
+import { Counters } from "../lib/Counters.sol";
 
 /**
  * @title The property asset contract based on EIP6960
@@ -176,8 +176,8 @@ contract PropertyAsset is
         return _propertyInfo[propertyMainId];
     }
 
-    function getNonce() external view returns (uint256) {
-        return _nonce.current();
+    function getNonce(address account) external view returns (uint256) {
+        return _nonce.current(account);
     }
 
     /**
@@ -237,7 +237,11 @@ contract PropertyAsset is
     ) private returns (uint256 propertyMainId) {
         propertyMainId = uint256(
             keccak256(
-                abi.encodePacked(CHAIN_ID, address(this), _nonce.current())
+                abi.encodePacked(
+                    CHAIN_ID,
+                    address(this),
+                    _nonce.useNonce(owner)
+                )
             )
         );
         require(
@@ -246,7 +250,6 @@ contract PropertyAsset is
         );
 
         _propertyInfo[propertyMainId] = propertyInfo;
-        _nonce.increment();
 
         _assetCollection.createAsset(
             owner,

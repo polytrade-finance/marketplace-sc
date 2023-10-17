@@ -183,16 +183,6 @@ contract WrappedAsset is
         }
     }
 
-    function onERC1155BatchReceived(
-        address,
-        address,
-        uint256[] calldata,
-        uint256[] calldata,
-        bytes calldata
-    ) external view override returns (bytes4) {
-        revert UnableToReceive();
-    }
-
     function onERC721Received(
         address operator,
         address,
@@ -202,6 +192,16 @@ contract WrappedAsset is
         if (operator == address(this)) {
             return IERC721Receiver.onERC721Received.selector;
         }
+    }
+
+    function onERC1155BatchReceived(
+        address,
+        address,
+        uint256[] calldata,
+        uint256[] calldata,
+        bytes calldata
+    ) external pure override returns (bytes4) {
+        revert UnableToReceive();
     }
 
     function _wrapERC721(
@@ -330,7 +330,7 @@ contract WrappedAsset is
         );
     }
 
-    function _preCheck(uint256 mainId, uint256 fractions) private {
+    function _preCheck(uint256 mainId, uint256 fractions) private view {
         require(fractions != 0, "Wrong asset id");
         require(
             fractions == _assetCollection.subBalanceOf(_msgSender(), mainId, 1),

@@ -35,8 +35,8 @@ describe("Marketplace Signatures", function () {
   let id;
   const chainId = network.config.chainId;
 
-  const getId = async (contract) => {
-    const nonce = await contract.getNonce();
+  const getId = async (contract, owner) => {
+    const nonce = await contract.getNonce(owner);
     return BigInt(
       ethers.solidityPackedKeccak256(
         ["uint256", "address", "uint256"],
@@ -92,12 +92,14 @@ describe("Marketplace Signatures", function () {
       AssetManagerAccess,
       invoiceContract.getAddress()
     );
-    id = await getId(invoiceContract);
+    id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.grantRole(OriginatorAccess, deployer.getAddress());
 
     await invoiceContract.createInvoice(user1.getAddress(), asset);
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 1000);
+    await marketplaceContract
+      .connect(user1)
+      .list(id, 1, asset.price, asset.fractions, 1000);
 
     await assetContract
       .connect(user1)
@@ -132,9 +134,9 @@ describe("Marketplace Signatures", function () {
 
   describe("Counter Offer", function () {
     it("Should return 0 for initial nonce", async function () {
-      expect(await marketplaceContract.nonces(user1.getAddress())).to.be.equal(
-        "0"
-      );
+      expect(
+        await marketplaceContract.getNonce(user1.getAddress())
+      ).to.be.equal("0");
     });
 
     it("Should return correct domain separator", async function () {
@@ -200,9 +202,9 @@ describe("Marketplace Signatures", function () {
       expect(balanceBeforeBuy - balanceAfterBuy).to.be.equal(
         offer.offerPrice / 10n
       );
-      expect(await marketplaceContract.nonces(user1.getAddress())).to.be.equal(
-        "1"
-      );
+      expect(
+        await marketplaceContract.getNonce(user1.getAddress())
+      ).to.be.equal("1");
       expect(
         await stableTokenContract.balanceOf(user1.getAddress())
       ).to.be.equal(offer.offerPrice / 10n);

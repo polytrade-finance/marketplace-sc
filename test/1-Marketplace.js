@@ -16,8 +16,8 @@ const { time } = require("@nomicfoundation/hardhat-network-helpers");
 const { now } = require("./helpers");
 const chainId = network.config.chainId;
 
-const getId = async (contract) => {
-  const nonce = await contract.getNonce();
+const getId = async (contract, owner) => {
+  const nonce = await contract.getNonce(owner);
   return BigInt(
     ethers.solidityPackedKeccak256(
       ["uint256", "address", "uint256"],
@@ -26,8 +26,8 @@ const getId = async (contract) => {
   );
 };
 
-const getIds = async (contract, num) => {
-  const nonce = await contract.getNonce();
+const getIds = async (contract, num, owner) => {
+  const nonce = await contract.getNonce(owner);
   const arr = [];
   for (let i = 0; i < num; i++) {
     arr.push(
@@ -140,7 +140,7 @@ describe("Marketplace", function () {
   });
 
   it("Should create property successfully", async function () {
-    const id = await getId(propertyContract);
+    const id = await getId(propertyContract, await user1.getAddress());
 
     await propertyContract.createProperty(await user1.getAddress(), property);
     await assetContract.setBaseURI(id, "https://ipfs.io/ipfs");
@@ -155,7 +155,7 @@ describe("Marketplace", function () {
   });
 
   it("Should create asset successfully", async function () {
-    const id = await getId(invoiceContract);
+    const id = await getId(invoiceContract, await user1.getAddress());
 
     await invoiceContract.createInvoice(await user1.getAddress(), asset);
     await assetContract.setBaseURI(id, "https://ipfs.io/ipfs");
@@ -226,7 +226,7 @@ describe("Marketplace", function () {
   });
 
   it("Batch create invoice", async function () {
-    const ids = await getIds(invoiceContract, 3);
+    const ids = await getIds(invoiceContract, 3, await user1.getAddress());
     await invoiceContract.batchCreateInvoice(
       [
         await user1.getAddress(),
@@ -250,7 +250,7 @@ describe("Marketplace", function () {
   });
 
   it("Batch create property", async function () {
-    const ids = await getIds(propertyContract, 3);
+    const ids = await getIds(propertyContract, 3, await user1.getAddress());
 
     await propertyContract.batchCreateProperty(
       [
@@ -323,7 +323,7 @@ describe("Marketplace", function () {
   });
 
   it("Should return zero rewards for minted invoice with zero price", async function () {
-    const id = await getId(propertyContract);
+    const id = await getId(propertyContract, await user1.getAddress());
 
     await invoiceContract.createInvoice(
       await user1.getAddress(),
@@ -338,8 +338,8 @@ describe("Marketplace", function () {
 
   it("Should revert on creating minted asset", async function () {
     await assetContract.grantRole(AssetManagerAccess, deployer.getAddress());
-    const iId = await getId(invoiceContract);
-    const pId = await getId(propertyContract);
+    const iId = await getId(invoiceContract, await user1.getAddress());
+    const pId = await getId(propertyContract, await user1.getAddress());
 
     await assetContract.createAsset(await user1.getAddress(), iId, 1, 10000);
 
@@ -438,18 +438,22 @@ describe("Marketplace", function () {
 
   it("Should revert on listing an asset without ownership", async function () {
     await expect(
-      marketplaceContract.connect(user1).list(1, 1, asset.price, asset.fractions, 100)
+      marketplaceContract
+        .connect(user1)
+        .list(1, 1, asset.price, asset.fractions, 100)
     ).to.be.revertedWith("Fractions > Balance");
   });
 
   it("Should revert on listing with zero minimum fraction ot buy", async function () {
     await expect(
-      marketplaceContract.connect(user1).list(1, 1, asset.price, asset.fractions, 0)
+      marketplaceContract
+        .connect(user1)
+        .list(1, 1, asset.price, asset.fractions, 0)
     ).to.be.revertedWith("Min. fraction can not be zero");
   });
 
   it("Should revert on settling an asset for wrong owner - Invoice", async function () {
-    const id = await getId(invoiceContract);
+    const id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.createInvoice(
       user1.getAddress(),
       await nearSettleAsset()
@@ -473,7 +477,7 @@ describe("Marketplace", function () {
   });
 
   it("Should revert on settling an asset for wrong owner - Property", async function () {
-    const id = await getId(propertyContract);
+    const id = await getId(propertyContract, await user1.getAddress());
     await propertyContract.createProperty(
       user1.getAddress(),
       await nearSettleProperty()
@@ -497,7 +501,7 @@ describe("Marketplace", function () {
   });
 
   it("Should revert on listing without enough balance to sell", async function () {
-    const id = await getId(invoiceContract);
+    const id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.createInvoice(
       user1.getAddress(),
       await nearSettleAsset()
@@ -531,7 +535,7 @@ describe("Marketplace", function () {
   });
 
   it("Should revert on listing and buying with less than Min. fraction", async function () {
-    const id = await getId(invoiceContract);
+    const id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.createInvoice(
       user1.getAddress(),
       await nearSettleAsset()
@@ -561,7 +565,7 @@ describe("Marketplace", function () {
   });
 
   it("Should revert on listing and buying without enough balance to sell", async function () {
-    const id = await getId(invoiceContract);
+    const id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.createInvoice(
       user1.getAddress(),
       await nearSettleAsset()
@@ -607,7 +611,7 @@ describe("Marketplace", function () {
   });
 
   it("Should return the listed info struct", async function () {
-    const id = await getId(invoiceContract);
+    const id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.createInvoice(user1.getAddress(), asset);
 
     await marketplaceContract.connect(user1).list(id, 1, asset.price, 1000);
@@ -623,7 +627,7 @@ describe("Marketplace", function () {
   });
 
   it("Should return the invoice info struct", async function () {
-    const id = await getId(invoiceContract);
+    const id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.createInvoice(await user1.getAddress(), asset);
 
     const info = await invoiceContract.getInvoiceInfo(id);
@@ -635,7 +639,7 @@ describe("Marketplace", function () {
   });
 
   it("Should return the property info struct", async function () {
-    const id = await getId(propertyContract);
+    const id = await getId(propertyContract, await user1.getAddress());
     await propertyContract.createProperty(user1.getAddress(), property);
 
     const propInfo = await propertyContract.getPropertyInfo(id);
@@ -836,7 +840,7 @@ describe("Marketplace", function () {
   });
 
   it("Should revert to settle invoice before due date", async function () {
-    const id = await getId(invoiceContract);
+    const id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.createInvoice(user1.getAddress(), asset);
 
     await expect(
@@ -845,7 +849,7 @@ describe("Marketplace", function () {
   });
 
   it("Should revert to settle property before due date", async function () {
-    const id = await getId(propertyContract);
+    const id = await getId(propertyContract, await user1.getAddress());
     await propertyContract.createProperty(user1.getAddress(), property);
 
     await expect(
@@ -876,7 +880,7 @@ describe("Marketplace", function () {
   });
 
   it("Should create invoice and selling it to buyer through Marketplace", async function () {
-    const id = await getId(invoiceContract);
+    const id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.createInvoice(user1.getAddress(), asset);
 
     await marketplaceContract.connect(user1).list(id, 1, asset.price, 1000);
@@ -901,8 +905,8 @@ describe("Marketplace", function () {
   });
 
   it("Should create asset and burn", async function () {
-    const iId = await getId(invoiceContract);
-    const pId = await getId(propertyContract);
+    const iId = await getId(invoiceContract, await user1.getAddress());
+    const pId = await getId(propertyContract, await user1.getAddress());
     await invoiceContract.createInvoice(user1.getAddress(), asset);
     await propertyContract.createProperty(user1.getAddress(), property);
 
@@ -924,7 +928,7 @@ describe("Marketplace", function () {
   });
 
   it("Should create invoice and selling it to buyer (before due date)", async function () {
-    const id = await getId(invoiceContract);
+    const id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.createInvoice(user1.getAddress(), asset);
 
     await marketplaceContract.connect(user1).list(id, 1, asset.price, 1000);
@@ -958,7 +962,7 @@ describe("Marketplace", function () {
   });
 
   it("Should create asset and selling it to buyer (after due date)", async function () {
-    const id = await getId(invoiceContract);
+    const id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.createInvoice(user1.getAddress(), asset);
 
     await marketplaceContract.connect(user1).list(id, 1, asset.price, 1000);
@@ -991,7 +995,7 @@ describe("Marketplace", function () {
   });
 
   it("Should create an invoice and settle the invoice after due date", async function () {
-    const id = await getId(invoiceContract);
+    const id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.createInvoice(
       user1.getAddress(),
       await nearSettleAsset()
@@ -1033,7 +1037,7 @@ describe("Marketplace", function () {
   });
 
   it("Should create a property and settle the property after due date", async function () {
-    const id = await getId(propertyContract);
+    const id = await getId(propertyContract, await user1.getAddress());
     await propertyContract.createProperty(
       user1.getAddress(),
       await nearSettleProperty()
@@ -1079,7 +1083,7 @@ describe("Marketplace", function () {
   });
 
   it("Should get remaining zero reward after due date", async function () {
-    const id = await getId(invoiceContract);
+    const id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.createInvoice(user1.getAddress(), asset);
 
     await time.increase(YEAR);
@@ -1092,7 +1096,7 @@ describe("Marketplace", function () {
   });
 
   it("Should create invoice and selling it for 2 times and apply buying fees", async function () {
-    const id = await getId(propertyContract);
+    const id = await getId(propertyContract, await user1.getAddress());
     await propertyContract.createProperty(
       user1.getAddress(),
       await nearSettleProperty()
@@ -1165,7 +1169,7 @@ describe("Marketplace", function () {
   });
 
   it("Should create multiple assets and selling it to buyer through Marketplace", async function () {
-    const ids = await getIds(propertyContract, 2);
+    const ids = await getIds(propertyContract, 2, await user1.getAddress());
     await propertyContract.createProperty(
       user1.getAddress(),
       await nearSettleProperty()
@@ -1221,7 +1225,7 @@ describe("Marketplace", function () {
   });
 
   it("Should create multiple invoices and batch settle all after due date", async function () {
-    const ids = await getIds(invoiceContract, 2);
+    const ids = await getIds(invoiceContract, 2, await user1.getAddress());
     await invoiceContract.createInvoice(
       user1.getAddress(),
       await nearSettleAsset()
@@ -1310,7 +1314,7 @@ describe("Marketplace", function () {
   });
 
   it("Should create multiple properties and batch settle all after due date", async function () {
-    const ids = await getIds(propertyContract, 2);
+    const ids = await getIds(propertyContract, 2, await user1.getAddress());
     await propertyContract.createProperty(
       user1.getAddress(),
       await nearSettleProperty()
@@ -1405,7 +1409,7 @@ describe("Marketplace", function () {
   });
 
   it("Should revert to buy when asset is not listed", async function () {
-    const id = await getId(propertyContract);
+    const id = await getId(propertyContract, await user1.getAddress());
     await propertyContract.createProperty(
       user1.getAddress(),
       await nearSettleProperty()
