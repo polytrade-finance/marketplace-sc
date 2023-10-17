@@ -438,13 +438,13 @@ describe("Marketplace", function () {
 
   it("Should revert on listing an asset without ownership", async function () {
     await expect(
-      marketplaceContract.connect(user1).list(1, 1, asset.price, 100)
-    ).to.be.revertedWith("Not enough balance");
+      marketplaceContract.connect(user1).list(1, 1, asset.price, asset.fractions, 100)
+    ).to.be.revertedWith("Fractions > Balance");
   });
 
   it("Should revert on listing with zero minimum fraction ot buy", async function () {
     await expect(
-      marketplaceContract.connect(user1).list(1, 1, asset.price, 0)
+      marketplaceContract.connect(user1).list(1, 1, asset.price, asset.fractions, 0)
     ).to.be.revertedWith("Min. fraction can not be zero");
   });
 

@@ -97,7 +97,7 @@ describe("Marketplace Signatures", function () {
 
     await invoiceContract.createInvoice(user1.getAddress(), asset);
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, 1000);
+    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 1000);
 
     await assetContract
       .connect(user1)
