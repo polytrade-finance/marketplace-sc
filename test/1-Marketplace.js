@@ -459,7 +459,9 @@ describe("Marketplace", function () {
       await nearSettleAsset()
     );
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 1);
+    await marketplaceContract
+      .connect(user1)
+      .list(id, 1, asset.price, asset.fractions, 1);
 
     await stableTokenContract
       .connect(treasuryWallet)
@@ -483,7 +485,9 @@ describe("Marketplace", function () {
       await nearSettleProperty()
     );
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 1);
+    await marketplaceContract
+      .connect(user1)
+      .list(id, 1, asset.price, asset.fractions, 1);
 
     await stableTokenContract
       .connect(treasuryWallet)
@@ -507,7 +511,9 @@ describe("Marketplace", function () {
       await nearSettleAsset()
     );
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 100);
+    await marketplaceContract
+      .connect(user1)
+      .list(id, 1, asset.price, asset.fractions, 100);
 
     await stableTokenContract
       .connect(buyer)
@@ -541,7 +547,9 @@ describe("Marketplace", function () {
       await nearSettleAsset()
     );
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 100);
+    await marketplaceContract
+      .connect(user1)
+      .list(id, 1, asset.price, asset.fractions, 100);
 
     await stableTokenContract
       .connect(buyer)
@@ -575,7 +583,9 @@ describe("Marketplace", function () {
       await nearSettleAsset()
     );
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 100);
+    await marketplaceContract
+      .connect(user1)
+      .list(id, 1, asset.price, asset.fractions, 100);
 
     await stableTokenContract
       .connect(buyer)
@@ -605,7 +615,9 @@ describe("Marketplace", function () {
       await nearSettleAsset()
     );
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 100);
+    await marketplaceContract
+      .connect(user1)
+      .list(id, 1, asset.price, asset.fractions, 100);
 
     await stableTokenContract
       .connect(buyer)
@@ -641,7 +653,9 @@ describe("Marketplace", function () {
       await nearSettleAsset()
     );
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 100);
+    await marketplaceContract
+      .connect(user1)
+      .list(id, 1, asset.price, asset.fractions, 100);
 
     await stableTokenContract
       .connect(buyer)
@@ -665,7 +679,15 @@ describe("Marketplace", function () {
 
     await marketplaceContract.connect(buyer).list(id, 1, asset.price, 100, 100);
 
-    await assetContract.connect(buyer).safeTransferFrom(await buyer.getAddress(), await user1.getAddress(), id, 1, 1);
+    await assetContract
+      .connect(buyer)
+      .safeTransferFrom(
+        await buyer.getAddress(),
+        await user1.getAddress(),
+        id,
+        1,
+        1
+      );
 
     await expect(
       marketplaceContract.connect(user1).buy(id, 1, 100, buyer.getAddress())
@@ -686,7 +708,9 @@ describe("Marketplace", function () {
     const id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.createInvoice(user1.getAddress(), asset);
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 1000);
+    await marketplaceContract
+      .connect(user1)
+      .list(id, 1, asset.price, asset.fractions, 1000);
 
     const info = await marketplaceContract.getListedInfo(
       user1.getAddress(),
@@ -955,7 +979,9 @@ describe("Marketplace", function () {
     const id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.createInvoice(user1.getAddress(), asset);
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 1000);
+    await marketplaceContract
+      .connect(user1)
+      .list(id, 1, asset.price, asset.fractions, 1000);
 
     await stableTokenContract
       .connect(buyer)
@@ -1003,7 +1029,9 @@ describe("Marketplace", function () {
     const id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.createInvoice(user1.getAddress(), asset);
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 1000);
+    await marketplaceContract
+      .connect(user1)
+      .list(id, 1, asset.price, asset.fractions, 1000);
 
     await stableTokenContract
       .connect(buyer)
@@ -1037,7 +1065,9 @@ describe("Marketplace", function () {
     const id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.createInvoice(user1.getAddress(), asset);
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 1000);
+    await marketplaceContract
+      .connect(user1)
+      .list(id, 1, asset.price, asset.fractions, 1000);
 
     await stableTokenContract
       .connect(buyer)
@@ -1073,7 +1103,9 @@ describe("Marketplace", function () {
       await nearSettleAsset()
     );
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 1000);
+    await marketplaceContract
+      .connect(user1)
+      .list(id, 1, asset.price, asset.fractions, 1000);
 
     await stableTokenContract
       .connect(buyer)
@@ -1115,7 +1147,9 @@ describe("Marketplace", function () {
       await nearSettleProperty()
     );
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 1000);
+    await marketplaceContract
+      .connect(user1)
+      .list(id, 1, asset.price, asset.fractions, 1000);
 
     await stableTokenContract
       .connect(buyer)
@@ -1174,7 +1208,9 @@ describe("Marketplace", function () {
       await nearSettleProperty()
     );
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 1000);
+    await marketplaceContract
+      .connect(user1)
+      .list(id, 1, asset.price, asset.fractions, 1000);
 
     await marketplaceContract.setBuyingFee(1000);
     await marketplaceContract.setInitialFee(2000);
@@ -1247,14 +1283,18 @@ describe("Marketplace", function () {
       await nearSettleProperty()
     );
 
-    await marketplaceContract.connect(user1).list(ids[0], 1, asset.price, asset.fractions, 1000);
+    await marketplaceContract
+      .connect(user1)
+      .list(ids[0], 1, asset.price, asset.fractions, 1000);
 
     await propertyContract.createProperty(
       user1.getAddress(),
       await nearSettleProperty()
     );
 
-    await marketplaceContract.connect(user1).list(ids[1], 1, asset.price, asset.fractions, 1000);
+    await marketplaceContract
+      .connect(user1)
+      .list(ids[1], 1, asset.price, asset.fractions, 1000);
 
     const totalStableTokenAmount = asset.price + asset.price;
 
@@ -1303,14 +1343,18 @@ describe("Marketplace", function () {
       await nearSettleAsset()
     );
 
-    await marketplaceContract.connect(user1).list(ids[0], 1, asset.price, asset.fractions, 1000);
+    await marketplaceContract
+      .connect(user1)
+      .list(ids[0], 1, asset.price, asset.fractions, 1000);
 
     await invoiceContract.createInvoice(
       user1.getAddress(),
       await nearSettleAsset()
     );
 
-    await marketplaceContract.connect(user1).list(ids[1], 1, asset.price, asset.fractions, 1000);
+    await marketplaceContract
+      .connect(user1)
+      .list(ids[1], 1, asset.price, asset.fractions, 1000);
 
     const totalStableTokenAmount = asset.price + asset.price;
 

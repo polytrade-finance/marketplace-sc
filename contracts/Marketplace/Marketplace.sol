@@ -101,7 +101,10 @@ contract Marketplace is
             subId
         );
         require(minFraction != 0, "Min. fraction can not be zero");
-        require(listedFractions >= minFraction, "Min. fraction > Fraction to list");
+        require(
+            listedFractions >= minFraction,
+            "Min. fraction > Fraction to list"
+        );
         require(subBalanceOf >= listedFractions, "Fraction to list > Balance");
 
         _listedInfo[mainId][subId][_msgSender()] = ListedInfo(
@@ -218,7 +221,6 @@ contract Marketplace is
     function setInitialFee(
         uint256 initialFee_
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-
         emit InitialFeeSet(_initialFee, initialFee_);
         _initialFee = initialFee_;
     }
@@ -229,7 +231,6 @@ contract Marketplace is
     function setBuyingFee(
         uint256 buyingFee_
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-
         emit BuyingFeeSet(_buyingFee, buyingFee_);
         _buyingFee = buyingFee_;
     }
