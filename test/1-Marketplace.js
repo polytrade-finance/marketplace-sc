@@ -441,7 +441,7 @@ describe("Marketplace", function () {
       marketplaceContract
         .connect(user1)
         .list(1, 1, asset.price, asset.fractions, 100)
-    ).to.be.revertedWith("Fractions > Balance");
+    ).to.be.revertedWith("Fraction to list > Balance");
   });
 
   it("Should revert on listing with zero minimum fraction ot buy", async function () {
@@ -459,7 +459,7 @@ describe("Marketplace", function () {
       await nearSettleAsset()
     );
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, 1);
+    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 1);
 
     await stableTokenContract
       .connect(treasuryWallet)
@@ -483,7 +483,7 @@ describe("Marketplace", function () {
       await nearSettleProperty()
     );
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, 1);
+    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 1);
 
     await stableTokenContract
       .connect(treasuryWallet)
@@ -500,14 +500,14 @@ describe("Marketplace", function () {
     ).to.be.revertedWith("Not enough balance");
   });
 
-  it("Should revert on listing without enough balance to sell", async function () {
+  it("Should revert on listing fractions less than Min. fraction", async function () {
     const id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.createInvoice(
       user1.getAddress(),
       await nearSettleAsset()
     );
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, 100);
+    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 100);
 
     await stableTokenContract
       .connect(buyer)
@@ -530,8 +530,42 @@ describe("Marketplace", function () {
       .buy(id, 1, 100, user1.getAddress());
 
     await expect(
-      marketplaceContract.connect(buyer).list(id, 1, asset.price, 2 * 100)
-    ).to.be.revertedWith("Min. fraction > Balance");
+      marketplaceContract.connect(buyer).list(id, 1, asset.price, 100, 200)
+    ).to.be.revertedWith("Min. fraction > Fraction to list");
+  });
+
+  it("Should revert on listing without enough balance to sell", async function () {
+    const id = await getId(invoiceContract, await user1.getAddress());
+    await invoiceContract.createInvoice(
+      user1.getAddress(),
+      await nearSettleAsset()
+    );
+
+    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 100);
+
+    await stableTokenContract
+      .connect(buyer)
+      .approve(marketplaceContract.getAddress(), 2n * asset.price);
+
+    await stableTokenContract
+      .connect(buyer)
+      .transfer(user1.getAddress(), 2n * asset.price);
+
+    await stableTokenContract
+      .connect(buyer)
+      .transfer(treasuryWallet.getAddress(), asset.price);
+
+    await stableTokenContract
+      .connect(treasuryWallet)
+      .approve(invoiceContract.getAddress(), 2n * asset.price);
+
+    await marketplaceContract
+      .connect(buyer)
+      .buy(id, 1, 100, user1.getAddress());
+
+    await expect(
+      marketplaceContract.connect(buyer).list(id, 1, asset.price, 200, 100)
+    ).to.be.revertedWith("Fraction to list > Balance");
   });
 
   it("Should revert on listing and buying with less than Min. fraction", async function () {
@@ -541,7 +575,7 @@ describe("Marketplace", function () {
       await nearSettleAsset()
     );
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, 100);
+    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 100);
 
     await stableTokenContract
       .connect(buyer)
@@ -564,14 +598,14 @@ describe("Marketplace", function () {
     ).to.be.revertedWith("Fraction to buy < Min. fraction");
   });
 
-  it("Should revert on listing and buying without enough balance to sell", async function () {
+  it("Should revert on listing and buying more than listed amount", async function () {
     const id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.createInvoice(
       user1.getAddress(),
       await nearSettleAsset()
     );
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, 100);
+    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 100);
 
     await stableTokenContract
       .connect(buyer)
@@ -593,11 +627,49 @@ describe("Marketplace", function () {
       .connect(buyer)
       .buy(id, 1, 100, user1.getAddress());
 
-    await marketplaceContract.connect(buyer).list(id, 1, asset.price, 100);
+    await marketplaceContract.connect(buyer).list(id, 1, asset.price, 100, 100);
 
     await expect(
       marketplaceContract.connect(user1).buy(id, 1, 2 * 100, buyer.getAddress())
-    ).to.be.revertedWith("Not enough fraction to buy");
+    ).to.be.revertedWith("Listed fractions < Fraction to buy");
+  });
+
+  it("Should revert on listing and buying without enough balance to sell", async function () {
+    const id = await getId(invoiceContract, await user1.getAddress());
+    await invoiceContract.createInvoice(
+      user1.getAddress(),
+      await nearSettleAsset()
+    );
+
+    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 100);
+
+    await stableTokenContract
+      .connect(buyer)
+      .approve(marketplaceContract.getAddress(), 2n * asset.price);
+
+    await stableTokenContract
+      .connect(buyer)
+      .transfer(user1.getAddress(), 2n * asset.price);
+
+    await stableTokenContract
+      .connect(buyer)
+      .transfer(treasuryWallet.getAddress(), asset.price);
+
+    await stableTokenContract
+      .connect(treasuryWallet)
+      .approve(marketplaceContract.getAddress(), 2n * asset.price);
+
+    await marketplaceContract
+      .connect(buyer)
+      .buy(id, 1, 100, user1.getAddress());
+
+    await marketplaceContract.connect(buyer).list(id, 1, asset.price, 100, 100);
+
+    await assetContract.connect(buyer).safeTransferFrom(await buyer.getAddress(), await user1.getAddress(), id, 1, 1);
+
+    await expect(
+      marketplaceContract.connect(user1).buy(id, 1, 100, buyer.getAddress())
+    ).to.be.revertedWith("Not enough balance to buy");
   });
 
   it("Should revert on passing invalid fee wallet Address", async function () {
@@ -614,7 +686,7 @@ describe("Marketplace", function () {
     const id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.createInvoice(user1.getAddress(), asset);
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, 1000);
+    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 1000);
 
     const info = await marketplaceContract.getListedInfo(
       user1.getAddress(),
@@ -883,7 +955,7 @@ describe("Marketplace", function () {
     const id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.createInvoice(user1.getAddress(), asset);
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, 1000);
+    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 1000);
 
     await stableTokenContract
       .connect(buyer)
@@ -931,7 +1003,7 @@ describe("Marketplace", function () {
     const id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.createInvoice(user1.getAddress(), asset);
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, 1000);
+    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 1000);
 
     await stableTokenContract
       .connect(buyer)
@@ -965,7 +1037,7 @@ describe("Marketplace", function () {
     const id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.createInvoice(user1.getAddress(), asset);
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, 1000);
+    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 1000);
 
     await stableTokenContract
       .connect(buyer)
@@ -1001,7 +1073,7 @@ describe("Marketplace", function () {
       await nearSettleAsset()
     );
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, 1000);
+    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 1000);
 
     await stableTokenContract
       .connect(buyer)
@@ -1043,7 +1115,7 @@ describe("Marketplace", function () {
       await nearSettleProperty()
     );
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, 1000);
+    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 1000);
 
     await stableTokenContract
       .connect(buyer)
@@ -1102,7 +1174,7 @@ describe("Marketplace", function () {
       await nearSettleProperty()
     );
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, 1000);
+    await marketplaceContract.connect(user1).list(id, 1, asset.price, asset.fractions, 1000);
 
     await marketplaceContract.setBuyingFee(1000);
     await marketplaceContract.setInitialFee(2000);
@@ -1133,7 +1205,7 @@ describe("Marketplace", function () {
 
     await marketplaceContract
       .connect(buyer)
-      .list(id, 1, asset.price, 1000 / 10);
+      .list(id, 1, asset.price, 1000, 1000 / 10);
     const after1stBuy = await stableTokenContract.balanceOf(
       feeWallet.getAddress()
     );
@@ -1175,14 +1247,14 @@ describe("Marketplace", function () {
       await nearSettleProperty()
     );
 
-    await marketplaceContract.connect(user1).list(ids[0], 1, asset.price, 1000);
+    await marketplaceContract.connect(user1).list(ids[0], 1, asset.price, asset.fractions, 1000);
 
     await propertyContract.createProperty(
       user1.getAddress(),
       await nearSettleProperty()
     );
 
-    await marketplaceContract.connect(user1).list(ids[1], 1, asset.price, 1000);
+    await marketplaceContract.connect(user1).list(ids[1], 1, asset.price, asset.fractions, 1000);
 
     const totalStableTokenAmount = asset.price + asset.price;
 
@@ -1231,14 +1303,14 @@ describe("Marketplace", function () {
       await nearSettleAsset()
     );
 
-    await marketplaceContract.connect(user1).list(ids[0], 1, asset.price, 1000);
+    await marketplaceContract.connect(user1).list(ids[0], 1, asset.price, asset.fractions, 1000);
 
     await invoiceContract.createInvoice(
       user1.getAddress(),
       await nearSettleAsset()
     );
 
-    await marketplaceContract.connect(user1).list(ids[1], 1, asset.price, 1000);
+    await marketplaceContract.connect(user1).list(ids[1], 1, asset.price, asset.fractions, 1000);
 
     const totalStableTokenAmount = asset.price + asset.price;
 
@@ -1322,7 +1394,7 @@ describe("Marketplace", function () {
 
     await marketplaceContract
       .connect(user1)
-      .list(ids[0], 1, property.price, 1000);
+      .list(ids[0], 1, property.price, asset.fractions, 1000);
 
     await propertyContract.createProperty(
       user1.getAddress(),
@@ -1331,7 +1403,7 @@ describe("Marketplace", function () {
 
     await marketplaceContract
       .connect(user1)
-      .list(ids[1], 1, property.price, 1000);
+      .list(ids[1], 1, property.price, asset.fractions, 1000);
 
     const totalStableTokenAmount = property.price + property.price;
 
@@ -1421,6 +1493,6 @@ describe("Marketplace", function () {
 
     await expect(
       marketplaceContract.connect(buyer).buy(id, 1, 1000, user1.getAddress())
-    ).to.be.revertedWith("Asset is not listed");
+    ).to.be.revertedWith("Listed fractions < Fraction to buy");
   });
 });

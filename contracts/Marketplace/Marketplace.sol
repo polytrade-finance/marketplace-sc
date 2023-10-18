@@ -101,8 +101,8 @@ contract Marketplace is
             subId
         );
         require(minFraction != 0, "Min. fraction can not be zero");
-        require(listedFractions >= minFraction, "Min. fraction > Fractions");
-        require(subBalanceOf >= listedFractions, "Fractions > Balance");
+        require(listedFractions >= minFraction, "Min. fraction > Fraction to list");
+        require(subBalanceOf >= listedFractions, "Fraction to list > Balance");
 
         _listedInfo[mainId][subId][_msgSender()] = ListedInfo(
             salePrice,
@@ -218,10 +218,9 @@ contract Marketplace is
     function setInitialFee(
         uint256 initialFee_
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        uint256 oldFee = _initialFee;
-        _initialFee = initialFee_;
 
-        emit InitialFeeSet(oldFee, _initialFee);
+        emit InitialFeeSet(_initialFee, initialFee_);
+        _initialFee = initialFee_;
     }
 
     /**
@@ -230,10 +229,9 @@ contract Marketplace is
     function setBuyingFee(
         uint256 buyingFee_
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        uint256 oldFee = _buyingFee;
-        _buyingFee = buyingFee_;
 
-        emit BuyingFeeSet(oldFee, _buyingFee);
+        emit BuyingFeeSet(_buyingFee, buyingFee_);
+        _buyingFee = buyingFee_;
     }
 
     /**
@@ -314,10 +312,8 @@ contract Marketplace is
     function _setFeeWallet(address newFeeWallet) private {
         require(newFeeWallet != address(0), "Invalid wallet address");
 
-        address oldFeeWallet = address(_feeWallet);
+        emit FeeWalletSet(_feeWallet, newFeeWallet);
         _feeWallet = newFeeWallet;
-
-        emit FeeWalletSet(oldFeeWallet, newFeeWallet);
     }
 
     /**
