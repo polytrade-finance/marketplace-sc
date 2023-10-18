@@ -210,10 +210,8 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
     function _setTreasuryWallet(address newTreasuryWallet) private {
         require(newTreasuryWallet != address(0), "Invalid wallet address");
 
-        address oldTreasuryWallet = address(_treasuryWallet);
+        emit TreasuryWalletSet(_treasuryWallet, newTreasuryWallet);
         _treasuryWallet = newTreasuryWallet;
-
-        emit TreasuryWalletSet(oldTreasuryWallet, newTreasuryWallet);
     }
 
     /**

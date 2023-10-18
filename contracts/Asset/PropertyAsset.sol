@@ -188,10 +188,8 @@ contract PropertyAsset is
     function _setTreasuryWallet(address newTreasuryWallet) private {
         require(newTreasuryWallet != address(0), "Invalid wallet address");
 
-        address oldTreasuryWallet = address(_treasuryWallet);
+        emit TreasuryWalletSet(_treasuryWallet, newTreasuryWallet);
         _treasuryWallet = newTreasuryWallet;
-
-        emit TreasuryWalletSet(oldTreasuryWallet, newTreasuryWallet);
     }
 
     /**
