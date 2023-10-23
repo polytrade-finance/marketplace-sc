@@ -9,7 +9,7 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { PropertyInfo, IPropertyAsset } from "contracts/Asset/interface/IPropertyAsset.sol";
 import { IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
 import { IToken } from "contracts/Token/interface/IToken.sol";
-import { Counters } from "../lib/Counters.sol";
+import { Counters } from "contracts/lib/Counters.sol";
 
 /**
  * @title The property asset contract based on EIP6960

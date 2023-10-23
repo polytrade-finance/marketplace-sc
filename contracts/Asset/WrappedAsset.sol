@@ -17,7 +17,6 @@ import { IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
  * @author Polytrade.Finance
  */
 contract WrappedAsset is
-    Initializable,
     Context,
     AccessControl,
     IERC721Receiver,
@@ -45,10 +44,10 @@ contract WrappedAsset is
     }
 
     /**
-     * @dev Initializer for the type contract
+     * @dev Constructor for the type contract
      * @param assetCollection_, Address of the asset collection used in the type contract
      */
-    function initialize(address assetCollection_) external initializer {
+    constructor(address assetCollection_) {
         if (!assetCollection_.supportsInterface(_ASSET_INTERFACE_ID)) {
             revert UnsupportedInterface();
         }

@@ -11,7 +11,8 @@ import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol"
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { IToken } from "contracts/Token/interface/IToken.sol";
 import { AssetInfo, IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
-import { Counters } from "../lib/Counters.sol";
+import { IFeeManager } from "contracts/Marketplace/interface/IFeeManager.sol";
+import { Counters } from "contracts/lib/Counters.sol";
 
 /**
  * @title The common marketplace for the assets
@@ -29,14 +30,10 @@ contract Marketplace is
     using ERC165Checker for address;
     using Counters for Counters.Counter;
 
-    uint256 private _initialFee;
-    uint256 private _buyingFee;
-
     IBaseAsset private _assetCollection;
+    IFeeManager private _feeManager;
     IToken private _stableToken;
     Counters.Counter private _nonce;
-
-    address private _feeWallet;
 
     mapping(uint256 => mapping(uint256 => mapping(address => ListedInfo)))
         private _listedInfo;
@@ -59,16 +56,19 @@ contract Marketplace is
         );
     bytes4 private constant _ASSET_INTERFACE_ID = type(IBaseAsset).interfaceId;
 
+    bytes4 private constant _FEEMANAGER_INTERFACE_ID =
+        type(IFeeManager).interfaceId;
+
     /**
      * @dev Initializer for the main Marketplace
      * @param assetCollection_, Address of the asset collection used in the marketplace
      * @param tokenAddress_, Address of the ERC20 token address
-     * @param feeWallet_, Address of the fee wallet
+     * @param feeManager_, Address of the fee manager
      */
     function initialize(
         address assetCollection_,
         address tokenAddress_,
-        address feeWallet_
+        address feeManager_
     ) external initializer {
         __EIP712_init("Polytrade", "2.3");
         if (!assetCollection_.supportsInterface(_ASSET_INTERFACE_ID)) {
@@ -80,7 +80,7 @@ contract Marketplace is
         _assetCollection = IBaseAsset(assetCollection_);
         _stableToken = IToken(tokenAddress_);
 
-        _setFeeWallet(feeWallet_);
+        _setFeeManager(feeManager_);
 
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
@@ -95,15 +95,15 @@ contract Marketplace is
         uint256 listedFractions,
         uint256 minFraction
     ) external {
-        uint256 subBalanceOf = _assetCollection.subBalanceOf(
-            _msgSender(),
-            mainId,
-            subId
-        );
         require(minFraction != 0, "Min. fraction can not be zero");
         require(
             listedFractions >= minFraction,
             "Min. fraction > Fraction to list"
+        );
+        uint256 subBalanceOf = _assetCollection.subBalanceOf(
+            _msgSender(),
+            mainId,
+            subId
         );
         require(subBalanceOf >= listedFractions, "Fraction to list > Balance");
 
@@ -216,32 +216,19 @@ contract Marketplace is
     }
 
     /**
-     * @dev See {IMarketplace-setInitialFee}.
+     * @dev See {IMarketplace-setFeeManager}.
      */
-    function setInitialFee(
-        uint256 initialFee_
+    function setFeeManager(
+        address newFeeManager
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        emit InitialFeeSet(_initialFee, initialFee_);
-        _initialFee = initialFee_;
+        _setFeeManager(newFeeManager);
     }
 
     /**
-     * @dev See {IMarketplace-setBuyingFee}.
+     * @dev See {IMarketplace-getFeeManager}.
      */
-    function setBuyingFee(
-        uint256 buyingFee_
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        emit BuyingFeeSet(_buyingFee, buyingFee_);
-        _buyingFee = buyingFee_;
-    }
-
-    /**
-     * @dev See {IMarketplace-setFeeWallet}.
-     */
-    function setFeeWallet(
-        address newFeeWallet
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _setFeeWallet(newFeeWallet);
+    function getFeeManager() external view returns (address) {
+        return address(_feeManager);
     }
 
     /**
@@ -256,13 +243,6 @@ contract Marketplace is
      */
     function getStableToken() external view returns (address) {
         return address(_stableToken);
-    }
-
-    /**
-     * @dev See {IMarketplace-getFeeWallet}.
-     */
-    function getFeeWallet() external view returns (address) {
-        return address(_feeWallet);
     }
 
     /**
@@ -281,20 +261,6 @@ contract Marketplace is
     }
 
     /**
-     * @dev See {IMarketplace-getInitialFee}.
-     */
-    function getInitialFee() external view returns (uint256) {
-        return _initialFee;
-    }
-
-    /**
-     * @dev See {IMarketplace-getBuyingFee}.
-     */
-    function getBuyingFee() external view returns (uint256) {
-        return _buyingFee;
-    }
-
-    /**
      * @dev See {IMarketplace-getPropertyInfo}.
      */
     function getListedInfo(
@@ -303,18 +269,6 @@ contract Marketplace is
         uint256 assetSubId
     ) external view returns (ListedInfo memory) {
         return _listedInfo[assetMainId][assetSubId][owner];
-    }
-
-    /**
-     * @notice Allows to set a new address for the fee wallet.
-     * @dev Wallet can be EOA or multisig
-     * @param newFeeWallet, Address of the new fee wallet
-     */
-    function _setFeeWallet(address newFeeWallet) private {
-        require(newFeeWallet != address(0), "Invalid wallet address");
-
-        emit FeeWalletSet(_feeWallet, newFeeWallet);
-        _feeWallet = newFeeWallet;
     }
 
     /**
@@ -358,8 +312,8 @@ contract Marketplace is
 
         uint256 payPrice = (salePrice * fractionToBuy) / 1e4;
         uint256 fee = assetInfo.initialOwner != owner
-            ? _buyingFee
-            : _initialFee;
+            ? _feeManager.getBuyingFee(mainId, subId)
+            : _feeManager.getInitialFee(mainId, subId);
         fee = (payPrice * fee) / 1e4;
 
         if (assetInfo.purchaseDate == 0) {
@@ -382,7 +336,11 @@ contract Marketplace is
             ""
         );
         _stableToken.safeTransferFrom(_msgSender(), owner, payPrice);
-        _stableToken.safeTransferFrom(_msgSender(), _feeWallet, fee);
+        _stableToken.safeTransferFrom(
+            _msgSender(),
+            _feeManager.getFeeWallet(),
+            fee
+        );
         emit AssetBought(
             owner,
             _msgSender(),
@@ -392,5 +350,19 @@ contract Marketplace is
             payPrice,
             fractionToBuy
         );
+    }
+
+    /**
+     * @notice Allows to set a new address for the fee manager.
+     * @dev Fee manager should support IFeeManager interface
+     * @param newFeeManager, Address of the new fee manager
+     */
+    function _setFeeManager(address newFeeManager) private {
+        if (!newFeeManager.supportsInterface(_FEEMANAGER_INTERFACE_ID)) {
+            revert UnsupportedInterface();
+        }
+
+        emit FeeManagerSet(address(_feeManager), newFeeManager);
+        _feeManager = IFeeManager(newFeeManager);
     }
 }

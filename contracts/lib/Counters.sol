@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
 /**
@@ -15,8 +16,8 @@ library Counters {
     function useNonce(
         Counter storage counter,
         address owner
-    ) internal returns (uint256 current) {
-        current = counter.currentNonce[owner];
+    ) internal returns (uint256 currentNonce) {
+        currentNonce = counter.currentNonce[owner];
         counter.currentNonce[owner]++;
     }
 

@@ -11,13 +11,6 @@ import { ListedInfo } from "contracts/lib/structs.sol";
 
 interface IMarketplace {
     /**
-     * @dev Emitted when new `Fee Wallet` has been set
-     * @param oldFeeWallet, Address of the old fee wallet
-     * @param newFeeWallet, Address of the new fee wallet
-     */
-    event FeeWalletSet(address oldFeeWallet, address newFeeWallet);
-
-    /**
      * @dev Emitted when asset owner changes
      * @param oldOwner, Address of the previous owner
      * @param newOwner, Address of the new owner
@@ -38,22 +31,6 @@ interface IMarketplace {
     );
 
     /**
-     * @dev Emitted when a new initial fee set
-     * @dev initial fee applies to the first buy
-     * @param oldFee, old initial fee percentage
-     * @param newFee, old initial fee percentage
-     */
-    event InitialFeeSet(uint256 oldFee, uint256 newFee);
-
-    /**
-     * @dev Emitted when a new buying fee set
-     * @dev buying fee applies to the all buyings instead of first one
-     * @param oldFee, old buying fee percentage
-     * @param newFee, old buying fee percentage
-     */
-    event BuyingFeeSet(uint256 oldFee, uint256 newFee);
-
-    /**
      * @dev Emitted when an asset is listed
      * @param owner, address of the asset owner
      * @param mainId, mainId identifies whether its a property or an invoice
@@ -71,6 +48,13 @@ interface IMarketplace {
     );
 
     /**
+     * @dev Emitted when new `Fee Manager` has been set
+     * @param oldFeeManager, Address of the old fee manager
+     * @param newFeeManager, Address of the new fee manager
+     */
+    event FeeManagerSet(address oldFeeManager, address newFeeManager);
+
+    /**
      * @dev Reverted on unsupported interface detection
      */
     error UnsupportedInterface();
@@ -81,8 +65,8 @@ interface IMarketplace {
      * @dev Transfer the price to previous owner if it is not the first buy
      * @dev Owner should have approved marketplace to transfer its assets
      * @dev Buyer should have approved marketplace to transfer its ERC20 tokens to pay price and fees
-     * @param mainId, mainId identifies whether its a property or an invoice
-     * @param subId, unique number of the asset
+     * @param mainId, main identifier of the asset
+     * @param subId, property identifier of main asset
      * @param fractionToBuy, amount of fraction for buying
      * @param owner, address of the owner of asset
      */
@@ -125,28 +109,6 @@ interface IMarketplace {
     ) external;
 
     /**
-     * @dev Set new initial fee
-     * @dev Initial fee applies to the first buy
-     * @dev Needs admin access to set
-     * @param initialFee_, new initial fee percentage with 2 decimals
-     */
-    function setInitialFee(uint256 initialFee_) external;
-
-    /**
-     * @dev Set new buying fee
-     * @dev Buying fee applies to the all buyings instead of first one
-     * @dev Needs admin access to set
-     * @param buyingFee_, new buying fee percentage with 2 decimals
-     */
-    function setBuyingFee(uint256 buyingFee_) external;
-
-    /**
-     * @dev Allows to set a new fee wallet address where buying fees will be allocated.
-     * @param newFeeWallet, Address of the new fee wallet
-     */
-    function setFeeWallet(address newFeeWallet) external;
-
-    /**
      * @dev Allows to buy asset with a signed message by owner with agreed sale price
      * @param owner, Address of the owner of asset
      * @param offeror, Address of the offeror
@@ -178,6 +140,19 @@ interface IMarketplace {
     ) external;
 
     /**
+     * @notice Allows to set a new address for the fee manager.
+     * @dev Fee manager should support IFeeManager interface
+     * @param newFeeManager, Address of the new fee manager
+     */
+    function setFeeManager(address newFeeManager) external;
+
+    /**
+     * @dev Gets current fee manager address
+     * @return address, Address of the fee manager contract
+     */
+    function getFeeManager() external view returns (address);
+
+    /**
      * @dev Gets current asset collection address
      * @return address, Address of the invocie collection contract
      */
@@ -188,12 +163,6 @@ interface IMarketplace {
      * @return address, Address of the stable token contract
      */
     function getStableToken() external view returns (address);
-
-    /**
-     * @dev Gets current fee wallet address
-     * @return address Address of the fee wallet
-     */
-    function getFeeWallet() external view returns (address);
 
     /**
      * @dev Returns the current nonce for `owner`. This value must be
@@ -210,18 +179,6 @@ interface IMarketplace {
      */
     // solhint-disable-next-line func-name-mixedcase
     function DOMAIN_SEPARATOR() external view returns (bytes32);
-
-    /**
-     * @dev Gets initial fee percentage that applies to first buyings
-     * @return percentage of initial fee with 2 decimals
-     */
-    function getInitialFee() external view returns (uint256);
-
-    /**
-     * @dev Gets buying fee percentage that applies to all buyings except first one
-     * @return percentage of buying fee with 2 decimals
-     */
-    function getBuyingFee() external view returns (uint256);
 
     /**
      * @dev Gets the asset information
