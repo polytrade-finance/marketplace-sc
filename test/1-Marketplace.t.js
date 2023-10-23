@@ -11,7 +11,7 @@ const {
   nearSettleAsset,
   zeroPriceAsset,
   nearSettleProperty,
-} = require("./data");
+} = require("./data.spec");
 const { time } = require("@nomicfoundation/hardhat-network-helpers");
 const { now } = require("./helpers");
 const chainId = network.config.chainId;
@@ -54,18 +54,11 @@ describe("Marketplace", function () {
   let treasuryWallet;
   let feeWallet;
   let newTreasuryWallet;
-  let newFeeWallet;
+  let newFeeManager;
 
   beforeEach(async () => {
-    [
-      deployer,
-      user1,
-      buyer,
-      treasuryWallet,
-      feeWallet,
-      newTreasuryWallet,
-      newFeeWallet,
-    ] = await ethers.getSigners();
+    [deployer, user1, buyer, treasuryWallet, feeWallet, newTreasuryWallet] =
+      await ethers.getSigners();
 
     const AssetFactory = await ethers.getContractFactory("BaseAsset");
     assetContract = await AssetFactory.deploy(
@@ -75,7 +68,14 @@ describe("Marketplace", function () {
       "https://ipfs.io/ipfs"
     );
 
-    await assetContract.waitForDeployment();
+    const FeeManagerFactory = await ethers.getContractFactory("FeeManager");
+    newFeeManager = await FeeManagerFactory.deploy(
+      0,
+      0,
+      await feeWallet.getAddress()
+    );
+
+    await newFeeManager.waitForDeployment();
 
     stableTokenContract = await (
       await ethers.getContractFactory("ERC20Token")
@@ -88,7 +88,7 @@ describe("Marketplace", function () {
       [
         await assetContract.getAddress(),
         await stableTokenContract.getAddress(),
-        await feeWallet.getAddress(),
+        await newFeeManager.getAddress(),
       ]
     );
 
@@ -701,7 +701,7 @@ describe("Marketplace", function () {
         await stableTokenContract.getAddress(),
         ethers.ZeroAddress,
       ])
-    ).to.revertedWith("Invalid wallet address");
+    ).to.reverted;
   });
 
   it("Should return the listed info struct", async function () {
@@ -767,26 +767,6 @@ describe("Marketplace", function () {
     );
   });
 
-  it("Should return the fee wallet address while calling getFeeWallet()", async function () {
-    expect(await marketplaceContract.getFeeWallet()).to.eq(
-      await feeWallet.getAddress()
-    );
-  });
-
-  it("Should set a new initial fee (10.00%) percentage for first buy", async function () {
-    await expect(await marketplaceContract.setInitialFee(1000)).not.to.be
-      .reverted;
-
-    expect(await marketplaceContract.getInitialFee()).to.eq(1000);
-  });
-
-  it("Should set a new buying fee (10.00%) percentage for all buys", async function () {
-    await expect(await marketplaceContract.setBuyingFee(1000)).not.to.be
-      .reverted;
-
-    expect(await marketplaceContract.getBuyingFee()).to.eq(1000);
-  });
-
   it("Should set a new treasury wallet address while calling setTreasuryWallet()", async function () {
     await expect(
       await invoiceContract.setTreasuryWallet(
@@ -821,19 +801,6 @@ describe("Marketplace", function () {
         .connect(user1)
         .setTreasuryWallet(newTreasuryWallet.getAddress())
     ).to.be.reverted;
-  });
-
-  it("Should revert to set initial fee without admin role", async function () {
-    await expect(
-      marketplaceContract.connect(user1).setInitialFee(1000)
-    ).to.be.revertedWith(
-      `AccessControl: account ${(
-        await user1.getAddress()
-      ).toLowerCase()} is missing role ${ethers.zeroPadValue(
-        ethers.toBeHex(0),
-        32
-      )}`
-    );
   });
 
   it("Should revert to create property without originator role", async function () {
@@ -882,19 +849,6 @@ describe("Marketplace", function () {
     );
   });
 
-  it("Should revert to set buying fee without admin role", async function () {
-    await expect(
-      marketplaceContract.connect(user1).setBuyingFee(1000)
-    ).to.be.revertedWith(
-      `AccessControl: account ${(
-        await user1.getAddress()
-      ).toLowerCase()} is missing role ${ethers.zeroPadValue(
-        ethers.toBeHex(0),
-        32
-      )}`
-    );
-  });
-
   it("Should revert to batch settle invoice without originator role", async function () {
     await expect(
       invoiceContract
@@ -919,20 +873,29 @@ describe("Marketplace", function () {
     );
   });
 
-  it("Should set a new fee wallet address while calling setFeeWallet()", async function () {
+  it("Should set a new fee manager address while calling setFeeManager()", async function () {
     await expect(
-      await marketplaceContract.setFeeWallet(await newFeeWallet.getAddress())
+      await marketplaceContract.setFeeManager(await newFeeManager.getAddress())
     ).not.to.be.reverted;
 
-    expect(await marketplaceContract.getFeeWallet()).to.eq(
-      await newFeeWallet.getAddress()
+    expect(await marketplaceContract.getFeeManager()).to.eq(
+      await newFeeManager.getAddress()
     );
   });
 
-  it("Should revert when setting a new fee wallet by invalid sender address while calling setFeeWallet()", async function () {
+  it("Should revert when setting a new fee manager by invalid caller address while calling setFeeManager()", async function () {
     await expect(
-      marketplaceContract.connect(user1).setFeeWallet(newFeeWallet.getAddress())
-    ).to.be.reverted;
+      marketplaceContract
+        .connect(user1)
+        .setFeeManager(newFeeManager.getAddress())
+    ).to.be.revertedWith(
+      `AccessControl: account ${(
+        await user1.getAddress()
+      ).toLowerCase()} is missing role ${ethers.zeroPadValue(
+        ethers.toBeHex(0),
+        32
+      )}`
+    );
   });
 
   it("Should revert to settle invoice before due date", async function () {
@@ -1212,8 +1175,7 @@ describe("Marketplace", function () {
       .connect(user1)
       .list(id, 1, asset.price, asset.fractions, 1000);
 
-    await marketplaceContract.setBuyingFee(1000);
-    await marketplaceContract.setInitialFee(2000);
+    await newFeeManager.setDefaultFees(2000, 1000);
 
     await stableTokenContract
       .connect(buyer)
