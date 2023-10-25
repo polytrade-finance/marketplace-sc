@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import { ListedInfo } from "contracts/lib/structs.sol";
+import { ListedInfo, IToken } from "contracts/lib/structs.sol";
 
 /**
  * @title The main interface to define the main marketplace
@@ -19,6 +19,7 @@ interface IMarketplace {
      * @param salePrice, the sale price of whole asset
      * @param payPrice, the price buyer pays that is fraction of salePrice
      * @param fractions, number of bought fractions
+     * @param token, address of receiveing token that listed
      */
     event AssetBought(
         address indexed oldOwner,
@@ -27,24 +28,21 @@ interface IMarketplace {
         uint256 subId,
         uint256 salePrice,
         uint256 payPrice,
-        uint256 fractions
+        uint256 fractions,
+        address token
     );
 
     /**
      * @dev Emitted when an asset is listed
      * @param owner, address of the asset owner
      * @param mainId, mainId identifies whether its a property or an invoice
-     * @param subId, unique number of the asset
-     * @param listedFractions, number of fractions listed by owner
-     * @param minFraction, minimum fraction needed to buy
+     * @param listedInfo, information of listed asset including salePrice, listedFraction, minFraction and token of sale
      */
     event AssetListed(
         address indexed owner,
         uint256 indexed mainId,
         uint256 indexed subId,
-        uint256 salePrice,
-        uint256 listedFractions,
-        uint256 minFraction
+        ListedInfo listedInfo
     );
 
     /**
@@ -96,16 +94,24 @@ interface IMarketplace {
      * @dev List an asset for the current owner
      * @param mainId, mainId identifies whether its a property or an invoice
      * @param subId, unique identifier of the asset
-     * @param salePrice, new price for asset sale
-     * @param listedFractions, number of fractions listed by owner
-     * @param minFraction, minFraction owner set for buyers
+     * @param listedInfo, information of listed asset including salePrice, listedFraction, minFraction and token of sale
      */
     function list(
         uint256 mainId,
         uint256 subId,
-        uint256 salePrice,
-        uint256 listedFractions,
-        uint256 minFraction
+        ListedInfo calldata listedInfo
+    ) external;
+
+    /**
+     * @dev Batch list assets for the specified owners
+     * @param mainIds, main unique identifier the asset
+     * @param subIds, sub unique identifier of the asset
+     * @param listedInfos, information of listed asset including salePrice, listedFraction, minFraction and token sale
+     */
+    function batchList(
+        uint256[] calldata mainIds,
+        uint256[] calldata subIds,
+        ListedInfo[] calldata listedInfos
     ) external;
 
     /**
@@ -157,12 +163,6 @@ interface IMarketplace {
      * @return address, Address of the invocie collection contract
      */
     function getAssetCollection() external view returns (address);
-
-    /**
-     * @dev Gets current stable token address
-     * @return address, Address of the stable token contract
-     */
-    function getStableToken() external view returns (address);
 
     /**
      * @dev Returns the current nonce for `owner`. This value must be
