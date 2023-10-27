@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import { ListedInfo } from "contracts/lib/structs.sol";
+import { ListedInfo, IToken } from "contracts/lib/structs.sol";
 
 /**
  * @title The main interface to define the main marketplace
@@ -11,19 +11,15 @@ import { ListedInfo } from "contracts/lib/structs.sol";
 
 interface IMarketplace {
     /**
-     * @dev Emitted when new `Fee Wallet` has been set
-     * @param oldFeeWallet, Address of the old fee wallet
-     * @param newFeeWallet, Address of the new fee wallet
-     */
-    event FeeWalletSet(address oldFeeWallet, address newFeeWallet);
-
-    /**
      * @dev Emitted when asset owner changes
      * @param oldOwner, Address of the previous owner
      * @param newOwner, Address of the new owner
      * @param mainId, mainId identifies whether its a property or an invoice
      * @param subId, id of the bought asset
-     *  @ @param payPrice, the price buyer pays that is fraction of salePrice
+     * @param salePrice, the sale price of whole asset
+     * @param payPrice, the price buyer pays that is fraction of salePrice
+     * @param fractions, number of bought fractions
+     * @param token, address of receiveing token that listed
      */
     event AssetBought(
         address indexed oldOwner,
@@ -31,40 +27,30 @@ interface IMarketplace {
         uint256 mainId,
         uint256 subId,
         uint256 salePrice,
-        uint256 payPrice
+        uint256 payPrice,
+        uint256 fractions,
+        address token
     );
-
-    /**
-     * @dev Emitted when a new initial fee set
-     * @dev initial fee applies to the first buy
-     * @param oldFee, old initial fee percentage
-     * @param newFee, old initial fee percentage
-     */
-    event InitialFeeSet(uint256 oldFee, uint256 newFee);
-
-    /**
-     * @dev Emitted when a new buying fee set
-     * @dev buying fee applies to the all buyings instead of first one
-     * @param oldFee, old buying fee percentage
-     * @param newFee, old buying fee percentage
-     */
-    event BuyingFeeSet(uint256 oldFee, uint256 newFee);
 
     /**
      * @dev Emitted when an asset is listed
      * @param owner, address of the asset owner
      * @param mainId, mainId identifies whether its a property or an invoice
-     * @param subId, unique number of the asset
-     * @param salePrice, unique number of the asset
-     * @param minFraction, minimum fraction needed to buy
+     * @param listedInfo, information of listed asset including salePrice, listedFraction, minFraction and token of sale
      */
     event AssetListed(
         address indexed owner,
         uint256 indexed mainId,
         uint256 indexed subId,
-        uint256 salePrice,
-        uint256 minFraction
+        ListedInfo listedInfo
     );
+
+    /**
+     * @dev Emitted when new `Fee Manager` has been set
+     * @param oldFeeManager, Address of the old fee manager
+     * @param newFeeManager, Address of the new fee manager
+     */
+    event FeeManagerSet(address oldFeeManager, address newFeeManager);
 
     /**
      * @dev Reverted on unsupported interface detection
@@ -77,8 +63,8 @@ interface IMarketplace {
      * @dev Transfer the price to previous owner if it is not the first buy
      * @dev Owner should have approved marketplace to transfer its assets
      * @dev Buyer should have approved marketplace to transfer its ERC20 tokens to pay price and fees
-     * @param mainId, mainId identifies whether its a property or an invoice
-     * @param subId, unique number of the asset
+     * @param mainId, main identifier of the asset
+     * @param subId, property identifier of main asset
      * @param fractionToBuy, amount of fraction for buying
      * @param owner, address of the owner of asset
      */
@@ -108,37 +94,25 @@ interface IMarketplace {
      * @dev List an asset for the current owner
      * @param mainId, mainId identifies whether its a property or an invoice
      * @param subId, unique identifier of the asset
-     * @param salePrice, new price for asset sale
-     * @param minFraction, minFraction owner set for buyers
+     * @param listedInfo, information of listed asset including salePrice, listedFraction, minFraction and token of sale
      */
     function list(
         uint256 mainId,
         uint256 subId,
-        uint256 salePrice,
-        uint256 minFraction
+        ListedInfo calldata listedInfo
     ) external;
 
     /**
-     * @dev Set new initial fee
-     * @dev Initial fee applies to the first buy
-     * @dev Needs admin access to set
-     * @param initialFee_, new initial fee percentage with 2 decimals
+     * @dev Batch list assets for the specified owners
+     * @param mainIds, main unique identifier the asset
+     * @param subIds, sub unique identifier of the asset
+     * @param listedInfos, information of listed asset including salePrice, listedFraction, minFraction and token sale
      */
-    function setInitialFee(uint256 initialFee_) external;
-
-    /**
-     * @dev Set new buying fee
-     * @dev Buying fee applies to the all buyings instead of first one
-     * @dev Needs admin access to set
-     * @param buyingFee_, new buying fee percentage with 2 decimals
-     */
-    function setBuyingFee(uint256 buyingFee_) external;
-
-    /**
-     * @dev Allows to set a new fee wallet address where buying fees will be allocated.
-     * @param newFeeWallet, Address of the new fee wallet
-     */
-    function setFeeWallet(address newFeeWallet) external;
+    function batchList(
+        uint256[] calldata mainIds,
+        uint256[] calldata subIds,
+        ListedInfo[] calldata listedInfos
+    ) external;
 
     /**
      * @dev Allows to buy asset with a signed message by owner with agreed sale price
@@ -172,22 +146,23 @@ interface IMarketplace {
     ) external;
 
     /**
+     * @notice Allows to set a new address for the fee manager.
+     * @dev Fee manager should support IFeeManager interface
+     * @param newFeeManager, Address of the new fee manager
+     */
+    function setFeeManager(address newFeeManager) external;
+
+    /**
+     * @dev Gets current fee manager address
+     * @return address, Address of the fee manager contract
+     */
+    function getFeeManager() external view returns (address);
+
+    /**
      * @dev Gets current asset collection address
      * @return address, Address of the invocie collection contract
      */
     function getAssetCollection() external view returns (address);
-
-    /**
-     * @dev Gets current stable token address
-     * @return address, Address of the stable token contract
-     */
-    function getStableToken() external view returns (address);
-
-    /**
-     * @dev Gets current fee wallet address
-     * @return address Address of the fee wallet
-     */
-    function getFeeWallet() external view returns (address);
 
     /**
      * @dev Returns the current nonce for `owner`. This value must be
@@ -196,7 +171,7 @@ interface IMarketplace {
      * Every successful call to {counterOffer} increases ``owner``'s nonce by one. This
      * prevents a signature from being used multiple times
      */
-    function nonces(address owner) external view returns (uint256);
+    function getNonce(address owner) external view returns (uint256);
 
     /**
      * @dev Gets the domain separator used in the encoding of the signature for {counterOffer}, as defined by {EIP712}.
@@ -204,18 +179,6 @@ interface IMarketplace {
      */
     // solhint-disable-next-line func-name-mixedcase
     function DOMAIN_SEPARATOR() external view returns (bytes32);
-
-    /**
-     * @dev Gets initial fee percentage that applies to first buyings
-     * @return percentage of initial fee with 2 decimals
-     */
-    function getInitialFee() external view returns (uint256);
-
-    /**
-     * @dev Gets buying fee percentage that applies to all buyings except first one
-     * @return percentage of buying fee with 2 decimals
-     */
-    function getBuyingFee() external view returns (uint256);
 
     /**
      * @dev Gets the asset information

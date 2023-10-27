@@ -17,7 +17,6 @@ import { IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
  * @author Polytrade.Finance
  */
 contract WrappedAsset is
-    Initializable,
     Context,
     AccessControl,
     IERC721Receiver,
@@ -45,10 +44,10 @@ contract WrappedAsset is
     }
 
     /**
-     * @dev Initializer for the type contract
+     * @dev Constructor for the type contract
      * @param assetCollection_, Address of the asset collection used in the type contract
      */
-    function initialize(address assetCollection_) external initializer {
+    constructor(address assetCollection_) {
         if (!assetCollection_.supportsInterface(_ASSET_INTERFACE_ID)) {
             revert UnsupportedInterface();
         }
@@ -177,9 +176,20 @@ contract WrappedAsset is
         uint256,
         uint256,
         bytes calldata
-    ) external view override returns (bytes4) {
+    ) external view override returns (bytes4 result) {
         if (operator == address(this)) {
             return IERC1155Receiver.onERC1155Received.selector;
+        }
+    }
+
+    function onERC721Received(
+        address operator,
+        address,
+        uint256,
+        bytes calldata
+    ) external view override returns (bytes4 result) {
+        if (operator == address(this)) {
+            return IERC721Receiver.onERC721Received.selector;
         }
     }
 
@@ -189,19 +199,8 @@ contract WrappedAsset is
         uint256[] calldata,
         uint256[] calldata,
         bytes calldata
-    ) external view override returns (bytes4) {
+    ) external pure override returns (bytes4) {
         revert UnableToReceive();
-    }
-
-    function onERC721Received(
-        address operator,
-        address,
-        uint256,
-        bytes calldata
-    ) external view override returns (bytes4) {
-        if (operator == address(this)) {
-            return IERC721Receiver.onERC721Received.selector;
-        }
     }
 
     function _wrapERC721(
@@ -330,7 +329,7 @@ contract WrappedAsset is
         );
     }
 
-    function _preCheck(uint256 mainId, uint256 fractions) private {
+    function _preCheck(uint256 mainId, uint256 fractions) private view {
         require(fractions != 0, "Wrong asset id");
         require(
             fractions == _assetCollection.subBalanceOf(_msgSender(), mainId, 1),

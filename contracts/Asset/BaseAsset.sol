@@ -150,8 +150,7 @@ contract BaseAsset is
      * @param newBaseURI, String of the asset base URI
      */
     function _setBaseURI(uint256 mainId, string memory newBaseURI) private {
-        string memory oldBaseURI = _assetBaseURI[mainId];
+        emit AssetBaseURISet(mainId, _assetBaseURI[mainId], newBaseURI);
         _assetBaseURI[mainId] = newBaseURI;
-        emit AssetBaseURISet(mainId, oldBaseURI, newBaseURI);
     }
 }

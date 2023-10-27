@@ -5,11 +5,11 @@ import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/I
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
-import { Counters } from "@openzeppelin/contracts/utils/Counters.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { PropertyInfo, IPropertyAsset } from "contracts/Asset/interface/IPropertyAsset.sol";
+import { PropertyInfo, IPropertyAsset, IToken } from "contracts/Asset/interface/IPropertyAsset.sol";
 import { IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
 import { IToken } from "contracts/Token/interface/IToken.sol";
+import { Counters } from "contracts/lib/Counters.sol";
 
 /**
  * @title The property asset contract based on EIP6960
@@ -26,7 +26,6 @@ contract PropertyAsset is
     using Counters for Counters.Counter;
 
     IBaseAsset private _assetCollection;
-    IToken private _stableToken;
     Counters.Counter private _nonce;
 
     address private _treasuryWallet;
@@ -45,21 +44,17 @@ contract PropertyAsset is
     /**
      * @dev Initializer for the type contract
      * @param assetCollection_, Address of the asset collection used in the type contract
-     * @param tokenAddress_, Address of the ERC20 token address
      * @param treasuryWallet_, Address of the treasury wallet
      */
     function initialize(
         address assetCollection_,
-        address tokenAddress_,
         address treasuryWallet_
     ) external initializer {
         if (!assetCollection_.supportsInterface(_ASSET_INTERFACE_ID)) {
             revert UnsupportedInterface();
         }
-        require(tokenAddress_ != address(0), "Invalid address");
 
         _assetCollection = IBaseAsset(assetCollection_);
-        _stableToken = IToken(tokenAddress_);
         CHAIN_ID = block.chainid;
 
         _setTreasuryWallet(treasuryWallet_);
@@ -176,8 +171,8 @@ contract PropertyAsset is
         return _propertyInfo[propertyMainId];
     }
 
-    function getNonce() external view returns (uint256) {
-        return _nonce.current();
+    function getNonce(address account) external view returns (uint256) {
+        return _nonce.current(account);
     }
 
     /**
@@ -188,10 +183,8 @@ contract PropertyAsset is
     function _setTreasuryWallet(address newTreasuryWallet) private {
         require(newTreasuryWallet != address(0), "Invalid wallet address");
 
-        address oldTreasuryWallet = address(_treasuryWallet);
+        emit TreasuryWalletSet(_treasuryWallet, newTreasuryWallet);
         _treasuryWallet = newTreasuryWallet;
-
-        emit TreasuryWalletSet(oldTreasuryWallet, newTreasuryWallet);
     }
 
     /**
@@ -218,12 +211,21 @@ contract PropertyAsset is
 
         settlePrice = (settlePrice * subBalanceOf) / property.fractions;
         _assetCollection.burnAsset(owner, propertyMainId, 1, subBalanceOf);
-        _stableToken.safeTransferFrom(_treasuryWallet, owner, settlePrice);
+        property.settlementToken.safeTransferFrom(
+            _treasuryWallet,
+            owner,
+            settlePrice
+        );
         if (_assetCollection.totalSubSupply(propertyMainId, 1) == 0) {
             delete _propertyInfo[propertyMainId];
         }
 
-        emit PropertySettled(owner, propertyMainId, settlePrice);
+        emit PropertySettled(
+            owner,
+            propertyMainId,
+            settlePrice,
+            address(property.settlementToken)
+        );
     }
 
     /**
@@ -235,9 +237,17 @@ contract PropertyAsset is
         address owner,
         PropertyInfo calldata propertyInfo
     ) private returns (uint256 propertyMainId) {
+        require(
+            address(propertyInfo.settlementToken) != address(0),
+            "Invalid address"
+        );
         propertyMainId = uint256(
             keccak256(
-                abi.encodePacked(CHAIN_ID, address(this), _nonce.current())
+                abi.encodePacked(
+                    CHAIN_ID,
+                    address(this),
+                    _nonce.useNonce(owner)
+                )
             )
         );
         require(
@@ -246,7 +256,6 @@ contract PropertyAsset is
         );
 
         _propertyInfo[propertyMainId] = propertyInfo;
-        _nonce.increment();
 
         _assetCollection.createAsset(
             owner,

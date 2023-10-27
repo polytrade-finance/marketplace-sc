@@ -1,13 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
+import { IToken } from "contracts/Token/interface/IToken.sol";
+
 /**
  * @title Listed information for each asset owner and asset id
+ * @param salePrice, sale price for the asset
+ * @param listedFractions, number of fractions listed by owner
  * @param minFraction, minimum fraction required for buying an asset
+ * @param token, address of token to receive salePrice
  */
 struct ListedInfo {
     uint256 salePrice;
+    uint256 listedFractions;
     uint256 minFraction;
+    IToken token;
 }
 
 /**
@@ -16,12 +23,14 @@ struct ListedInfo {
  * @param dueDate, timestamp of which originator can not settle before it
  * @param rewardApr, reward apr of invoice usied in reward calculations
  * @param fractions, number of fractions
+ * @param settlementToken, the token which settlement set for by originator
  */
 struct InvoiceInfo {
     uint256 price;
     uint256 dueDate;
     uint256 rewardApr;
     uint256 fractions;
+    IToken settlementToken;
 }
 
 /**
@@ -53,9 +62,11 @@ struct AssetInfo {
  * @param price, is the value of the property
  * @param dueDate, timestamp of which originator can not settle before it
  * @param frations, number of fractions
+ * @param settlementToken, the token which settlement set for by originator
  */
 struct PropertyInfo {
     uint256 price;
     uint256 dueDate;
     uint256 fractions;
+    IToken settlementToken;
 }

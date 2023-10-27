@@ -16,7 +16,7 @@ contract ERC20Token is ERC20 {
         string memory symbol_,
         uint8 decimals_,
         address receiver_,
-        uint totalSupply_
+        uint256 totalSupply_
     ) ERC20(name_, symbol_) {
         _decimals = decimals_;
         _mint(receiver_, totalSupply_ * (10 ** decimals_));

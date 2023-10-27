@@ -6,11 +6,12 @@ import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/I
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { ListedInfo, IMarketplace } from "contracts/Marketplace/interface/IMarketplace.sol";
+import { ListedInfo, IMarketplace, IToken } from "contracts/Marketplace/interface/IMarketplace.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
-import { IToken } from "contracts/Token/interface/IToken.sol";
 import { AssetInfo, IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
+import { IFeeManager } from "contracts/Marketplace/interface/IFeeManager.sol";
+import { Counters } from "contracts/lib/Counters.sol";
 
 /**
  * @title The common marketplace for the assets
@@ -26,18 +27,14 @@ contract Marketplace is
 {
     using SafeERC20 for IToken;
     using ERC165Checker for address;
-
-    uint256 private _initialFee;
-    uint256 private _buyingFee;
+    using Counters for Counters.Counter;
 
     IBaseAsset private _assetCollection;
-    IToken private _stableToken;
-
-    address private _feeWallet;
+    IFeeManager private _feeManager;
+    Counters.Counter private _nonce;
 
     mapping(uint256 => mapping(uint256 => mapping(address => ListedInfo)))
         private _listedInfo;
-    mapping(address => uint256) private _currentNonce;
 
     // solhint-disable-next-line var-name-mixedcase
     bytes32 private constant _OFFER_TYPEHASH =
@@ -57,28 +54,26 @@ contract Marketplace is
         );
     bytes4 private constant _ASSET_INTERFACE_ID = type(IBaseAsset).interfaceId;
 
+    bytes4 private constant _FEEMANAGER_INTERFACE_ID =
+        type(IFeeManager).interfaceId;
+
     /**
      * @dev Initializer for the main Marketplace
      * @param assetCollection_, Address of the asset collection used in the marketplace
-     * @param tokenAddress_, Address of the ERC20 token address
-     * @param feeWallet_, Address of the fee wallet
+     * @param feeManager_, Address of the fee manager
      */
     function initialize(
         address assetCollection_,
-        address tokenAddress_,
-        address feeWallet_
+        address feeManager_
     ) external initializer {
         __EIP712_init("Polytrade", "2.3");
         if (!assetCollection_.supportsInterface(_ASSET_INTERFACE_ID)) {
             revert UnsupportedInterface();
         }
 
-        require(tokenAddress_ != address(0), "Invalid address");
-
         _assetCollection = IBaseAsset(assetCollection_);
-        _stableToken = IToken(tokenAddress_);
 
-        _setFeeWallet(feeWallet_);
+        _setFeeManager(feeManager_);
 
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
@@ -89,24 +84,31 @@ contract Marketplace is
     function list(
         uint256 mainId,
         uint256 subId,
-        uint256 salePrice,
-        uint256 minFraction
+        ListedInfo calldata listedInfo
     ) external {
-        uint256 subBalanceOf = _assetCollection.subBalanceOf(
-            _msgSender(),
-            mainId,
-            subId
-        );
-        require(minFraction != 0, "Min. fraction can not be zero");
-        require(subBalanceOf != 0, "Not enough balance");
-        require(subBalanceOf >= minFraction, "Min. fraction > Balance");
+        _list(mainId, subId, listedInfo);
+    }
 
-        _listedInfo[mainId][subId][_msgSender()] = ListedInfo(
-            salePrice,
-            minFraction
+    /**
+     * @dev See {IMarketplace-batchList}.
+     */
+    function batchList(
+        uint256[] calldata mainIds,
+        uint256[] calldata subIds,
+        ListedInfo[] calldata listedInfos
+    ) external {
+        uint256 length = subIds.length;
+        require(
+            mainIds.length == length && length == listedInfos.length,
+            "No array parity"
         );
+        for (uint256 i = 0; i < length; ) {
+            _list(mainIds[i], subIds[i], listedInfos[i]);
 
-        emit AssetListed(_msgSender(), mainId, subId, salePrice, minFraction);
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     /**
@@ -127,7 +129,7 @@ contract Marketplace is
         {
             require(block.timestamp <= deadline, "Offer expired");
             require(offeror == _msgSender(), "You are not the offeror");
-            uint256 nonce = _useNonce(owner);
+            uint256 nonce = _nonce.useNonce(owner);
             bytes32 offerHash = keccak256(
                 abi.encode(
                     _OFFER_TYPEHASH,
@@ -202,36 +204,19 @@ contract Marketplace is
     }
 
     /**
-     * @dev See {IMarketplace-setInitialFee}.
+     * @dev See {IMarketplace-setFeeManager}.
      */
-    function setInitialFee(
-        uint256 initialFee_
+    function setFeeManager(
+        address newFeeManager
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        uint256 oldFee = _initialFee;
-        _initialFee = initialFee_;
-
-        emit InitialFeeSet(oldFee, _initialFee);
+        _setFeeManager(newFeeManager);
     }
 
     /**
-     * @dev See {IMarketplace-setBuyingFee}.
+     * @dev See {IMarketplace-getFeeManager}.
      */
-    function setBuyingFee(
-        uint256 buyingFee_
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        uint256 oldFee = _buyingFee;
-        _buyingFee = buyingFee_;
-
-        emit BuyingFeeSet(oldFee, _buyingFee);
-    }
-
-    /**
-     * @dev See {IMarketplace-setFeeWallet}.
-     */
-    function setFeeWallet(
-        address newFeeWallet
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _setFeeWallet(newFeeWallet);
+    function getFeeManager() external view returns (address) {
+        return address(_feeManager);
     }
 
     /**
@@ -239,20 +224,6 @@ contract Marketplace is
      */
     function getAssetCollection() external view returns (address) {
         return address(_assetCollection);
-    }
-
-    /**
-     * @dev See {IMarketplace-getStableToken}.
-     */
-    function getStableToken() external view returns (address) {
-        return address(_stableToken);
-    }
-
-    /**
-     * @dev See {IMarketplace-getFeeWallet}.
-     */
-    function getFeeWallet() external view returns (address) {
-        return address(_feeWallet);
     }
 
     /**
@@ -264,24 +235,10 @@ contract Marketplace is
     }
 
     /**
-     * @dev See {IMarketplace-nonces}.
+     * @dev See {IMarketplace-getNonce}.
      */
-    function nonces(address owner) external view virtual returns (uint256) {
-        return _currentNonce[owner];
-    }
-
-    /**
-     * @dev See {IMarketplace-getInitialFee}.
-     */
-    function getInitialFee() external view returns (uint256) {
-        return _initialFee;
-    }
-
-    /**
-     * @dev See {IMarketplace-getBuyingFee}.
-     */
-    function getBuyingFee() external view returns (uint256) {
-        return _buyingFee;
+    function getNonce(address owner) external view virtual returns (uint256) {
+        return _nonce.current(owner);
     }
 
     /**
@@ -296,27 +253,37 @@ contract Marketplace is
     }
 
     /**
-     * @dev "Consume a nonce": return the current value and increment
+     * @dev List an asset based on main id and sub id
+     * @dev Checks and validate listed fraction to be greater than min fraction
+     * @dev Validates if listed fractions is less than owner current balance
+     * @param mainId, unique identifier of the asset
+     * @param subId, unique identifier of the asset
+     * @param listedInfo, information of listed asset including salePrice, listedFraction, minFraction and token of sale
      */
-    function _useNonce(
-        address owner
-    ) internal virtual returns (uint256 current) {
-        current = _currentNonce[owner];
-        _currentNonce[owner]++;
-    }
+    function _list(
+        uint256 mainId,
+        uint256 subId,
+        ListedInfo calldata listedInfo
+    ) private {
+        require(address(listedInfo.token) != address(0), "Invalid address");
+        require(listedInfo.minFraction != 0, "Min. fraction can not be zero");
+        require(
+            listedInfo.listedFractions >= listedInfo.minFraction,
+            "Min. fraction > Fraction to list"
+        );
+        uint256 subBalanceOf = _assetCollection.subBalanceOf(
+            _msgSender(),
+            mainId,
+            subId
+        );
+        require(
+            subBalanceOf >= listedInfo.listedFractions,
+            "Fraction to list > Balance"
+        );
 
-    /**
-     * @notice Allows to set a new address for the fee wallet.
-     * @dev Wallet can be EOA or multisig
-     * @param newFeeWallet, Address of the new fee wallet
-     */
-    function _setFeeWallet(address newFeeWallet) private {
-        require(newFeeWallet != address(0), "Invalid wallet address");
+        _listedInfo[mainId][subId][_msgSender()] = listedInfo;
 
-        address oldFeeWallet = address(_feeWallet);
-        _feeWallet = newFeeWallet;
-
-        emit FeeWalletSet(oldFeeWallet, newFeeWallet);
+        emit AssetListed(_msgSender(), mainId, subId, listedInfo);
     }
 
     /**
@@ -336,34 +303,43 @@ contract Marketplace is
         uint256 fractionToBuy,
         address owner
     ) private {
-        uint256 ownerBalance = _assetCollection.subBalanceOf(
-            owner,
-            mainId,
-            subId
-        );
-
         AssetInfo memory assetInfo = _assetCollection.getAssetInfo(
             mainId,
             subId
         );
 
+        ListedInfo memory listedInfo = _listedInfo[mainId][subId][owner];
+
         require(
-            fractionToBuy >= _listedInfo[mainId][subId][owner].minFraction,
+            fractionToBuy >= listedInfo.minFraction,
             "Fraction to buy < Min. fraction"
         );
-        require(fractionToBuy <= ownerBalance, "Not enough fraction to buy");
-        require(salePrice != 0, "Asset is not listed");
+        require(
+            listedInfo.listedFractions >= fractionToBuy,
+            "Listed fractions < Fraction to buy"
+        );
+        require(
+            fractionToBuy <=
+                _assetCollection.subBalanceOf(owner, mainId, subId),
+            "Not enough balance to buy"
+        );
+        // require(salePrice != 0, "Asset is not listed");
 
         uint256 payPrice = (salePrice * fractionToBuy) / 1e4;
         uint256 fee = assetInfo.initialOwner != owner
-            ? _buyingFee
-            : _initialFee;
+            ? _feeManager.getBuyingFee(mainId, subId)
+            : _feeManager.getInitialFee(mainId, subId);
         fee = (payPrice * fee) / 1e4;
+
         if (assetInfo.purchaseDate == 0) {
             _assetCollection.updatePurchaseDate(mainId, subId);
         }
-        if (ownerBalance == fractionToBuy) {
+        if (listedInfo.listedFractions == fractionToBuy) {
             delete _listedInfo[mainId][subId][owner];
+        } else {
+            _listedInfo[mainId][subId][owner].listedFractions =
+                listedInfo.listedFractions -
+                fractionToBuy;
         }
 
         _assetCollection.safeTransferFrom(
@@ -374,15 +350,35 @@ contract Marketplace is
             fractionToBuy,
             ""
         );
-        _stableToken.safeTransferFrom(_msgSender(), owner, payPrice);
-        _stableToken.safeTransferFrom(_msgSender(), _feeWallet, fee);
+        listedInfo.token.safeTransferFrom(_msgSender(), owner, payPrice);
+        listedInfo.token.safeTransferFrom(
+            _msgSender(),
+            _feeManager.getFeeWallet(),
+            fee
+        );
         emit AssetBought(
             owner,
             _msgSender(),
             mainId,
             subId,
             salePrice,
-            payPrice
+            payPrice,
+            fractionToBuy,
+            address(listedInfo.token)
         );
+    }
+
+    /**
+     * @notice Allows to set a new address for the fee manager.
+     * @dev Fee manager should support IFeeManager interface
+     * @param newFeeManager, Address of the new fee manager
+     */
+    function _setFeeManager(address newFeeManager) private {
+        if (!newFeeManager.supportsInterface(_FEEMANAGER_INTERFACE_ID)) {
+            revert UnsupportedInterface();
+        }
+
+        emit FeeManagerSet(address(_feeManager), newFeeManager);
+        _feeManager = IFeeManager(newFeeManager);
     }
 }

@@ -1,12 +1,13 @@
 const { expect } = require("chai");
 const { ethers, upgrades, network } = require("hardhat");
 const {
-  asset,
   MarketplaceAccess,
   offer,
   AssetManagerAccess,
   OriginatorAccess,
-} = require("./data");
+  createAsset,
+  createList,
+} = require("./data.spec");
 const { time } = require("@nomicfoundation/hardhat-network-helpers");
 const { now } = require("./helpers");
 const {
@@ -33,10 +34,11 @@ describe("Marketplace Signatures", function () {
   let domainData;
   let offerType;
   let id;
+  let asset;
   const chainId = network.config.chainId;
 
-  const getId = async (contract) => {
-    const nonce = await contract.getNonce();
+  const getId = async (contract, owner) => {
+    const nonce = await contract.getNonce(owner);
     return BigInt(
       ethers.solidityPackedKeccak256(
         ["uint256", "address", "uint256"],
@@ -61,26 +63,27 @@ describe("Marketplace Signatures", function () {
 
     await assetContract.waitForDeployment();
 
+    const FeeManagerFactory = await ethers.getContractFactory("FeeManager");
+    const FeeManager = await FeeManagerFactory.deploy(
+      0,
+      0,
+      await feeWallet.getAddress()
+    );
+
+    await FeeManager.waitForDeployment();
+
     stableTokenContract = await (
       await ethers.getContractFactory("ERC20Token")
     ).deploy("USD Dollar", "USDC", 18, offeror.getAddress(), 200000);
 
     marketplaceContract = await upgrades.deployProxy(
       await ethers.getContractFactory("Marketplace"),
-      [
-        await assetContract.getAddress(),
-        await stableTokenContract.getAddress(),
-        await feeWallet.getAddress(),
-      ]
+      [await assetContract.getAddress(), await FeeManager.getAddress()]
     );
 
     invoiceContract = await upgrades.deployProxy(
       await ethers.getContractFactory("InvoiceAsset"),
-      [
-        await assetContract.getAddress(),
-        await stableTokenContract.getAddress(),
-        await treasuryWallet.getAddress(),
-      ]
+      [await assetContract.getAddress(), await treasuryWallet.getAddress()]
     );
 
     await assetContract.grantRole(
@@ -92,12 +95,25 @@ describe("Marketplace Signatures", function () {
       AssetManagerAccess,
       invoiceContract.getAddress()
     );
-    id = await getId(invoiceContract);
+    id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.grantRole(OriginatorAccess, deployer.getAddress());
+
+    asset = await createAsset(stableTokenContract.getAddress());
 
     await invoiceContract.createInvoice(user1.getAddress(), asset);
 
-    await marketplaceContract.connect(user1).list(id, 1, asset.price, 1000);
+    await marketplaceContract
+      .connect(user1)
+      .list(
+        id,
+        1,
+        await createList(
+          asset.price,
+          asset.fractions,
+          1000,
+          stableTokenContract.getAddress()
+        )
+      );
 
     await assetContract
       .connect(user1)
@@ -132,9 +148,9 @@ describe("Marketplace Signatures", function () {
 
   describe("Counter Offer", function () {
     it("Should return 0 for initial nonce", async function () {
-      expect(await marketplaceContract.nonces(user1.getAddress())).to.be.equal(
-        "0"
-      );
+      expect(
+        await marketplaceContract.getNonce(user1.getAddress())
+      ).to.be.equal("0");
     });
 
     it("Should return correct domain separator", async function () {
@@ -200,9 +216,9 @@ describe("Marketplace Signatures", function () {
       expect(balanceBeforeBuy - balanceAfterBuy).to.be.equal(
         offer.offerPrice / 10n
       );
-      expect(await marketplaceContract.nonces(user1.getAddress())).to.be.equal(
-        "1"
-      );
+      expect(
+        await marketplaceContract.getNonce(user1.getAddress())
+      ).to.be.equal("1");
       expect(
         await stableTokenContract.balanceOf(user1.getAddress())
       ).to.be.equal(offer.offerPrice / 10n);

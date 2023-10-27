@@ -1,14 +1,14 @@
 const { expect } = require("chai");
-const { network, ethers, upgrades } = require("hardhat");
-const { AssetManagerAccess } = require("./data");
+const { network, ethers } = require("hardhat");
+const { AssetManagerAccess } = require("./data.spec");
 const {
   Sand1155,
   Ens721,
   Ens721Signer,
   Sand1155Signer,
-} = require("./addresses");
+} = require("./addresses.spec");
 
-const { EnsTokenId, SandTokenId } = require("./data");
+const { EnsTokenId, SandTokenId } = require("./data.spec");
 const chainId = network.config.chainId;
 
 const getSigner = async (address) => {
@@ -78,10 +78,9 @@ describe("Wrapper Contract", function () {
     );
     await assetContract.waitForDeployment();
 
-    wrapperContract = await upgrades.deployProxy(
-      await ethers.getContractFactory("WrappedAsset"),
-      [await assetContract.getAddress()]
-    );
+    wrapperContract = await (
+      await ethers.getContractFactory("WrappedAsset")
+    ).deploy(await assetContract.getAddress());
 
     await wrapperContract.whitelist(Ens721, true);
     await wrapperContract.whitelist(Sand1155, true);
@@ -91,16 +90,11 @@ describe("Wrapper Contract", function () {
     );
   });
 
-  it("Should revert to initialize again", async function () {
-    await expect(wrapperContract.initialize(assetContract.getAddress())).to.be
-      .reverted;
-  });
-
-  it("Should revert to initialize with wrong asset contract address", async function () {
+  it("Should revert to deploy with wrong asset contract address", async function () {
     await expect(
-      upgrades.deployProxy(await ethers.getContractFactory("WrappedAsset"), [
-        ethers.ZeroAddress,
-      ])
+      (
+        await ethers.getContractFactory("WrappedAsset")
+      ).deploy(ethers.ZeroAddress)
     ).to.be.reverted;
   });
 

@@ -22,41 +22,61 @@ const AssetManagerAccess = ethers.keccak256(
 const DAY = 24n * 60n * 60n;
 const YEAR = 360n * DAY;
 
-const asset = {
-  price: ethers.parseUnits("10", DECIMALS.SIX),
-  dueDate: Number(new Date("2023-11-12").getTime() / 1000), // in seconds
-  rewardApr: ethers.parseUnits("10", DECIMALS.TWO), // with 2 decimals
-  fractions: 10000,
+const createList = async (salePrice, listedFractions, minFraction, token) => {
+  return {
+    salePrice,
+    listedFractions,
+    minFraction,
+    token,
+  };
 };
 
-const zeroPriceAsset = {
-  price: 0,
-  dueDate: Number(new Date("2023-11-12").getTime() / 1000), // in seconds
-  rewardApr: ethers.parseUnits("10", DECIMALS.TWO), // with 2 decimals
-  fractions: 10000,
+const createAsset = async (token) => {
+  return {
+    price: ethers.parseUnits("10", DECIMALS.SIX),
+    dueDate: (await now()) + 7890000, // add 3 months
+    rewardApr: ethers.parseUnits("10", DECIMALS.TWO), // with 2 decimals
+    fractions: 10000,
+    settlementToken: token,
+  };
 };
 
-const nearSettleAsset = async () => {
+const zeroPriceAsset = async (token) => {
+  return {
+    price: 0,
+    dueDate: (await now()) + 7890000, // add 3 months
+    rewardApr: ethers.parseUnits("10", DECIMALS.TWO), // with 2 decimals
+    fractions: 10000,
+    settlementToken: token,
+  };
+};
+
+const nearSettleAsset = async (token) => {
   return {
     price: ethers.parseUnits("10", DECIMALS.SIX),
     dueDate: (await now()) + 100, // in seconds
     rewardApr: ethers.parseUnits("10", DECIMALS.TWO), // with 2 decimals
     fractions: 10000,
+    settlementToken: token,
   };
 };
 
-const nearSettleProperty = async () => {
+const nearSettleProperty = async (token) => {
   return {
     price: ethers.parseUnits("10", DECIMALS.SIX),
     dueDate: (await now()) + 100,
     fractions: 10000,
+    settlementToken: token,
   };
 };
 
-const property = {
-  price: ethers.parseUnits("10", DECIMALS.SIX),
-  dueDate: Number(new Date("2023-11-12").getTime() / 1000),
-  fractions: 10000,
+const createProperty = async (token) => {
+  return {
+    price: ethers.parseUnits("10", DECIMALS.SIX),
+    dueDate: (await now()) + 7890000, // add 3 months
+    fractions: 10000,
+    settlementToken: token,
+  };
 };
 
 const offer = {
@@ -75,11 +95,12 @@ module.exports = {
   SandTokenId,
   DAY,
   YEAR,
-  asset,
+  createAsset,
+  createList,
   zeroPriceAsset,
   nearSettleAsset,
   nearSettleProperty,
-  property,
+  createProperty,
   offer,
   DECIMALS,
   MarketplaceAccess,
