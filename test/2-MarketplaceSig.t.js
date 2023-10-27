@@ -1,11 +1,12 @@
 const { expect } = require("chai");
 const { ethers, upgrades, network } = require("hardhat");
 const {
-  asset,
   MarketplaceAccess,
   offer,
   AssetManagerAccess,
   OriginatorAccess,
+  createAsset,
+  createList,
 } = require("./data.spec");
 const { time } = require("@nomicfoundation/hardhat-network-helpers");
 const { now } = require("./helpers");
@@ -33,6 +34,7 @@ describe("Marketplace Signatures", function () {
   let domainData;
   let offerType;
   let id;
+  let asset;
   const chainId = network.config.chainId;
 
   const getId = async (contract, owner) => {
@@ -76,20 +78,12 @@ describe("Marketplace Signatures", function () {
 
     marketplaceContract = await upgrades.deployProxy(
       await ethers.getContractFactory("Marketplace"),
-      [
-        await assetContract.getAddress(),
-        await stableTokenContract.getAddress(),
-        await FeeManager.getAddress(),
-      ]
+      [await assetContract.getAddress(), await FeeManager.getAddress()]
     );
 
     invoiceContract = await upgrades.deployProxy(
       await ethers.getContractFactory("InvoiceAsset"),
-      [
-        await assetContract.getAddress(),
-        await stableTokenContract.getAddress(),
-        await treasuryWallet.getAddress(),
-      ]
+      [await assetContract.getAddress(), await treasuryWallet.getAddress()]
     );
 
     await assetContract.grantRole(
@@ -104,11 +98,22 @@ describe("Marketplace Signatures", function () {
     id = await getId(invoiceContract, await user1.getAddress());
     await invoiceContract.grantRole(OriginatorAccess, deployer.getAddress());
 
+    asset = await createAsset(stableTokenContract.getAddress());
+
     await invoiceContract.createInvoice(user1.getAddress(), asset);
 
     await marketplaceContract
       .connect(user1)
-      .list(id, 1, asset.price, asset.fractions, 1000);
+      .list(
+        id,
+        1,
+        await createList(
+          asset.price,
+          asset.fractions,
+          1000,
+          stableTokenContract.getAddress()
+        )
+      );
 
     await assetContract
       .connect(user1)

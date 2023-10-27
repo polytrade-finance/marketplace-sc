@@ -6,7 +6,7 @@ import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC16
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { InvoiceInfo, IInvoiceAsset } from "contracts/Asset/interface/IInvoiceAsset.sol";
+import { InvoiceInfo, IInvoiceAsset, IToken } from "contracts/Asset/interface/IInvoiceAsset.sol";
 import { IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
 import { IToken } from "contracts/Token/interface/IToken.sol";
 import { Counters } from "contracts/lib/Counters.sol";
@@ -22,7 +22,6 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
     using Counters for Counters.Counter;
 
     IBaseAsset private _assetCollection;
-    IToken private _stableToken;
     Counters.Counter private _nonce;
 
     address private _treasuryWallet;
@@ -43,21 +42,17 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
     /**
      * @dev Initializer for the type contract
      * @param assetCollection_, Address of the asset collection used in the type contract
-     * @param tokenAddress_, Address of the ERC20 token address
      * @param treasuryWallet_, Address of the treasury wallet
      */
     function initialize(
         address assetCollection_,
-        address tokenAddress_,
         address treasuryWallet_
     ) external initializer {
         if (!assetCollection_.supportsInterface(_ASSET_INTERFACE_ID)) {
             revert UnsupportedInterface();
         }
-        require(tokenAddress_ != address(0), "Invalid address");
 
         _assetCollection = IBaseAsset(assetCollection_);
-        _stableToken = IToken(tokenAddress_);
         CHAIN_ID = block.chainid;
 
         _setTreasuryWallet(treasuryWallet_);
@@ -156,16 +151,25 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         }
     }
 
+    /**
+     * @dev See {IInvoiceAsset-getNonce}.
+     */
     function getNonce(address account) external view returns (uint256) {
         return _nonce.current(account);
     }
 
+    /**
+     * @dev See {IInvoiceAsset-getAvailableReward}.
+     */
     function getAvailableReward(
         uint256 invoiceMainId
     ) external view returns (uint256) {
         return _getAvailableReward(invoiceMainId);
     }
 
+    /**
+     * @dev See {IInvoiceAsset-getRemainingReward}.
+     */
     function getRemainingReward(
         uint256 invoiceMainId
     ) external view returns (uint256 reward) {
@@ -196,6 +200,9 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         return address(_treasuryWallet);
     }
 
+    /**
+     * @dev See {IInvoiceAsset-getInvoiceInfo}.
+     */
     function getInvoiceInfo(
         uint256 invoiceMainId
     ) external view returns (InvoiceInfo memory info) {
@@ -233,12 +240,21 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         uint256 settlePrice = (invoice.price * subBalanceOf) /
             invoice.fractions;
         _assetCollection.burnAsset(owner, invoiceMainId, 1, subBalanceOf);
-        _stableToken.safeTransferFrom(_treasuryWallet, owner, settlePrice);
+        invoice.settlementToken.safeTransferFrom(
+            _treasuryWallet,
+            owner,
+            settlePrice
+        );
         if (_assetCollection.totalSubSupply(invoiceMainId, 1) == 0) {
             delete _invoiceInfo[invoiceMainId];
         }
 
-        emit InvoiceSettled(owner, invoiceMainId, settlePrice);
+        emit InvoiceSettled(
+            owner,
+            invoiceMainId,
+            settlePrice,
+            address(invoice.settlementToken)
+        );
     }
 
     /**
@@ -250,6 +266,10 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         address owner,
         InvoiceInfo calldata invoiceInfo
     ) private returns (uint256 invoiceMainId) {
+        require(
+            address(invoiceInfo.settlementToken) != address(0),
+            "Invalid address"
+        );
         invoiceMainId = uint256(
             keccak256(
                 abi.encodePacked(
@@ -290,9 +310,18 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         uint256 reward = (_getAvailableReward(invoiceMainId) * subBalanceOf) /
             invoice.fractions;
 
-        _stableToken.safeTransferFrom(_treasuryWallet, receiver, reward);
+        invoice.settlementToken.safeTransferFrom(
+            _treasuryWallet,
+            receiver,
+            reward
+        );
 
-        emit RewardsClaimed(receiver, invoiceMainId, reward);
+        emit RewardsClaimed(
+            receiver,
+            invoiceMainId,
+            reward,
+            address(invoice.settlementToken)
+        );
     }
 
     /**

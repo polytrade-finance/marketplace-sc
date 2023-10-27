@@ -6,10 +6,9 @@ import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/I
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { ListedInfo, IMarketplace } from "contracts/Marketplace/interface/IMarketplace.sol";
+import { ListedInfo, IMarketplace, IToken } from "contracts/Marketplace/interface/IMarketplace.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
-import { IToken } from "contracts/Token/interface/IToken.sol";
 import { AssetInfo, IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
 import { IFeeManager } from "contracts/Marketplace/interface/IFeeManager.sol";
 import { Counters } from "contracts/lib/Counters.sol";
@@ -32,7 +31,6 @@ contract Marketplace is
 
     IBaseAsset private _assetCollection;
     IFeeManager private _feeManager;
-    IToken private _stableToken;
     Counters.Counter private _nonce;
 
     mapping(uint256 => mapping(uint256 => mapping(address => ListedInfo)))
@@ -62,12 +60,10 @@ contract Marketplace is
     /**
      * @dev Initializer for the main Marketplace
      * @param assetCollection_, Address of the asset collection used in the marketplace
-     * @param tokenAddress_, Address of the ERC20 token address
      * @param feeManager_, Address of the fee manager
      */
     function initialize(
         address assetCollection_,
-        address tokenAddress_,
         address feeManager_
     ) external initializer {
         __EIP712_init("Polytrade", "2.3");
@@ -75,10 +71,7 @@ contract Marketplace is
             revert UnsupportedInterface();
         }
 
-        require(tokenAddress_ != address(0), "Invalid address");
-
         _assetCollection = IBaseAsset(assetCollection_);
-        _stableToken = IToken(tokenAddress_);
 
         _setFeeManager(feeManager_);
 
@@ -91,36 +84,31 @@ contract Marketplace is
     function list(
         uint256 mainId,
         uint256 subId,
-        uint256 salePrice,
-        uint256 listedFractions,
-        uint256 minFraction
+        ListedInfo calldata listedInfo
     ) external {
-        require(minFraction != 0, "Min. fraction can not be zero");
+        _list(mainId, subId, listedInfo);
+    }
+
+    /**
+     * @dev See {IMarketplace-batchList}.
+     */
+    function batchList(
+        uint256[] calldata mainIds,
+        uint256[] calldata subIds,
+        ListedInfo[] calldata listedInfos
+    ) external {
+        uint256 length = subIds.length;
         require(
-            listedFractions >= minFraction,
-            "Min. fraction > Fraction to list"
+            mainIds.length == length && length == listedInfos.length,
+            "No array parity"
         );
-        uint256 subBalanceOf = _assetCollection.subBalanceOf(
-            _msgSender(),
-            mainId,
-            subId
-        );
-        require(subBalanceOf >= listedFractions, "Fraction to list > Balance");
+        for (uint256 i = 0; i < length; ) {
+            _list(mainIds[i], subIds[i], listedInfos[i]);
 
-        _listedInfo[mainId][subId][_msgSender()] = ListedInfo(
-            salePrice,
-            listedFractions,
-            minFraction
-        );
-
-        emit AssetListed(
-            _msgSender(),
-            mainId,
-            subId,
-            salePrice,
-            listedFractions,
-            minFraction
-        );
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     /**
@@ -239,13 +227,6 @@ contract Marketplace is
     }
 
     /**
-     * @dev See {IMarketplace-getStableToken}.
-     */
-    function getStableToken() external view returns (address) {
-        return address(_stableToken);
-    }
-
-    /**
      * @dev See {IMarketplace-DOMAIN_SEPARATOR}.
      */
     // solhint-disable-next-line func-name-mixedcase
@@ -269,6 +250,40 @@ contract Marketplace is
         uint256 assetSubId
     ) external view returns (ListedInfo memory) {
         return _listedInfo[assetMainId][assetSubId][owner];
+    }
+
+    /**
+     * @dev List an asset based on main id and sub id
+     * @dev Checks and validate listed fraction to be greater than min fraction
+     * @dev Validates if listed fractions is less than owner current balance
+     * @param mainId, unique identifier of the asset
+     * @param subId, unique identifier of the asset
+     * @param listedInfo, information of listed asset including salePrice, listedFraction, minFraction and token of sale
+     */
+    function _list(
+        uint256 mainId,
+        uint256 subId,
+        ListedInfo calldata listedInfo
+    ) private {
+        require(address(listedInfo.token) != address(0), "Invalid address");
+        require(listedInfo.minFraction != 0, "Min. fraction can not be zero");
+        require(
+            listedInfo.listedFractions >= listedInfo.minFraction,
+            "Min. fraction > Fraction to list"
+        );
+        uint256 subBalanceOf = _assetCollection.subBalanceOf(
+            _msgSender(),
+            mainId,
+            subId
+        );
+        require(
+            subBalanceOf >= listedInfo.listedFractions,
+            "Fraction to list > Balance"
+        );
+
+        _listedInfo[mainId][subId][_msgSender()] = listedInfo;
+
+        emit AssetListed(_msgSender(), mainId, subId, listedInfo);
     }
 
     /**
@@ -335,8 +350,8 @@ contract Marketplace is
             fractionToBuy,
             ""
         );
-        _stableToken.safeTransferFrom(_msgSender(), owner, payPrice);
-        _stableToken.safeTransferFrom(
+        listedInfo.token.safeTransferFrom(_msgSender(), owner, payPrice);
+        listedInfo.token.safeTransferFrom(
             _msgSender(),
             _feeManager.getFeeWallet(),
             fee
@@ -348,7 +363,8 @@ contract Marketplace is
             subId,
             salePrice,
             payPrice,
-            fractionToBuy
+            fractionToBuy,
+            address(listedInfo.token)
         );
     }
 

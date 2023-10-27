@@ -176,7 +176,7 @@ contract WrappedAsset is
         uint256,
         uint256,
         bytes calldata
-    ) external view override returns (bytes4) {
+    ) external view override returns (bytes4 result) {
         if (operator == address(this)) {
             return IERC1155Receiver.onERC1155Received.selector;
         }
@@ -187,7 +187,7 @@ contract WrappedAsset is
         address,
         uint256,
         bytes calldata
-    ) external view override returns (bytes4) {
+    ) external view override returns (bytes4 result) {
         if (operator == address(this)) {
             return IERC721Receiver.onERC721Received.selector;
         }
