@@ -11,7 +11,7 @@ import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuar
 import { ListedInfo, IMarketplace, IToken } from "contracts/Marketplace/interface/IMarketplace.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
-import { AssetInfo, IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
+import { IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
 import { IInvoiceAsset } from "contracts/Asset/interface/IInvoiceAsset.sol";
 import { IFeeManager } from "contracts/Marketplace/interface/IFeeManager.sol";
 import { Counters } from "contracts/lib/Counters.sol";
