@@ -7,7 +7,7 @@ import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC16
 import { ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import { ListedInfo, IMarketplace, IToken } from "contracts/Marketplace/interface/IMarketplace.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
@@ -27,7 +27,7 @@ contract Marketplace is
     ERC165,
     EIP712Upgradeable,
     AccessControl,
-    ReentrancyGuard,
+    ReentrancyGuardUpgradeable,
     IMarketplace
 {
     using SafeERC20 for IToken;
@@ -72,6 +72,7 @@ contract Marketplace is
         address feeManager_
     ) external initializer {
         __EIP712_init("Polytrade", "2.3");
+        __ReentrancyGuard_init();
         if (!assetCollection_.supportsInterface(_ASSET_INTERFACE_ID)) {
             revert UnsupportedInterface();
         }

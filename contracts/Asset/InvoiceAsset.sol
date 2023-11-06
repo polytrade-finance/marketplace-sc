@@ -62,7 +62,7 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         if (!assetCollection_.supportsInterface(_ASSET_INTERFACE_ID)) {
             revert UnsupportedInterface();
         }
-        if (!marketplace_.supportsInterface(_ASSET_INTERFACE_ID)) {
+        if (!marketplace_.supportsInterface(_MARKETPLACE_INTERFACE_ID)) {
             revert UnsupportedInterface();
         }
 
