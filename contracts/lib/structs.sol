@@ -54,7 +54,6 @@ struct WrappedInfo {
  */
 struct AssetInfo {
     address initialOwner;
-    uint256 purchaseDate;
 }
 
 /**
