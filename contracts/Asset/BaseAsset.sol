@@ -46,16 +46,6 @@ contract BaseAsset is
     }
 
     /**
-     * @dev See {IBaseAsset-updatePurchaseDate}.
-     */
-    function updatePurchaseDate(
-        uint256 mainId,
-        uint256 subId
-    ) external onlyRole(MARKETPLACE_ROLE) {
-        _assetInfo[mainId][subId].purchaseDate = block.timestamp;
-    }
-
-    /**
      * @dev See {IBaseAsset-createAsset}.
      */
     function createAsset(
