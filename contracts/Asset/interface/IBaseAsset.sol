@@ -43,8 +43,6 @@ interface IBaseAsset is IDLT, IDLTEnumerable, IDLTPermit {
         uint256 amount
     );
 
-    function updatePurchaseDate(uint256 mainId, uint256 subId) external;
-
     /**
      * @dev Creates an asset with its parameters
      * @param owner, initial owner of asset
