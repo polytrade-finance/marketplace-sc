@@ -134,7 +134,7 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
     ) external onlyRole(ASSET_ORIGINATOR) {
         uint256 length = invoiceMainIds.length;
         require(
-            owners.length == length || invoiceSubIds.length == length,
+            owners.length == length && invoiceSubIds.length == length,
             "No array parity"
         );
         for (uint256 i = 0; i < length; ) {
@@ -364,7 +364,7 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
             invoiceMainId,
             0,
             ListedInfo(
-                invoiceInfo.price / fractions,
+                (invoiceInfo.price * 100) / fractions,
                 fractions,
                 1,
                 invoiceInfo.settlementToken
