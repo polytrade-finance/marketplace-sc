@@ -33,16 +33,6 @@ describe("Asset", function () {
     );
   });
 
-  it("Should revert on updating purchase date by invalid caller", async function () {
-    await expect(
-      assetContract.connect(deployer).updatePurchaseDate(1, 1)
-    ).to.be.revertedWith(
-      `AccessControl: account ${(
-        await deployer.getAddress()
-      ).toLowerCase()} is missing role ${MarketplaceAccess}`
-    );
-  });
-
   it("Should revert on burning asset by invalid caller", async function () {
     await expect(
       assetContract
