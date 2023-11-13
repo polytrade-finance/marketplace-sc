@@ -525,6 +525,23 @@ describe("Marketplace", function () {
     ).to.be.revertedWith("Min. fraction > Fraction to list");
   });
 
+  it("Should revert on reentrancy attack on marketpalce buy", async function () {
+    const owner = await (
+      await ethers.getContractFactory("MockInvoiceOwner")
+    ).deploy(marketplaceContract.getAddress());
+    await assetContract.grantRole(AssetManagerAccess, deployer.getAddress());
+
+    await assetContract.createAsset(owner.getAddress(), 1, 0, 10000);
+
+    await owner.list(1);
+
+    await expect(
+      marketplaceContract
+        .connect(user1)
+        .buy(1, 0, 100, await owner.getAddress())
+    ).to.be.revertedWith("ReentrancyGuard: reentrant call");
+  });
+
   it("Should revert on listing without enough balance to sell", async function () {
     const id = await getId(invoiceContract, await invoiceContract.getAddress());
     await invoiceContract.createInvoice(
@@ -712,6 +729,30 @@ describe("Marketplace", function () {
         ]
       )
     ).to.revertedWith("No array parity");
+  });
+
+  it("Should batch create properties and batch list", async function () {
+    const ids = await getIds(propertyContract, 3, await user1.getAddress());
+
+    await propertyContract.batchCreateProperty(
+      [
+        await user1.getAddress(),
+        await user1.getAddress(),
+        await user1.getAddress(),
+      ],
+      [property, property, property]
+    );
+
+    const list = await createList(
+      asset.price,
+      asset.fractions,
+      1000,
+      stableTokenContract.getAddress()
+    );
+
+    await marketplaceContract
+      .connect(user1)
+      .batchList([ids[0], ids[1], ids[2]], [1, 1, 1], [list, list, list]);
   });
 
   it("Should return the listed info struct", async function () {
@@ -907,6 +948,18 @@ describe("Marketplace", function () {
     );
   });
 
+  it("Should revert to create sub id on invoice without marketplace role", async function () {
+    await expect(
+      invoiceContract
+        .connect(user1)
+        .onSubIdCreation(user1.getAddress(), 1, 10000)
+    ).to.be.revertedWith(
+      `AccessControl: account ${(
+        await user1.getAddress()
+      ).toLowerCase()} is missing role ${MarketplaceAccess}`
+    );
+  });
+
   it("Should set a new fee manager address while calling setFeeManager()", async function () {
     await expect(
       await marketplaceContract.setFeeManager(await newFeeManager.getAddress())
@@ -993,6 +1046,25 @@ describe("Marketplace", function () {
     expect(await assetContract.subBalanceOf(buyer.getAddress(), id, 1)).to.eq(
       1000
     );
+  });
+
+  it("Should create invoice and increment sub Id after buy", async function () {
+    const id = await getId(invoiceContract, await invoiceContract.getAddress());
+    await invoiceContract.createInvoice(asset);
+
+    await stableTokenContract
+      .connect(buyer)
+      .approve(marketplaceContract.getAddress(), asset.price);
+
+    expect(await invoiceContract.getCurrentSubId(id)).to.eq(0);
+
+    await expect(
+      await marketplaceContract
+        .connect(buyer)
+        .buy(id, 0, 1000, invoiceContract.getAddress())
+    ).not.to.be.reverted;
+
+    expect(await invoiceContract.getCurrentSubId(id)).to.eq(1);
   });
 
   it("Should create asset and burn", async function () {
@@ -1185,6 +1257,16 @@ describe("Marketplace", function () {
     await invoiceContract.createInvoice(asset);
 
     await time.increase(YEAR);
+
+    const expectedReward = 0;
+
+    const actualReward = await invoiceContract.getRemainingReward(id, 0);
+
+    expect(actualReward).to.be.equal(expectedReward);
+  });
+
+  it("Should get remaining zero reward for not created invoice", async function () {
+    const id = await getId(invoiceContract, await invoiceContract.getAddress());
 
     const expectedReward = 0;
 

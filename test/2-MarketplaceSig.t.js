@@ -83,7 +83,11 @@ describe("Marketplace Signatures", function () {
 
     invoiceContract = await upgrades.deployProxy(
       await ethers.getContractFactory("InvoiceAsset"),
-      [await assetContract.getAddress(), await treasuryWallet.getAddress(), await marketplaceContract.getAddress()]
+      [
+        await assetContract.getAddress(),
+        await treasuryWallet.getAddress(),
+        await marketplaceContract.getAddress(),
+      ]
     );
 
     await assetContract.grantRole(
@@ -99,21 +103,26 @@ describe("Marketplace Signatures", function () {
 
     await invoiceContract.grantRole(OriginatorAccess, deployer.getAddress());
 
-    await invoiceContract.grantRole(MarketplaceAccess, marketplaceContract.getAddress());
+    await invoiceContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.getAddress()
+    );
 
     asset = await createAsset(stableTokenContract.getAddress());
 
     await invoiceContract.createInvoice(asset);
 
     await stableTokenContract
-    .connect(user1)
-    .approve(marketplaceContract.getAddress(), 10n * asset.price);
+      .connect(user1)
+      .approve(marketplaceContract.getAddress(), 10n * asset.price);
 
     await stableTokenContract
-    .connect(offeror)
-    .transfer(user1.getAddress(), 10n * asset.price);
+      .connect(offeror)
+      .transfer(user1.getAddress(), 10n * asset.price);
 
-    await marketplaceContract.connect(user1).buy(id, 0, asset.fractions, invoiceContract.getAddress())
+    await marketplaceContract
+      .connect(user1)
+      .buy(id, 0, asset.fractions, invoiceContract.getAddress());
 
     await marketplaceContract
       .connect(user1)
@@ -137,7 +146,7 @@ describe("Marketplace Signatures", function () {
       .approve(marketplaceContract.getAddress(), 10n * asset.price);
 
     domainSeparator = await marketplaceContract.DOMAIN_SEPARATOR();
-    
+
     domainData = {
       name,
       version,
@@ -237,13 +246,13 @@ describe("Marketplace Signatures", function () {
       expect(balanceBeforeBuy - balanceAfterBuy).to.be.equal(
         offer.offerPrice / 10n
       );
-      
+
       expect(
         await marketplaceContract.getNonce(user1.getAddress())
       ).to.be.equal("1");
-      expect(
-        user1BalanceAfterBuy - user1BalanceBeforeBuy
-      ).to.be.equal(offer.offerPrice / 10n);
+      expect(user1BalanceAfterBuy - user1BalanceBeforeBuy).to.be.equal(
+        offer.offerPrice / 10n
+      );
     });
 
     it("Should revert if sender is not offeror", async function () {
