@@ -41,8 +41,8 @@ describe("Marketplace Signatures", function () {
     const nonce = await contract.getNonce(owner);
     return BigInt(
       ethers.solidityPackedKeccak256(
-        ["uint256", "address", "uint256"],
-        [chainId, await contract.getAddress(), nonce]
+        ["uint256", "address", "address", "uint256"],
+        [chainId, await contract.getAddress(), owner, nonce]
       )
     );
   };
