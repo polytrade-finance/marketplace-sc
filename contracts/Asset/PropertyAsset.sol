@@ -8,7 +8,6 @@ import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { PropertyInfo, IPropertyAsset, IToken } from "contracts/Asset/interface/IPropertyAsset.sol";
 import { IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
-import { IToken } from "contracts/Token/interface/IToken.sol";
 import { Counters } from "contracts/lib/Counters.sol";
 
 /**
@@ -245,6 +244,7 @@ contract PropertyAsset is
                 abi.encodePacked(
                     CHAIN_ID,
                     address(this),
+                    owner,
                     _nonce.useNonce(owner)
                 )
             )
