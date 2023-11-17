@@ -151,6 +151,36 @@ contract WrappedAsset is
     }
 
     /**
+     * @dev See {IWrappedAsset-emergencyUnwrapERC20}.
+     */
+    function emergencyUnwrapERC20(
+        uint256 mainId,
+        address receiver
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _unwrapERC20(receiver, mainId);
+    }
+
+    /**
+     * @dev See {IWrappedAsset-emergencyUnwrapERC721}.
+     */
+    function emergencyUnwrapERC721(
+        uint256 mainId,
+        address receiver
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _unwrapERC721(receiver, mainId);
+    }
+
+    /**
+     * @dev See {IWrappedAsset-emergencyUnwrapERC721}.
+     */
+    function emergencyUnwrapERC1155(
+        uint256 mainId,
+        address receiver
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _unwrapERC1155(receiver, mainId);
+    }
+
+    /**
      * @dev See {IWrappedAsset-unwrapERC721}.
      */
     function unwrapERC721(uint256 mainId) external {
