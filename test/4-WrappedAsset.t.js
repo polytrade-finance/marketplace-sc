@@ -310,6 +310,15 @@ describe("Wrapper Contract", function () {
     ).to.be.revertedWith("No array parity");
   });
 
+  it("Should revert wrap erc20 token with zero balance", async function () {
+
+    await expect(
+      wrapperContract
+        .connect(signer20)
+        .wrapERC20(Erc20, 0, 10000)
+    ).to.be.revertedWith("Balance can not be zero");
+  });
+
   it("Should batch wrap erc20 token", async function () {
     const id = await getId(wrapperContract, await signer20.getAddress());
 
@@ -497,6 +506,12 @@ describe("Wrapper Contract", function () {
     await expect(
       wrapperContract.wrapERC1155(Sand1155, SandTokenId, 1, 10000)
     ).to.be.revertedWith("Not enough balance");
+  });
+
+  it("Should revert to wrap erc1155 with zero balance", async function () {
+    await expect(
+      wrapperContract.wrapERC1155(Sand1155, SandTokenId, 0, 10000)
+    ).to.be.revertedWith("Balance can not be zero");
   });
 
   it("Should revert to wrap erc1155 contract address is not whitelisted", async function () {

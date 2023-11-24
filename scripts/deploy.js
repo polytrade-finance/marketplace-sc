@@ -8,8 +8,8 @@ async function main() {
   );
   const AssetFactory = await ethers.getContractFactory("Asset");
   const asset = await AssetFactory.deploy(
-    "PolytradeAssetManager",
-    "PAM",
+    "PolytradeRealWorldAssets",
+    "PRWA",
     "https://polytrade.finance"
   );
   await asset.waitForDeployment();
@@ -40,8 +40,8 @@ async function main() {
   await hre.run("verify:verify", {
     address: asset.getAddress(),
     constructorArguments: [
-      "PolytradeAssetManager",
-      "PAM",
+      "PolytradeRealWorldAssets",
+      "PRWA",
       "https://polytrade.finance",
     ],
   });

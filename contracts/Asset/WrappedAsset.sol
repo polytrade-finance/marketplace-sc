@@ -312,6 +312,7 @@ contract WrappedAsset is
         uint256 balance,
         uint256 fractions
     ) private isWhitelisted(contractAddress) returns (uint256 mainId) {
+        require(balance != 0, "Balance can not be zero");
         IToken token = IToken(contractAddress);
         uint256 actualBalance = token.balanceOf(_msgSender());
         require(actualBalance >= balance, "Not enough balance");
@@ -406,6 +407,7 @@ contract WrappedAsset is
         uint256 balance,
         uint256 fractions
     ) private isWhitelisted(contractAddress) returns (uint256 mainId) {
+        require(balance != 0, "Balance can not be zero");
         if (!contractAddress.supportsInterface(_ERC1155_INTERFACE_ID)) {
             revert UnsupportedInterface();
         }
