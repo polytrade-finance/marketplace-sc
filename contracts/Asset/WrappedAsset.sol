@@ -219,7 +219,7 @@ contract WrappedAsset is
         );
 
         require(
-            _assetCollection.totalSubSupply(mainId, 1) == 0,
+            _assetCollection.totalMainSupply(mainId) == 0,
             "Asset already created"
         );
 

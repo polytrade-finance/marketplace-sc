@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers, network } = require("hardhat");
-const { AssetManagerAccess, MarketplaceAccess } = require("./data.spec");
+const { AssetManagerAccess } = require("./data.spec");
 
 describe("Asset", function () {
   let assetContract;
@@ -30,16 +30,6 @@ describe("Asset", function () {
       `AccessControl: account ${(
         await deployer.getAddress()
       ).toLowerCase()} is missing role ${AssetManagerAccess}`
-    );
-  });
-
-  it("Should revert on updating purchase date by invalid caller", async function () {
-    await expect(
-      assetContract.connect(deployer).updatePurchaseDate(1, 1)
-    ).to.be.revertedWith(
-      `AccessControl: account ${(
-        await deployer.getAddress()
-      ).toLowerCase()} is missing role ${MarketplaceAccess}`
     );
   });
 

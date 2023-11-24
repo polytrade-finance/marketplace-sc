@@ -4,12 +4,15 @@ pragma solidity 0.8.17;
 import { EIP712Upgradeable } from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import { ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import { ListedInfo, IMarketplace, IToken } from "contracts/Marketplace/interface/IMarketplace.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
-import { AssetInfo, IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
+import { IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
+import { IInvoiceAsset } from "contracts/Asset/interface/IInvoiceAsset.sol";
 import { IFeeManager } from "contracts/Marketplace/interface/IFeeManager.sol";
 import { Counters } from "contracts/lib/Counters.sol";
 
@@ -21,8 +24,10 @@ import { Counters } from "contracts/lib/Counters.sol";
 contract Marketplace is
     Initializable,
     Context,
+    ERC165,
     EIP712Upgradeable,
     AccessControl,
+    ReentrancyGuardUpgradeable,
     IMarketplace
 {
     using SafeERC20 for IToken;
@@ -67,6 +72,7 @@ contract Marketplace is
         address feeManager_
     ) external initializer {
         __EIP712_init("Polytrade", "2.3");
+        __ReentrancyGuard_init();
         if (!assetCollection_.supportsInterface(_ASSET_INTERFACE_ID)) {
             revert UnsupportedInterface();
         }
@@ -253,6 +259,17 @@ contract Marketplace is
     }
 
     /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(ERC165, AccessControl) returns (bool) {
+        return
+            interfaceId == type(IMarketplace).interfaceId ||
+            super.supportsInterface(interfaceId);
+    }
+
+    /**
      * @dev List an asset based on main id and sub id
      * @dev Checks and validate listed fraction to be greater than min fraction
      * @dev Validates if listed fractions is less than owner current balance
@@ -271,6 +288,8 @@ contract Marketplace is
             listedInfo.listedFractions >= listedInfo.minFraction,
             "Min. fraction > Fraction to list"
         );
+        require(listedInfo.salePrice != 0, "Sale price can not be zero");
+
         uint256 subBalanceOf = _assetCollection.subBalanceOf(
             _msgSender(),
             mainId,
@@ -302,12 +321,7 @@ contract Marketplace is
         uint256 salePrice,
         uint256 fractionToBuy,
         address owner
-    ) private {
-        AssetInfo memory assetInfo = _assetCollection.getAssetInfo(
-            mainId,
-            subId
-        );
-
+    ) private nonReentrant {
         ListedInfo memory listedInfo = _listedInfo[mainId][subId][owner];
 
         require(
@@ -323,17 +337,16 @@ contract Marketplace is
                 _assetCollection.subBalanceOf(owner, mainId, subId),
             "Not enough balance to buy"
         );
-        // require(salePrice != 0, "Asset is not listed");
 
-        uint256 payPrice = (salePrice * fractionToBuy) / 1e4;
-        uint256 fee = assetInfo.initialOwner != owner
+        address receiver = owner;
+        uint256 payPrice = (salePrice * fractionToBuy) / 1e2;
+        uint256 fee = _assetCollection
+            .getAssetInfo(mainId, subId)
+            .initialOwner != owner
             ? _feeManager.getBuyingFee(mainId, subId)
             : _feeManager.getInitialFee(mainId, subId);
         fee = (payPrice * fee) / 1e4;
 
-        if (assetInfo.purchaseDate == 0) {
-            _assetCollection.updatePurchaseDate(mainId, subId);
-        }
         if (listedInfo.listedFractions == fractionToBuy) {
             delete _listedInfo[mainId][subId][owner];
         } else {
@@ -342,15 +355,25 @@ contract Marketplace is
                 fractionToBuy;
         }
 
-        _assetCollection.safeTransferFrom(
-            owner,
-            _msgSender(),
-            mainId,
-            subId,
-            fractionToBuy,
-            ""
-        );
-        listedInfo.token.safeTransferFrom(_msgSender(), owner, payPrice);
+        if (subId == 0) {
+            receiver = IInvoiceAsset(owner).getTreasuryWallet();
+            IInvoiceAsset(owner).onSubIdCreation(
+                _msgSender(),
+                mainId,
+                fractionToBuy
+            );
+        } else {
+            _assetCollection.safeTransferFrom(
+                owner,
+                _msgSender(),
+                mainId,
+                subId,
+                fractionToBuy,
+                ""
+            );
+        }
+
+        listedInfo.token.safeTransferFrom(_msgSender(), receiver, payPrice);
         listedInfo.token.safeTransferFrom(
             _msgSender(),
             _feeManager.getFeeWallet(),

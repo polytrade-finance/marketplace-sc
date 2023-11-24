@@ -74,7 +74,7 @@ describe("Marketplace Signatures", function () {
 
     stableTokenContract = await (
       await ethers.getContractFactory("ERC20Token")
-    ).deploy("USD Dollar", "USDC", 18, offeror.getAddress(), 200000);
+    ).deploy("USD Dollar", "USDC", 18, offeror.getAddress(), 20000000);
 
     marketplaceContract = await upgrades.deployProxy(
       await ethers.getContractFactory("Marketplace"),
@@ -83,7 +83,11 @@ describe("Marketplace Signatures", function () {
 
     invoiceContract = await upgrades.deployProxy(
       await ethers.getContractFactory("InvoiceAsset"),
-      [await assetContract.getAddress(), await treasuryWallet.getAddress()]
+      [
+        await assetContract.getAddress(),
+        await treasuryWallet.getAddress(),
+        await marketplaceContract.getAddress(),
+      ]
     );
 
     await assetContract.grantRole(
@@ -95,12 +99,30 @@ describe("Marketplace Signatures", function () {
       AssetManagerAccess,
       invoiceContract.getAddress()
     );
-    id = await getId(invoiceContract, await user1.getAddress());
+    id = await getId(invoiceContract, await invoiceContract.getAddress());
+
     await invoiceContract.grantRole(OriginatorAccess, deployer.getAddress());
+
+    await invoiceContract.grantRole(
+      MarketplaceAccess,
+      marketplaceContract.getAddress()
+    );
 
     asset = await createAsset(stableTokenContract.getAddress());
 
-    await invoiceContract.createInvoice(user1.getAddress(), asset);
+    await invoiceContract.createInvoice(asset);
+
+    await stableTokenContract
+      .connect(user1)
+      .approve(marketplaceContract.getAddress(), 10n * asset.price);
+
+    await stableTokenContract
+      .connect(offeror)
+      .transfer(user1.getAddress(), 10n * asset.price);
+
+    await marketplaceContract
+      .connect(user1)
+      .buy(id, 0, asset.fractions, invoiceContract.getAddress());
 
     await marketplaceContract
       .connect(user1)
@@ -108,7 +130,7 @@ describe("Marketplace Signatures", function () {
         id,
         1,
         await createList(
-          asset.price,
+          asset.price / 100n,
           asset.fractions,
           1000,
           stableTokenContract.getAddress()
@@ -168,7 +190,7 @@ describe("Marketplace Signatures", function () {
       params = {
         owner: await user1.getAddress(),
         offeror: await offeror.getAddress(),
-        offerPrice: offer.offerPrice,
+        offerPrice: offer.offerPrice / 100n,
         mainId: id,
         subId: 1,
         fractionsToBuy: 1000,
@@ -194,12 +216,16 @@ describe("Marketplace Signatures", function () {
         offeror.getAddress()
       );
 
+      const user1BalanceBeforeBuy = await stableTokenContract.balanceOf(
+        user1.getAddress()
+      );
+
       await marketplaceContract
         .connect(offeror)
         .counterOffer(
           user1.getAddress(),
           offeror.getAddress(),
-          offer.offerPrice,
+          offer.offerPrice / 100n,
           id,
           1,
           1000,
@@ -213,22 +239,27 @@ describe("Marketplace Signatures", function () {
         offeror.getAddress()
       );
 
+      const user1BalanceAfterBuy = await stableTokenContract.balanceOf(
+        user1.getAddress()
+      );
+
       expect(balanceBeforeBuy - balanceAfterBuy).to.be.equal(
         offer.offerPrice / 10n
       );
+
       expect(
         await marketplaceContract.getNonce(user1.getAddress())
       ).to.be.equal("1");
-      expect(
-        await stableTokenContract.balanceOf(user1.getAddress())
-      ).to.be.equal(offer.offerPrice / 10n);
+      expect(user1BalanceAfterBuy - user1BalanceBeforeBuy).to.be.equal(
+        offer.offerPrice / 10n
+      );
     });
 
     it("Should revert if sender is not offeror", async function () {
       params = {
         owner: await user1.getAddress(),
         offeror: await offeror.getAddress(),
-        offerPrice: offer.offerPrice,
+        offerPrice: offer.offerPrice / 100n,
         mainId: id,
         subId: 1,
         fractionsToBuy: 1000,
@@ -246,7 +277,7 @@ describe("Marketplace Signatures", function () {
           .counterOffer(
             user1.getAddress(),
             offeror.getAddress(),
-            offer.offerPrice,
+            offer.offerPrice / 100n,
             id,
             1,
             1000,
@@ -267,7 +298,7 @@ describe("Marketplace Signatures", function () {
           .counterOffer(
             user1.getAddress(),
             offeror.getAddress(),
-            offer.offerPrice,
+            offer.offerPrice / 100n,
             id,
             1,
             1000,
@@ -290,7 +321,7 @@ describe("Marketplace Signatures", function () {
         marketplaceContract.counterOffer(
           user1.getAddress(),
           offeror.getAddress(),
-          offer.offerPrice,
+          offer.offerPrice / 100n,
           id,
           1,
           1000,
