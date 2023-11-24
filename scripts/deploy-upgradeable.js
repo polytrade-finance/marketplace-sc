@@ -65,18 +65,18 @@ async function main() {
   console.log(await wrapperAsset.getAddress());
 
   await token.approve(marketplace.getAddress(), ethers.MaxUint256);
-console.log("first")
+  console.log("first");
   await asset.grantRole(AssetManagerAccess, invoiceAsset.getAddress());
-  console.log("first")
+  console.log("first");
 
   await asset.grantRole(AssetManagerAccess, propertyAsset.getAddress());
-  console.log("first")
+  console.log("first");
 
   await asset.grantRole(AssetManagerAccess, wrapperAsset.getAddress());
-  console.log("first")
+  console.log("first");
 
   await invoiceAsset.grantRole(MarketplaceAccess, marketplace.getAddress());
-  console.log("first")
+  console.log("first");
 
   await asset.setApprovalForAll(marketplace.getAddress(), true);
 }

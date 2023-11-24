@@ -311,11 +311,8 @@ describe("Wrapper Contract", function () {
   });
 
   it("Should revert wrap erc20 token with zero balance", async function () {
-
     await expect(
-      wrapperContract
-        .connect(signer20)
-        .wrapERC20(Erc20, 0, 10000)
+      wrapperContract.connect(signer20).wrapERC20(Erc20, 0, 10000)
     ).to.be.revertedWith("Balance can not be zero");
   });
 
