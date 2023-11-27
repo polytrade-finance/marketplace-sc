@@ -5,7 +5,7 @@ require("dotenv").config();
 
 const {
   TESTNET_PRIVATE_KEY,
-  MAINNET_PRIVATE_KEY,
+  MAINNET_DEPLOYER_PRIVATE_KEY,
   TESTNET_ARCHIVAL_RPC,
   MAINNET_ARCHIVAL_RPC,
 } = process.env;
@@ -55,7 +55,7 @@ module.exports = {
       url: `${MAINNET_ARCHIVAL_RPC}`,
       accounts: [
         `${
-          MAINNET_PRIVATE_KEY ||
+          MAINNET_DEPLOYER_PRIVATE_KEY ||
           "0x0000000000000000000000000000000000000000000000000000000000000000"
         }`,
       ],

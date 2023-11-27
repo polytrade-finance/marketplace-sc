@@ -41,8 +41,8 @@ describe("Marketplace Signatures", function () {
     const nonce = await contract.getNonce(owner);
     return BigInt(
       ethers.solidityPackedKeccak256(
-        ["uint256", "address", "uint256"],
-        [chainId, await contract.getAddress(), nonce]
+        ["uint256", "address", "address", "uint256"],
+        [chainId, await contract.getAddress(), owner, nonce]
       )
     );
   };
@@ -155,7 +155,7 @@ describe("Marketplace Signatures", function () {
     };
 
     offerType = {
-      CounterOffer: [
+      offer: [
         { name: "owner", type: "address" },
         { name: "offeror", type: "address" },
         { name: "offerPrice", type: "uint256" },
@@ -222,7 +222,7 @@ describe("Marketplace Signatures", function () {
 
       await marketplaceContract
         .connect(offeror)
-        .counterOffer(
+        .offer(
           user1.getAddress(),
           offeror.getAddress(),
           offer.offerPrice / 100n,
@@ -274,7 +274,7 @@ describe("Marketplace Signatures", function () {
       await expect(
         marketplaceContract
           .connect(user1)
-          .counterOffer(
+          .offer(
             user1.getAddress(),
             offeror.getAddress(),
             offer.offerPrice / 100n,
@@ -295,7 +295,7 @@ describe("Marketplace Signatures", function () {
       await expect(
         marketplaceContract
           .connect(offeror)
-          .counterOffer(
+          .offer(
             user1.getAddress(),
             offeror.getAddress(),
             offer.offerPrice / 100n,
@@ -318,7 +318,7 @@ describe("Marketplace Signatures", function () {
       const { r, s, v } = ethers.Signature.from(signature);
 
       await expect(
-        marketplaceContract.counterOffer(
+        marketplaceContract.offer(
           user1.getAddress(),
           offeror.getAddress(),
           offer.offerPrice / 100n,

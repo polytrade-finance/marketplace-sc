@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
@@ -9,8 +10,9 @@ import { IERC1155Receiver } from "@openzeppelin/contracts/interfaces/IERC1155Rec
 import { IERC721Receiver } from "@openzeppelin/contracts/interfaces/IERC721Receiver.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
-import { WrappedInfo, IWrappedAsset } from "contracts/Asset/interface/IWrappedAsset.sol";
+import { WrappedInfo, IWrappedAsset, IToken } from "contracts/Asset/interface/IWrappedAsset.sol";
 import { IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
+import { Counters } from "contracts/lib/Counters.sol";
 
 /**
  * @title The wrapped asset contract based on EIP6960
@@ -24,7 +26,10 @@ contract WrappedAsset is
     IWrappedAsset
 {
     using ERC165Checker for address;
+    using SafeERC20 for IToken;
+    using Counters for Counters.Counter;
 
+    Counters.Counter private _nonce;
     IBaseAsset private _assetCollection;
 
     // solhint-disable-next-line
@@ -62,15 +67,50 @@ contract WrappedAsset is
         address contractAddress,
         bool status
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (
-            !contractAddress.supportsInterface(_ERC721_INTERFACE_ID) &&
-            !contractAddress.supportsInterface(_ERC1155_INTERFACE_ID)
-        ) {
+        if (contractAddress == address(0)) {
             revert UnsupportedInterface();
         }
         _isWhitelisted[contractAddress] = status;
 
         emit StatusChanged(contractAddress, status);
+    }
+
+    /**
+     * @dev See {IWrappedAsset-wrapERC721}.
+     */
+    function wrapERC20(
+        address contractAddress,
+        uint256 balance,
+        uint256 fractions
+    ) external returns (uint256) {
+        return _wrapERC20(contractAddress, balance, fractions);
+    }
+
+    /**
+     * @dev See {IWrappedAsset-batchWrapERC20}.
+     */
+    function batchWrapERC20(
+        address[] calldata contractAddresses,
+        uint256[] calldata balances,
+        uint256[] calldata fractions
+    ) external returns (uint256[] memory) {
+        uint256 length = contractAddresses.length;
+        require(
+            balances.length == length && length == fractions.length,
+            "No array parity"
+        );
+        uint256[] memory ids = new uint256[](length);
+        for (uint256 i = 0; i < length; ) {
+            ids[i] = _wrapERC20(
+                contractAddresses[i],
+                balances[i],
+                fractions[i]
+            );
+            unchecked {
+                ++i;
+            }
+        }
+        return ids;
     }
 
     /**
@@ -117,9 +157,10 @@ contract WrappedAsset is
     function wrapERC1155(
         address contractAddress,
         uint256 tokenId,
+        uint256 balance,
         uint256 fractions
     ) external returns (uint256) {
-        return _wrapERC1155(contractAddress, tokenId, fractions);
+        return _wrapERC1155(contractAddress, tokenId, balance, fractions);
     }
 
     /**
@@ -128,11 +169,14 @@ contract WrappedAsset is
     function batchWrapERC1155(
         address[] calldata contractAddresses,
         uint256[] calldata tokenIds,
+        uint256[] calldata balances,
         uint256[] calldata fractions
     ) external returns (uint256[] memory) {
         uint256 length = contractAddresses.length;
         require(
-            tokenIds.length == length && length == fractions.length,
+            tokenIds.length == length &&
+                length == fractions.length &&
+                balances.length == length,
             "No array parity"
         );
         uint256[] memory ids = new uint256[](length);
@@ -140,6 +184,7 @@ contract WrappedAsset is
             ids[i] = _wrapERC1155(
                 contractAddresses[i],
                 tokenIds[i],
+                balances[i],
                 fractions[i]
             );
 
@@ -151,17 +196,76 @@ contract WrappedAsset is
     }
 
     /**
+     * @dev See {IWrappedAsset-emergencyUnwrapERC20}.
+     */
+    function emergencyUnwrapERC20(
+        uint256 mainId,
+        address receiver
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _unwrapERC20(receiver, mainId);
+    }
+
+    /**
+     * @dev See {IWrappedAsset-emergencyUnwrapERC721}.
+     */
+    function emergencyUnwrapERC721(
+        uint256 mainId,
+        address receiver
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _unwrapERC721(receiver, mainId);
+    }
+
+    /**
+     * @dev See {IWrappedAsset-emergencyUnwrapERC721}.
+     */
+    function emergencyUnwrapERC1155(
+        uint256 mainId,
+        address receiver
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _unwrapERC1155(receiver, mainId);
+    }
+
+    /**
+     * @dev See {IWrappedAsset-unwrapERC20}.
+     */
+    function unwrapERC20(uint256 mainId) external {
+        require(
+            _wrappedInfo[mainId].fractions ==
+                _assetCollection.subBalanceOf(_msgSender(), mainId, 1),
+            "Partial ownership"
+        );
+        _unwrapERC20(_msgSender(), mainId);
+    }
+
+    /**
      * @dev See {IWrappedAsset-unwrapERC721}.
      */
     function unwrapERC721(uint256 mainId) external {
-        _unwrapERC721(mainId);
+        require(
+            _wrappedInfo[mainId].fractions ==
+                _assetCollection.subBalanceOf(_msgSender(), mainId, 1),
+            "Partial ownership"
+        );
+        _unwrapERC721(_msgSender(), mainId);
     }
 
     /**
      * @dev See {IWrappedAsset-unwrapERC1155}.
      */
     function unwrapERC1155(uint256 mainId) external {
-        _unwrapERC1155(mainId);
+        require(
+            _wrappedInfo[mainId].fractions ==
+                _assetCollection.subBalanceOf(_msgSender(), mainId, 1),
+            "Partial ownership"
+        );
+        _unwrapERC1155(_msgSender(), mainId);
+    }
+
+    /**
+     * @dev See {IWrappedAsset-getNonce}.
+     */
+    function getNonce(address account) external view returns (uint256) {
+        return _nonce.current(account);
     }
 
     function getWrappedInfo(
@@ -203,11 +307,59 @@ contract WrappedAsset is
         revert UnableToReceive();
     }
 
+    function _wrapERC20(
+        address contractAddress,
+        uint256 balance,
+        uint256 fractions
+    ) private isWhitelisted(contractAddress) returns (uint256 mainId) {
+        require(balance != 0, "Balance can not be zero");
+        IToken token = IToken(contractAddress);
+        uint256 actualBalance = token.balanceOf(_msgSender());
+        require(actualBalance >= balance, "Not enough balance");
+
+        mainId = uint256(
+            keccak256(
+                abi.encodePacked(
+                    CHAIN_ID,
+                    address(this),
+                    _msgSender(),
+                    _nonce.useNonce(_msgSender())
+                )
+            )
+        );
+
+        require(
+            _assetCollection.totalSubSupply(mainId, 1) == 0,
+            "Asset already created"
+        );
+
+        _wrappedInfo[mainId] = WrappedInfo(
+            0,
+            fractions,
+            balance,
+            contractAddress
+        );
+
+        token.safeTransferFrom(_msgSender(), address(this), balance);
+        _assetCollection.createAsset(_msgSender(), mainId, 1, fractions);
+
+        emit ERC20Wrapped(
+            _msgSender(),
+            contractAddress,
+            balance,
+            mainId,
+            _nonce.current(_msgSender())
+        );
+    }
+
     function _wrapERC721(
         address contractAddress,
         uint256 tokenId,
         uint256 fractions
     ) private isWhitelisted(contractAddress) returns (uint256 mainId) {
+        if (!contractAddress.supportsInterface(_ERC721_INTERFACE_ID)) {
+            revert UnsupportedInterface();
+        }
         IERC721 token = IERC721(contractAddress);
         require(
             _msgSender() == token.ownerOf(tokenId),
@@ -215,7 +367,14 @@ contract WrappedAsset is
         );
 
         mainId = uint256(
-            keccak256(abi.encodePacked(CHAIN_ID, contractAddress, tokenId))
+            keccak256(
+                abi.encodePacked(
+                    CHAIN_ID,
+                    address(this),
+                    _msgSender(),
+                    _nonce.useNonce(_msgSender())
+                )
+            )
         );
 
         require(
@@ -233,25 +392,36 @@ contract WrappedAsset is
         token.safeTransferFrom(_msgSender(), address(this), tokenId, "");
         _assetCollection.createAsset(_msgSender(), mainId, 1, fractions);
 
-        emit ERC721Wrapped(_msgSender(), contractAddress, tokenId, mainId);
+        emit ERC721Wrapped(
+            _msgSender(),
+            contractAddress,
+            tokenId,
+            mainId,
+            _nonce.current(_msgSender())
+        );
     }
 
     function _wrapERC1155(
         address contractAddress,
         uint256 tokenId,
+        uint256 balance,
         uint256 fractions
     ) private isWhitelisted(contractAddress) returns (uint256 mainId) {
+        require(balance != 0, "Balance can not be zero");
+        if (!contractAddress.supportsInterface(_ERC1155_INTERFACE_ID)) {
+            revert UnsupportedInterface();
+        }
         IERC1155 token = IERC1155(contractAddress);
-        uint256 balance = token.balanceOf(_msgSender(), tokenId);
-        require(balance != 0, "Not enough balance");
+        uint256 actualBalance = token.balanceOf(_msgSender(), tokenId);
+        require(actualBalance >= balance, "Not enough balance");
 
         mainId = uint256(
             keccak256(
                 abi.encodePacked(
                     CHAIN_ID,
+                    address(this),
                     _msgSender(),
-                    contractAddress,
-                    tokenId
+                    _nonce.useNonce(_msgSender())
                 )
             )
         );
@@ -282,58 +452,85 @@ contract WrappedAsset is
             contractAddress,
             tokenId,
             balance,
+            mainId,
+            _nonce.current(_msgSender())
+        );
+    }
+
+    function _unwrapERC20(address receiver, uint256 mainId) private {
+        WrappedInfo memory info = _wrappedInfo[mainId];
+        require(_wrappedInfo[mainId].fractions != 0, "Wrong asset id");
+
+        IToken token = IToken(info.contractAddress);
+
+        delete _wrappedInfo[mainId];
+
+        _assetCollection.burnAsset(
+            receiver,
+            mainId,
+            1,
+            _assetCollection.subBalanceOf(receiver, mainId, 1)
+        );
+        token.safeTransfer(receiver, info.balance);
+
+        emit ERC20Unwrapped(
+            receiver,
+            info.contractAddress,
+            info.balance,
             mainId
         );
     }
 
-    function _unwrapERC721(uint256 mainId) private {
+    function _unwrapERC721(address receiver, uint256 mainId) private {
         WrappedInfo memory info = _wrappedInfo[mainId];
-        _preCheck(mainId, info.fractions);
+        require(_wrappedInfo[mainId].fractions != 0, "Wrong asset id");
 
         IERC721 token = IERC721(info.contractAddress);
         delete _wrappedInfo[mainId];
 
-        _assetCollection.burnAsset(_msgSender(), mainId, 1, info.fractions);
-        token.safeTransferFrom(address(this), _msgSender(), info.tokenId, "");
+        _assetCollection.burnAsset(
+            receiver,
+            mainId,
+            1,
+            _assetCollection.subBalanceOf(receiver, mainId, 1)
+        );
+        token.safeTransferFrom(address(this), receiver, info.tokenId, "");
 
         emit ERC721Unwrapped(
-            _msgSender(),
+            receiver,
             info.contractAddress,
             info.tokenId,
             mainId
         );
     }
 
-    function _unwrapERC1155(uint256 mainId) private {
+    function _unwrapERC1155(address receiver, uint256 mainId) private {
         WrappedInfo memory info = _wrappedInfo[mainId];
-        _preCheck(mainId, info.fractions);
+        require(info.fractions != 0, "Wrong asset id");
 
         IERC1155 token = IERC1155(info.contractAddress);
         delete _wrappedInfo[mainId];
 
-        _assetCollection.burnAsset(_msgSender(), mainId, 1, info.fractions);
+        _assetCollection.burnAsset(
+            receiver,
+            mainId,
+            1,
+            _assetCollection.subBalanceOf(receiver, mainId, 1)
+        );
         token.safeTransferFrom(
             address(this),
-            _msgSender(),
+            receiver,
             info.tokenId,
             info.balance,
             ""
         );
 
         emit ERC1155Unwrapped(
-            _msgSender(),
+            receiver,
             info.contractAddress,
             info.tokenId,
             info.balance,
             mainId
-        );
-    }
-
-    function _preCheck(uint256 mainId, uint256 fractions) private view {
-        require(fractions != 0, "Wrong asset id");
-        require(
-            fractions == _assetCollection.subBalanceOf(_msgSender(), mainId, 1),
-            "Partial ownership"
         );
     }
 }

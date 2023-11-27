@@ -9,7 +9,6 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { InvoiceInfo, IInvoiceAsset, IToken } from "contracts/Asset/interface/IInvoiceAsset.sol";
 import { IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
 import { ListedInfo, IMarketplace } from "contracts/Marketplace/interface/IMarketplace.sol";
-import { IToken } from "contracts/Token/interface/IToken.sol";
 import { Counters } from "contracts/lib/Counters.sol";
 
 /**
@@ -207,8 +206,17 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
     function getAvailableReward(
         uint256 invoiceMainId,
         uint256 invoiceSubId
-    ) external view returns (uint256) {
-        return _getAvailableReward(invoiceMainId, invoiceSubId);
+    ) external view returns (uint256 reward) {
+        uint256 fractions = _invoiceInfo[invoiceMainId].fractions;
+        if (fractions != 0) {
+            reward =
+                (_getAvailableReward(invoiceMainId, invoiceSubId) *
+                    _assetCollection.totalSubSupply(
+                        invoiceMainId,
+                        invoiceSubId
+                    )) /
+                fractions;
+        }
     }
 
     /**
@@ -219,21 +227,29 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         uint256 invoiceSubId
     ) external view returns (uint256 reward) {
         InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId];
-        uint256 purchaseDate = _purchaseDate[invoiceMainId][invoiceSubId];
-        uint256 tenure;
 
-        if (purchaseDate != 0) {
-            tenure = invoice.dueDate - purchaseDate;
-        } else if (invoice.price != 0) {
-            tenure =
-                invoice.dueDate -
-                (
-                    block.timestamp > invoice.dueDate
-                        ? invoice.dueDate
-                        : block.timestamp
-                );
+        if (invoice.fractions != 0) {
+            uint256 purchaseDate = _purchaseDate[invoiceMainId][invoiceSubId];
+            uint256 tenure;
+            if (purchaseDate != 0) {
+                tenure = invoice.dueDate - purchaseDate;
+            } else {
+                tenure =
+                    invoice.dueDate -
+                    (
+                        block.timestamp > invoice.dueDate
+                            ? invoice.dueDate
+                            : block.timestamp
+                    );
+            }
+            reward =
+                (_calculateFormula(invoice.price, tenure, invoice.rewardApr) *
+                    _assetCollection.totalSubSupply(
+                        invoiceMainId,
+                        invoiceSubId
+                    )) /
+                invoice.fractions;
         }
-        reward = _calculateFormula(invoice.price, tenure, invoice.rewardApr);
     }
 
     /**
@@ -248,8 +264,8 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
      */
     function getInvoiceInfo(
         uint256 invoiceMainId
-    ) external view returns (InvoiceInfo memory info) {
-        info = _invoiceInfo[invoiceMainId];
+    ) external view returns (InvoiceInfo memory) {
+        return _invoiceInfo[invoiceMainId];
     }
 
     /**
@@ -335,6 +351,7 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
             keccak256(
                 abi.encodePacked(
                     CHAIN_ID,
+                    address(this),
                     address(this),
                     _nonce.useNonce(address(this))
                 )

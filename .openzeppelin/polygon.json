@@ -1,45 +1,30 @@
 {
   "manifestVersion": "3.2",
   "admin": {
-    "address": "0xdC669349Ca0256C70EaEa631362dFd763EE63648",
-    "txHash": "0x3bbe53705a10cdd9c217afbc107794f7868f9612dfa82b08557c36b3088b844d"
+    "address": "0x86642cF04EaE30Be744fdca9526f57c1a5586D1D",
+    "txHash": "0x3fe8cf5fd9ed6b1a566abf2e2450ebfa8c6b6f26d2ef462902dccef5ae3e0e19"
   },
   "proxies": [
     {
-      "address": "0xc1A5cB293A6f045cD5f01D1C8cfC29Fe3ED8973f",
-      "txHash": "0x3743995df6441f6c41a97d1e7ca32eba331ad0fd50deb1e5af23f10ecb77394a",
+      "address": "0x596C89d5DA9368F33E22e2A783a1a6BC097278Be",
+      "txHash": "0x37a2a0798ba6894027c224c62b5b04331c13073738749998cd104355f708e7ef",
       "kind": "transparent"
     },
     {
-      "address": "0xDb423C522594590935893cfa67Af37940e8ab06E",
-      "txHash": "0x41a90dd249525b458696021726cec0d1acb75f9c284112a5d3e325aecdacfe55",
+      "address": "0xD3F665E0bF7F4aeA50B4ee7C1CDF6d827C0654df",
+      "txHash": "0x447771b82bbe40d885a11ad2e7a69a97e2a9ef7e7ecea83484697b465f0ccb67",
       "kind": "transparent"
     },
     {
-      "address": "0xc2F3Fd444a835EE77DC7787Ca42c9E36c27538ca",
-      "txHash": "0x520b6aa4672aed4a8ff2a6e2c64aed38321c893e177648c1b1c241b934402367",
-      "kind": "transparent"
-    },
-    {
-      "address": "0x34753E78415cD88176688449D7d7812f97108A88",
-      "txHash": "0x6c14507907debc031b51f728de21a5adbbb0007c523c8794aca6974efa680d88",
-      "kind": "transparent"
-    },
-    {
-      "address": "0x60059c6bBe88CaD480eB0465Ec9ED3CbA1a91C6e",
-      "txHash": "0x8f7697a1777fa5cbdd3b62b495d4b32ce42470e48dd7d967f4630926b145d891",
-      "kind": "transparent"
-    },
-    {
-      "address": "0x11C23AADD1E01D2eC7044Ff5259ad7aD18502c16",
-      "txHash": "0xd9b009fb0f37946fcdd07aa9a096a0473b14937c745af7fdf80f15e70d1cca5f",
+      "address": "0x97463C65642e62f728D5d73F7A055097721D4347",
+      "txHash": "0x9797544c86b6602db5c7a5766ed220bef2c4018ed0b7d5c4157e6d58bdd988a2",
       "kind": "transparent"
     }
   ],
   "impls": {
-    "304cc6ceeac9b3c00447197424386150dda53f194aa1d9c34dd1a1fab511c3e0": {
-      "address": "0x4EedA9Ae5f499b4D5d376f8D4217027B7E28Db01",
-      "txHash": "0xe2884cda7749df19e1b536a09f476414f6c7399a437a69a78269969c655095d7",
+    "0f36b92201e5fc9e7b87dee904998bf2109c62096cfb9fe507a4585f09d54f03": {
+      "address": "0x489b2b53Dc467c89c6cff52D312C86DbaeC67b0c",
+      "txHash": "0x10296228e9810b9b300a7b71ae188c4a1d979a877b603958986e45417f1d2fac",
       "layout": {
         "solcVersion": "0.8.17",
         "storage": [
@@ -130,7 +115,7 @@
             "label": "_assetCollection",
             "offset": 0,
             "slot": "104",
-            "type": "t_contract(IBaseAsset)10174",
+            "type": "t_contract(IBaseAsset)6603",
             "contract": "Marketplace",
             "src": "contracts/Marketplace/Marketplace.sol:37"
           },
@@ -138,7 +123,7 @@
             "label": "_feeManager",
             "offset": 0,
             "slot": "105",
-            "type": "t_contract(IFeeManager)12034",
+            "type": "t_contract(IFeeManager)7759",
             "contract": "Marketplace",
             "src": "contracts/Marketplace/Marketplace.sol:38"
           },
@@ -146,7 +131,7 @@
             "label": "_nonce",
             "offset": 0,
             "slot": "106",
-            "type": "t_struct(Counter)12391_storage",
+            "type": "t_struct(Counter)8027_storage",
             "contract": "Marketplace",
             "src": "contracts/Marketplace/Marketplace.sol:39"
           },
@@ -154,7 +139,7 @@
             "label": "_listedInfo",
             "offset": 0,
             "slot": "107",
-            "type": "t_mapping(t_uint256,t_mapping(t_uint256,t_mapping(t_address,t_struct(ListedInfo)12449_storage)))",
+            "type": "t_mapping(t_uint256,t_mapping(t_uint256,t_mapping(t_address,t_struct(ListedInfo)8085_storage)))",
             "contract": "Marketplace",
             "src": "contracts/Marketplace/Marketplace.sol:41"
           }
@@ -180,15 +165,15 @@
             "label": "bytes32",
             "numberOfBytes": "32"
           },
-          "t_contract(IBaseAsset)10174": {
+          "t_contract(IBaseAsset)6603": {
             "label": "contract IBaseAsset",
             "numberOfBytes": "20"
           },
-          "t_contract(IFeeManager)12034": {
+          "t_contract(IFeeManager)7759": {
             "label": "contract IFeeManager",
             "numberOfBytes": "20"
           },
-          "t_contract(IToken)12383": {
+          "t_contract(IToken)8019": {
             "label": "contract IToken",
             "numberOfBytes": "20"
           },
@@ -196,7 +181,7 @@
             "label": "mapping(address => bool)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_address,t_struct(ListedInfo)12449_storage)": {
+          "t_mapping(t_address,t_struct(ListedInfo)8085_storage)": {
             "label": "mapping(address => struct ListedInfo)",
             "numberOfBytes": "32"
           },
@@ -208,11 +193,11 @@
             "label": "mapping(bytes32 => struct AccessControl.RoleData)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_mapping(t_address,t_struct(ListedInfo)12449_storage))": {
+          "t_mapping(t_uint256,t_mapping(t_address,t_struct(ListedInfo)8085_storage))": {
             "label": "mapping(uint256 => mapping(address => struct ListedInfo))",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_mapping(t_uint256,t_mapping(t_address,t_struct(ListedInfo)12449_storage)))": {
+          "t_mapping(t_uint256,t_mapping(t_uint256,t_mapping(t_address,t_struct(ListedInfo)8085_storage)))": {
             "label": "mapping(uint256 => mapping(uint256 => mapping(address => struct ListedInfo)))",
             "numberOfBytes": "32"
           },
@@ -220,7 +205,7 @@
             "label": "string",
             "numberOfBytes": "32"
           },
-          "t_struct(Counter)12391_storage": {
+          "t_struct(Counter)8027_storage": {
             "label": "struct Counters.Counter",
             "members": [
               {
@@ -232,7 +217,7 @@
             ],
             "numberOfBytes": "32"
           },
-          "t_struct(ListedInfo)12449_storage": {
+          "t_struct(ListedInfo)8085_storage": {
             "label": "struct ListedInfo",
             "members": [
               {
@@ -255,7 +240,7 @@
               },
               {
                 "label": "token",
-                "type": "t_contract(IToken)12383",
+                "type": "t_contract(IToken)8019",
                 "offset": 0,
                 "slot": "3"
               }
@@ -291,9 +276,9 @@
         }
       }
     },
-    "b04169a0b332fdd936647b3bd6d3ceaa9250529e89fe808d2f72f11beb1723ac": {
-      "address": "0xDa28096Ef1DB4F1b5451D5cAb0b76A01027edb1F",
-      "txHash": "0x05597dbef16ee84bc8c06ef65f49a61e0fcdc829922acf381712396468c1a6e4",
+    "a341a04133a308a39f942043e0a710504c472d22fb2628dfe6f08f71ced61ab8": {
+      "address": "0x2E076465c7915Bb86dE9D875588E86894e124105",
+      "txHash": "0x37b1c1d9ed04784d155b0bcc77ed51a8dfe28385793bd87aee4f18e576763b57",
       "layout": {
         "solcVersion": "0.8.17",
         "storage": [
@@ -326,25 +311,25 @@
             "label": "_assetCollection",
             "offset": 0,
             "slot": "2",
-            "type": "t_contract(IBaseAsset)10174",
+            "type": "t_contract(IBaseAsset)6603",
             "contract": "InvoiceAsset",
-            "src": "contracts/Asset/InvoiceAsset.sol:25"
+            "src": "contracts/Asset/InvoiceAsset.sol:24"
           },
           {
             "label": "_marketplace",
             "offset": 0,
             "slot": "3",
-            "type": "t_contract(IMarketplace)12204",
+            "type": "t_contract(IMarketplace)7929",
             "contract": "InvoiceAsset",
-            "src": "contracts/Asset/InvoiceAsset.sol:26"
+            "src": "contracts/Asset/InvoiceAsset.sol:25"
           },
           {
             "label": "_nonce",
             "offset": 0,
             "slot": "4",
-            "type": "t_struct(Counter)12391_storage",
+            "type": "t_struct(Counter)8027_storage",
             "contract": "InvoiceAsset",
-            "src": "contracts/Asset/InvoiceAsset.sol:27"
+            "src": "contracts/Asset/InvoiceAsset.sol:26"
           },
           {
             "label": "_treasuryWallet",
@@ -352,7 +337,7 @@
             "slot": "5",
             "type": "t_address",
             "contract": "InvoiceAsset",
-            "src": "contracts/Asset/InvoiceAsset.sol:29"
+            "src": "contracts/Asset/InvoiceAsset.sol:28"
           },
           {
             "label": "CHAIN_ID",
@@ -360,15 +345,15 @@
             "slot": "6",
             "type": "t_uint256",
             "contract": "InvoiceAsset",
-            "src": "contracts/Asset/InvoiceAsset.sol:32"
+            "src": "contracts/Asset/InvoiceAsset.sol:31"
           },
           {
             "label": "_invoiceInfo",
             "offset": 0,
             "slot": "7",
-            "type": "t_mapping(t_uint256,t_struct(InvoiceInfo)12461_storage)",
+            "type": "t_mapping(t_uint256,t_struct(InvoiceInfo)8097_storage)",
             "contract": "InvoiceAsset",
-            "src": "contracts/Asset/InvoiceAsset.sol:36"
+            "src": "contracts/Asset/InvoiceAsset.sol:35"
           },
           {
             "label": "_purchaseDate",
@@ -376,7 +361,7 @@
             "slot": "8",
             "type": "t_mapping(t_uint256,t_mapping(t_uint256,t_uint256))",
             "contract": "InvoiceAsset",
-            "src": "contracts/Asset/InvoiceAsset.sol:37"
+            "src": "contracts/Asset/InvoiceAsset.sol:36"
           },
           {
             "label": "_currentSubId",
@@ -384,7 +369,7 @@
             "slot": "9",
             "type": "t_mapping(t_uint256,t_uint256)",
             "contract": "InvoiceAsset",
-            "src": "contracts/Asset/InvoiceAsset.sol:38"
+            "src": "contracts/Asset/InvoiceAsset.sol:37"
           }
         ],
         "types": {
@@ -400,15 +385,15 @@
             "label": "bytes32",
             "numberOfBytes": "32"
           },
-          "t_contract(IBaseAsset)10174": {
+          "t_contract(IBaseAsset)6603": {
             "label": "contract IBaseAsset",
             "numberOfBytes": "20"
           },
-          "t_contract(IMarketplace)12204": {
+          "t_contract(IMarketplace)7929": {
             "label": "contract IMarketplace",
             "numberOfBytes": "20"
           },
-          "t_contract(IToken)12383": {
+          "t_contract(IToken)8019": {
             "label": "contract IToken",
             "numberOfBytes": "20"
           },
@@ -428,7 +413,7 @@
             "label": "mapping(uint256 => mapping(uint256 => uint256))",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_struct(InvoiceInfo)12461_storage)": {
+          "t_mapping(t_uint256,t_struct(InvoiceInfo)8097_storage)": {
             "label": "mapping(uint256 => struct InvoiceInfo)",
             "numberOfBytes": "32"
           },
@@ -436,7 +421,7 @@
             "label": "mapping(uint256 => uint256)",
             "numberOfBytes": "32"
           },
-          "t_struct(Counter)12391_storage": {
+          "t_struct(Counter)8027_storage": {
             "label": "struct Counters.Counter",
             "members": [
               {
@@ -448,7 +433,7 @@
             ],
             "numberOfBytes": "32"
           },
-          "t_struct(InvoiceInfo)12461_storage": {
+          "t_struct(InvoiceInfo)8097_storage": {
             "label": "struct InvoiceInfo",
             "members": [
               {
@@ -477,7 +462,7 @@
               },
               {
                 "label": "settlementToken",
-                "type": "t_contract(IToken)12383",
+                "type": "t_contract(IToken)8019",
                 "offset": 0,
                 "slot": "4"
               }
@@ -513,9 +498,9 @@
         }
       }
     },
-    "9a10fca3a1f75cddae3a14014e935c61046984bc813600dac671766c8d36459c": {
-      "address": "0x314e809b753c2a8bC7eb66795a554073f805a740",
-      "txHash": "0xf9df589cd303c80b62b7ca616e3860888015677788010b455c090f799f593c9f",
+    "529c426fcf9cfc0b6d2296da4908e3ab8f723b5bbdd5205ef91f1a72596043ca": {
+      "address": "0xeD1cbd8df30997cc64377A0CFD2DA2F37A8bE437",
+      "txHash": "0x9d6f8bb2671302529ee0024ebbc3e8361d3d0f257e46e1e21d50af975dfff5fa",
       "layout": {
         "solcVersion": "0.8.17",
         "storage": [
@@ -548,17 +533,17 @@
             "label": "_assetCollection",
             "offset": 0,
             "slot": "2",
-            "type": "t_contract(IBaseAsset)10174",
+            "type": "t_contract(IBaseAsset)10676",
             "contract": "PropertyAsset",
-            "src": "contracts/Asset/PropertyAsset.sol:28"
+            "src": "contracts/Asset/PropertyAsset.sol:27"
           },
           {
             "label": "_nonce",
             "offset": 0,
             "slot": "3",
-            "type": "t_struct(Counter)12391_storage",
+            "type": "t_struct(Counter)12941_storage",
             "contract": "PropertyAsset",
-            "src": "contracts/Asset/PropertyAsset.sol:29"
+            "src": "contracts/Asset/PropertyAsset.sol:28"
           },
           {
             "label": "_treasuryWallet",
@@ -566,7 +551,7 @@
             "slot": "4",
             "type": "t_address",
             "contract": "PropertyAsset",
-            "src": "contracts/Asset/PropertyAsset.sol:31"
+            "src": "contracts/Asset/PropertyAsset.sol:30"
           },
           {
             "label": "CHAIN_ID",
@@ -574,15 +559,15 @@
             "slot": "5",
             "type": "t_uint256",
             "contract": "PropertyAsset",
-            "src": "contracts/Asset/PropertyAsset.sol:34"
+            "src": "contracts/Asset/PropertyAsset.sol:33"
           },
           {
             "label": "_propertyInfo",
             "offset": 0,
             "slot": "6",
-            "type": "t_mapping(t_uint256,t_struct(PropertyInfo)12483_storage)",
+            "type": "t_mapping(t_uint256,t_struct(PropertyInfo)13033_storage)",
             "contract": "PropertyAsset",
-            "src": "contracts/Asset/PropertyAsset.sol:36"
+            "src": "contracts/Asset/PropertyAsset.sol:35"
           }
         ],
         "types": {
@@ -598,11 +583,11 @@
             "label": "bytes32",
             "numberOfBytes": "32"
           },
-          "t_contract(IBaseAsset)10174": {
+          "t_contract(IBaseAsset)10676": {
             "label": "contract IBaseAsset",
             "numberOfBytes": "20"
           },
-          "t_contract(IToken)12383": {
+          "t_contract(IToken)12933": {
             "label": "contract IToken",
             "numberOfBytes": "20"
           },
@@ -618,11 +603,11 @@
             "label": "mapping(bytes32 => struct AccessControl.RoleData)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_struct(PropertyInfo)12483_storage)": {
+          "t_mapping(t_uint256,t_struct(PropertyInfo)13033_storage)": {
             "label": "mapping(uint256 => struct PropertyInfo)",
             "numberOfBytes": "32"
           },
-          "t_struct(Counter)12391_storage": {
+          "t_struct(Counter)12941_storage": {
             "label": "struct Counters.Counter",
             "members": [
               {
@@ -634,7 +619,7 @@
             ],
             "numberOfBytes": "32"
           },
-          "t_struct(PropertyInfo)12483_storage": {
+          "t_struct(PropertyInfo)13033_storage": {
             "label": "struct PropertyInfo",
             "members": [
               {
@@ -657,7 +642,7 @@
               },
               {
                 "label": "settlementToken",
-                "type": "t_contract(IToken)12383",
+                "type": "t_contract(IToken)12933",
                 "offset": 0,
                 "slot": "3"
               }

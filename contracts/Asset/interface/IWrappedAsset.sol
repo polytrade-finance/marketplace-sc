@@ -1,9 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import { WrappedInfo } from "contracts/lib/structs.sol";
+import { WrappedInfo, IToken } from "contracts/lib/structs.sol";
 
 interface IWrappedAsset {
+    event ERC20Unwrapped(
+        address indexed owner,
+        address indexed contractAddress,
+        uint256 balance,
+        uint256 mainId
+    );
     /**
      * @dev Emitted when an asset is unwrapped
      * @param owner, address of the asset owner
@@ -34,6 +40,14 @@ interface IWrappedAsset {
         uint256 mainId
     );
 
+    event ERC20Wrapped(
+        address indexed owner,
+        address indexed contractAddress,
+        uint256 balance,
+        uint256 mainId,
+        uint256 nonce
+    );
+
     /**
      * @dev Emitted when an asset is wrapped to DLT
      * @param owner, address of the asset owner
@@ -45,7 +59,8 @@ interface IWrappedAsset {
         address indexed owner,
         address indexed contractAddress,
         uint256 tokenId,
-        uint256 mainId
+        uint256 mainId,
+        uint256 nonce
     );
 
     /**
@@ -61,7 +76,8 @@ interface IWrappedAsset {
         address indexed contractAddress,
         uint256 tokenId,
         uint256 balance,
-        uint256 mainId
+        uint256 mainId,
+        uint256 nonce
     );
 
     event StatusChanged(address indexed contractAddress, bool status);
@@ -74,6 +90,12 @@ interface IWrappedAsset {
     error UnableToReceive();
 
     function whitelist(address contractAddress, bool status) external;
+
+    function wrapERC20(
+        address contractAddress,
+        uint256 balance,
+        uint256 fractions
+    ) external returns (uint256);
 
     /**
      * @dev Wrapps an ERC721 token into DLT
@@ -106,14 +128,18 @@ interface IWrappedAsset {
     function wrapERC1155(
         address contractAddress,
         uint256 tokenId,
+        uint256 balance,
         uint256 fractions
     ) external returns (uint256);
 
     function batchWrapERC1155(
         address[] calldata contractAddresses,
         uint256[] calldata tokenIds,
+        uint256[] calldata balances,
         uint256[] calldata fractions
     ) external returns (uint256[] memory);
+
+    function unwrapERC20(uint256 mainId) external;
 
     /**
      * @dev Unwrapps a DLT to ERC721 token

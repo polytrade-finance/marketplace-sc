@@ -28,10 +28,6 @@ contract BaseAsset is
     bytes32 public constant ASSET_MANAGER =
         0x9c6e3ae929b539a99db03120eac7d9f862d68479b44f1eec05ab6036fcf56830;
 
-    // Create a new role identifier for the marketplace role
-    bytes32 public constant MARKETPLACE_ROLE =
-        0x0ea61da3a8a09ad801432653699f8c1860b1ae9d2ea4a141fadfd63227717bc8;
-
     mapping(uint256 => mapping(uint256 => AssetInfo)) private _assetInfo;
     mapping(uint256 => string) private _assetBaseURI;
 

@@ -45,7 +45,7 @@ contract Marketplace is
     bytes32 private constant _OFFER_TYPEHASH =
         keccak256(
             abi.encodePacked(
-                "CounterOffer(",
+                "offer(",
                 "address owner,",
                 "address offeror,",
                 "uint256 offerPrice,",
@@ -118,9 +118,9 @@ contract Marketplace is
     }
 
     /**
-     * @dev See {IMarketplace-counterOffer}.
+     * @dev See {IMarketplace-offer}.
      */
-    function counterOffer(
+    function offer(
         address owner,
         address offeror,
         uint256 offerPrice,

@@ -1,5 +1,5 @@
 const { ethers, upgrades } = require("hardhat");
-const { tokenAddress, treasuryWallet, feeWallet } = require("./data");
+const { treasuryWallet, feeWallet } = require("./data");
 
 async function main() {
   const MarketplaceAccess = ethers.keccak256(
@@ -21,10 +21,16 @@ async function main() {
 
   console.log(await asset.getAddress());
 
-  const TokenFactory = await ethers.getContractFactory("ERC20Token");
-  const token = TokenFactory.attach(tokenAddress);
+  const WrapperFactory = await ethers.getContractFactory("WrappedAsset");
+  const wrapperAsset = await WrapperFactory.deploy(await asset.getAddress());
+  await wrapperAsset.waitForDeployment();
 
-  console.log(await token.getAddress());
+  console.log(await wrapperAsset.getAddress());
+
+  // const TokenFactory = await ethers.getContractFactory("ERC20Token");
+  // const token = TokenFactory.attach(tokenAddress);
+
+  // console.log(await token.getAddress());
 
   const FeeManager = await ethers.getContractFactory("FeeManager");
   const feeManager = await FeeManager.deploy(100, 200, feeWallet);
@@ -58,14 +64,6 @@ async function main() {
 
   console.log(await propertyAsset.getAddress());
 
-  const WrapperFactory = await ethers.getContractFactory("WrappedAsset");
-  const wrapperAsset = await WrapperFactory.deploy(await asset.getAddress());
-  await wrapperAsset.waitForDeployment();
-
-  console.log(await wrapperAsset.getAddress());
-
-  await token.approve(marketplace.getAddress(), ethers.MaxUint256);
-  console.log("first");
   await asset.grantRole(AssetManagerAccess, invoiceAsset.getAddress());
   console.log("first");
 
@@ -73,7 +71,6 @@ async function main() {
   console.log("first");
 
   await asset.grantRole(AssetManagerAccess, wrapperAsset.getAddress());
-  console.log("first");
 
   await invoiceAsset.grantRole(MarketplaceAccess, marketplace.getAddress());
   console.log("first");
@@ -87,10 +84,9 @@ main().catch((error) => {
   throw new Error(error);
 });
 
-// Asset 0xef0bABAdd9DfF3E4C3A85E904fe669891Cb6Dd80
-// Token 0xdd7fded184a005ba01f9f963ff2242136cf4f3eb
-// Marketplace 0x34753E78415cD88176688449D7d7812f97108A88
-// Invoice 0x60059c6bBe88CaD480eB0465Ec9ED3CbA1a91C6e
-// Property 0x11C23AADD1E01D2eC7044Ff5259ad7aD18502c16
-// Wrapper 0x1C807B6378Ed18A01792749222a509F2Aee1DE08
-// NFT 0xCCa859b22f3FD6544CbE088dDf3b5154abAA8748
+// Polygon
+// BaseAsset 0x6bD42F82dBD545eD95d861CAe21013b8E00bbf83
+// Wrapper 0xCfD4d25cBeED0e61C118938ff3c55a076b03D439
+// Marketplace 0x596C89d5DA9368F33E22e2A783a1a6BC097278Be
+// Invoice 0xD3F665E0bF7F4aeA50B4ee7C1CDF6d827C0654df
+// Property 0x97463C65642e62f728D5d73F7A055097721D4347

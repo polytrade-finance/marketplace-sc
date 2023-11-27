@@ -21,8 +21,8 @@ const getId = async (contract, owner) => {
   const nonce = await contract.getNonce(owner);
   return BigInt(
     ethers.solidityPackedKeccak256(
-      ["uint256", "address", "uint256"],
-      [chainId, await contract.getAddress(), nonce]
+      ["uint256", "address", "address", "uint256"],
+      [chainId, await contract.getAddress(), owner, nonce]
     )
   );
 };
@@ -34,8 +34,8 @@ const getIds = async (contract, num, owner) => {
     arr.push(
       BigInt(
         ethers.solidityPackedKeccak256(
-          ["uint256", "address", "uint256"],
-          [chainId, await contract.getAddress(), nonce + BigInt(i)]
+          ["uint256", "address", "address", "uint256"],
+          [chainId, await contract.getAddress(), owner, nonce + BigInt(i)]
         )
       )
     );
@@ -158,7 +158,7 @@ describe("Marketplace", function () {
   });
 
   it("Should create asset successfully", async function () {
-    const id = await getId(invoiceContract, await user1.getAddress());
+    const id = await getId(invoiceContract, await invoiceContract.getAddress());
 
     await invoiceContract.createInvoice(asset);
     await assetContract.setBaseURI(id, "https://ipfs.io/ipfs");
@@ -229,7 +229,11 @@ describe("Marketplace", function () {
   });
 
   it("Batch create invoice", async function () {
-    const ids = await getIds(invoiceContract, 3, await user1.getAddress());
+    const ids = await getIds(
+      invoiceContract,
+      3,
+      await invoiceContract.getAddress()
+    );
     await invoiceContract.batchCreateInvoice([asset, asset, asset]);
 
     expect(
@@ -308,7 +312,10 @@ describe("Marketplace", function () {
 
   it("Should revert on creating minted asset", async function () {
     await assetContract.grantRole(AssetManagerAccess, deployer.getAddress());
-    const iId = await getId(invoiceContract, await user1.getAddress());
+    const iId = await getId(
+      invoiceContract,
+      await invoiceContract.getAddress()
+    );
     const pId = await getId(propertyContract, await user1.getAddress());
 
     await assetContract.createAsset(await user1.getAddress(), iId, 0, 10000);
@@ -440,7 +447,7 @@ describe("Marketplace", function () {
   });
 
   it("Should revert on settling an asset for wrong owner - Invoice", async function () {
-    const id = await getId(invoiceContract, await user1.getAddress());
+    const id = await getId(invoiceContract, await invoiceContract.getAddress());
     await invoiceContract.createInvoice(
       await nearSettleAsset(stableTokenContract.getAddress())
     );
@@ -712,7 +719,7 @@ describe("Marketplace", function () {
   });
 
   it("Should revert to batch List without array parity", async function () {
-    const id = await getId(invoiceContract, await user1.getAddress());
+    const id = await getId(invoiceContract, await invoiceContract.getAddress());
     await invoiceContract.createInvoice(asset);
 
     await expect(
@@ -756,7 +763,7 @@ describe("Marketplace", function () {
   });
 
   it("Should return the listed info struct", async function () {
-    const id = await getId(invoiceContract, await user1.getAddress());
+    const id = await getId(invoiceContract, await invoiceContract.getAddress());
     await invoiceContract.createInvoice(asset);
 
     const info = await marketplaceContract.getListedInfo(
@@ -1095,7 +1102,12 @@ describe("Marketplace", function () {
 
   it("Should create invoice and selling it to buyer (before due date)", async function () {
     const id = await getId(invoiceContract, await invoiceContract.getAddress());
+
+    expect(await invoiceContract.getAvailableReward(id, 0)).to.eq(0);
+
     await invoiceContract.createInvoice(asset);
+
+    expect(await invoiceContract.getRemainingReward(id, 1)).to.be.eq(0);
 
     await stableTokenContract
       .connect(buyer)

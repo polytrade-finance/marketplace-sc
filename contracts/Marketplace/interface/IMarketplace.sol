@@ -132,7 +132,7 @@ interface IMarketplace {
      * over the EIP712-formatted function arguments.
      * - the signature must use ``owner``'s current nonce
      */
-    function counterOffer(
+    function offer(
         address owner,
         address offeror,
         uint256 offerPrice,
@@ -166,15 +166,15 @@ interface IMarketplace {
 
     /**
      * @dev Returns the current nonce for `owner`. This value must be
-     * included whenever a signature is generated for {counterOffer}.
+     * included whenever a signature is generated for {offer}.
      *
-     * Every successful call to {counterOffer} increases ``owner``'s nonce by one. This
+     * Every successful call to {offer} increases ``owner``'s nonce by one. This
      * prevents a signature from being used multiple times
      */
     function getNonce(address owner) external view returns (uint256);
 
     /**
-     * @dev Gets the domain separator used in the encoding of the signature for {counterOffer}, as defined by {EIP712}.
+     * @dev Gets the domain separator used in the encoding of the signature for {offer}, as defined by {EIP712}.
      * @return bytes32 of the domain separator
      */
     // solhint-disable-next-line func-name-mixedcase
