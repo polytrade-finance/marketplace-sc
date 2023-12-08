@@ -813,7 +813,7 @@ describe("Marketplace", function () {
     expect(info.minFraction).to.eq(1);
   });
 
-  it("Should return the delted unlisted info struct", async function () {
+  it("Should return the deleted unlisted info struct", async function () {
     const id = await getId(propertyContract, await user1.getAddress());
     await propertyContract.createProperty(await user1.getAddress(), property);
 
