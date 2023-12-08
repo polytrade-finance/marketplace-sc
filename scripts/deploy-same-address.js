@@ -1,5 +1,5 @@
 const { ethers, upgrades } = require("hardhat");
-const { tokenAddress, treasuryWallet, feeWallet } = require("./data");
+const { treasuryWallet, feeWallet } = require("./data");
 
 async function main() {
   const MarketplaceAccess = ethers.keccak256(
@@ -65,15 +65,15 @@ async function main() {
   console.log(await propertyAsset.getAddress());
 
   await asset.grantRole(AssetManagerAccess, invoiceAsset.getAddress());
-  console.log("first")
+  console.log("first");
 
   await asset.grantRole(AssetManagerAccess, propertyAsset.getAddress());
-  console.log("first")
+  console.log("first");
 
   await asset.grantRole(AssetManagerAccess, wrapperAsset.getAddress());
 
   await invoiceAsset.grantRole(MarketplaceAccess, marketplace.getAddress());
-  console.log("first")
+  console.log("first");
 
   await asset.setApprovalForAll(marketplace.getAddress(), true);
 }
@@ -84,7 +84,7 @@ main().catch((error) => {
   throw new Error(error);
 });
 
-//Polygon
+// Polygon
 // BaseAsset 0x6bD42F82dBD545eD95d861CAe21013b8E00bbf83
 // Wrapper 0xCfD4d25cBeED0e61C118938ff3c55a076b03D439
 // Marketplace 0x596C89d5DA9368F33E22e2A783a1a6BC097278Be
