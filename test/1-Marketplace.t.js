@@ -738,6 +738,15 @@ describe("Marketplace", function () {
     ).to.revertedWith("No array parity");
   });
 
+  it("Should revert to batch Unlist without array parity", async function () {
+    const id = await getId(invoiceContract, await invoiceContract.getAddress());
+    await invoiceContract.createInvoice(asset);
+
+    await expect(marketplaceContract.batchUnlist([id], [1, 1])).to.revertedWith(
+      "No array parity"
+    );
+  });
+
   it("Should batch create properties and batch list", async function () {
     const ids = await getIds(propertyContract, 3, await user1.getAddress());
 
@@ -762,6 +771,34 @@ describe("Marketplace", function () {
       .batchList([ids[0], ids[1], ids[2]], [1, 1, 1], [list, list, list]);
   });
 
+  it("Should batch create properties and batch list and unlisted", async function () {
+    const ids = await getIds(propertyContract, 3, await user1.getAddress());
+
+    await propertyContract.batchCreateProperty(
+      [
+        await user1.getAddress(),
+        await user1.getAddress(),
+        await user1.getAddress(),
+      ],
+      [property, property, property]
+    );
+
+    const list = await createList(
+      asset.price,
+      asset.fractions,
+      1000,
+      stableTokenContract.getAddress()
+    );
+
+    await marketplaceContract
+      .connect(user1)
+      .batchList([ids[0], ids[1], ids[2]], [1, 1, 1], [list, list, list]);
+
+    await marketplaceContract
+      .connect(user1)
+      .batchUnlist([ids[0], ids[1], ids[2]], [1, 1, 1]);
+  });
+
   it("Should return the listed info struct", async function () {
     const id = await getId(invoiceContract, await invoiceContract.getAddress());
     await invoiceContract.createInvoice(asset);
@@ -772,8 +809,33 @@ describe("Marketplace", function () {
       0
     );
 
-    expect(info.salePrice).to.eq(asset.price / 100n);
+    expect(info.salePrice).to.eq(asset.price / asset.fractions);
     expect(info.minFraction).to.eq(1);
+  });
+
+  it("Should return the delted unlisted info struct", async function () {
+    const id = await getId(propertyContract, await user1.getAddress());
+    await propertyContract.createProperty(await user1.getAddress(), property);
+
+    const list = await createList(
+      asset.price,
+      asset.fractions,
+      1000,
+      stableTokenContract.getAddress()
+    );
+
+    await marketplaceContract.connect(user1).list(id, 1, list);
+
+    await marketplaceContract.connect(user1).unlist(id, 1);
+
+    const info = await marketplaceContract.getListedInfo(
+      invoiceContract.getAddress(),
+      id,
+      0
+    );
+
+    expect(info.salePrice).to.eq(0);
+    expect(info.minFraction).to.eq(0);
   });
 
   it("Should return the batch listed info struct", async function () {
@@ -803,12 +865,12 @@ describe("Marketplace", function () {
       ids[2],
       0
     );
-    // 100 for 100.00 fraction (10000/100)
-    expect(info1.salePrice).to.eq(asset.price / 100n);
+
+    expect(info1.salePrice).to.eq(asset.price / asset.fractions);
     expect(info1.minFraction).to.eq(1);
-    expect(info2.salePrice).to.eq(asset.price / 100n);
+    expect(info2.salePrice).to.eq(asset.price / asset.fractions);
     expect(info2.minFraction).to.eq(1);
-    expect(info3.salePrice).to.eq(asset.price / 100n);
+    expect(info3.salePrice).to.eq(asset.price / asset.fractions);
     expect(info3.minFraction).to.eq(1);
   });
 
@@ -1213,14 +1275,14 @@ describe("Marketplace", function () {
       user1.getAddress(),
       await nearSettleProperty(stableTokenContract.getAddress())
     );
-    // price for each fraction (considering 2 decimal for fractions)
+
     await marketplaceContract
       .connect(user1)
       .list(
         id,
         1,
         await createList(
-          asset.price / 100n,
+          asset.price / asset.fractions,
           asset.fractions,
           1000,
           stableTokenContract.getAddress()
@@ -1300,7 +1362,7 @@ describe("Marketplace", function () {
         id,
         1,
         await createList(
-          asset.price / 100n,
+          asset.price / asset.fractions,
           asset.fractions,
           1000,
           stableTokenContract.getAddress()
@@ -1339,7 +1401,7 @@ describe("Marketplace", function () {
         id,
         1,
         await createList(
-          asset.price / 100n,
+          asset.price / asset.fractions,
           1000,
           1000 / 10,
           stableTokenContract.getAddress()
@@ -1392,7 +1454,7 @@ describe("Marketplace", function () {
         ids[0],
         1,
         await createList(
-          asset.price / 100n,
+          asset.price / asset.fractions,
           asset.fractions,
           1000,
           stableTokenContract.getAddress()
@@ -1410,7 +1472,7 @@ describe("Marketplace", function () {
         ids[1],
         1,
         await createList(
-          asset.price / 100n,
+          asset.price / asset.fractions,
           asset.fractions,
           1000,
           stableTokenContract.getAddress()
@@ -1578,7 +1640,7 @@ describe("Marketplace", function () {
         ids[0],
         1,
         await createList(
-          property.price / 100n,
+          property.price / asset.fractions,
           asset.fractions,
           1000,
           stableTokenContract.getAddress()
@@ -1596,7 +1658,7 @@ describe("Marketplace", function () {
         ids[1],
         1,
         await createList(
-          property.price / 100n,
+          property.price / asset.fractions,
           asset.fractions,
           1000,
           stableTokenContract.getAddress()
