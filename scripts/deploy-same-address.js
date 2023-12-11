@@ -68,9 +68,11 @@ async function main() {
 
   await asset.grantRole(AssetManagerAccess, propertyAsset.getAddress());
 
+
   await asset.grantRole(AssetManagerAccess, wrapperAsset.getAddress());
 
   await invoiceAsset.grantRole(MarketplaceAccess, marketplace.getAddress());
+
 
   await asset.setApprovalForAll(marketplace.getAddress(), true);
 }
