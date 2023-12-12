@@ -118,6 +118,31 @@ contract Marketplace is
     }
 
     /**
+     * @dev See {IMarketplace-unlist}.
+     */
+    function unlist(uint256 mainId, uint256 subId) external {
+        _unlist(mainId, subId);
+    }
+
+    /**
+     * @dev See {IMarketplace-batchUnlist}.
+     */
+    function batchUnlist(
+        uint256[] calldata mainIds,
+        uint256[] calldata subIds
+    ) external {
+        uint256 length = subIds.length;
+        require(mainIds.length == length, "No array parity");
+        for (uint256 i = 0; i < length; ) {
+            _unlist(mainIds[i], subIds[i]);
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /**
      * @dev See {IMarketplace-offer}.
      */
     function offer(
@@ -306,6 +331,17 @@ contract Marketplace is
     }
 
     /**
+     * @dev Unlist an asset based on main id and sub id
+     * @param mainId, unique identifier of the asset
+     * @param subId, unique identifier of the asset
+     */
+    function _unlist(uint256 mainId, uint256 subId) private {
+        delete _listedInfo[mainId][subId][_msgSender()];
+
+        emit AssetUnlisted(_msgSender(), mainId, subId);
+    }
+
+    /**
      * @dev Safe transfer asset to marketplace and transfer the price to the prev owner
      * @dev Transfer the price to previous owner if it is not the first buy
      * @dev Transfer buying fee or initial fee to fee wallet based on asset status
@@ -339,7 +375,7 @@ contract Marketplace is
         );
 
         address receiver = owner;
-        uint256 payPrice = (salePrice * fractionToBuy) / 1e2;
+        uint256 payPrice = salePrice * fractionToBuy;
         uint256 fee = _assetCollection
             .getAssetInfo(mainId, subId)
             .initialOwner != owner

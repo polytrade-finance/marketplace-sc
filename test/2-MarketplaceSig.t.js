@@ -190,7 +190,7 @@ describe("Marketplace Signatures", function () {
       params = {
         owner: await user1.getAddress(),
         offeror: await offeror.getAddress(),
-        offerPrice: offer.offerPrice / 100n,
+        offerPrice: offer.offerPrice / 10000n,
         mainId: id,
         subId: 1,
         fractionsToBuy: 1000,
@@ -225,7 +225,7 @@ describe("Marketplace Signatures", function () {
         .offer(
           user1.getAddress(),
           offeror.getAddress(),
-          offer.offerPrice / 100n,
+          offer.offerPrice / 10000n,
           id,
           1,
           1000,

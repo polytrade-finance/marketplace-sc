@@ -65,15 +65,12 @@ async function main() {
   console.log(await propertyAsset.getAddress());
 
   await asset.grantRole(AssetManagerAccess, invoiceAsset.getAddress());
-  console.log("first");
 
   await asset.grantRole(AssetManagerAccess, propertyAsset.getAddress());
-  console.log("first");
 
   await asset.grantRole(AssetManagerAccess, wrapperAsset.getAddress());
 
   await invoiceAsset.grantRole(MarketplaceAccess, marketplace.getAddress());
-  console.log("first");
 
   await asset.setApprovalForAll(marketplace.getAddress(), true);
 }

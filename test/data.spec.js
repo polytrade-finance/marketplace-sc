@@ -36,7 +36,7 @@ const createAsset = async (token) => {
     price: ethers.parseUnits("10", DECIMALS.SIX),
     dueDate: (await now()) + 7890000, // add 3 months
     rewardApr: ethers.parseUnits("10", DECIMALS.TWO), // with 2 decimals
-    fractions: 10000,
+    fractions: 10000n,
     settlementToken: token,
   };
 };
@@ -46,7 +46,7 @@ const zeroPriceAsset = async (token) => {
     price: 0,
     dueDate: (await now()) + 7890000, // add 3 months
     rewardApr: ethers.parseUnits("10", DECIMALS.TWO), // with 2 decimals
-    fractions: 10000,
+    fractions: 10000n,
     settlementToken: token,
   };
 };
@@ -56,7 +56,7 @@ const nearSettleAsset = async (token) => {
     price: ethers.parseUnits("10", DECIMALS.SIX),
     dueDate: (await now()) + 100, // in seconds
     rewardApr: ethers.parseUnits("10", DECIMALS.TWO), // with 2 decimals
-    fractions: 10000,
+    fractions: 10000n,
     settlementToken: token,
   };
 };
@@ -65,7 +65,7 @@ const nearSettleProperty = async (token) => {
   return {
     price: ethers.parseUnits("10", DECIMALS.SIX),
     dueDate: (await now()) + 100,
-    fractions: 10000,
+    fractions: 10000n,
     settlementToken: token,
   };
 };
@@ -74,7 +74,7 @@ const createProperty = async (token) => {
   return {
     price: ethers.parseUnits("10", DECIMALS.SIX),
     dueDate: (await now()) + 7890000, // add 3 months
-    fractions: 10000,
+    fractions: 10000n,
     settlementToken: token,
   };
 };

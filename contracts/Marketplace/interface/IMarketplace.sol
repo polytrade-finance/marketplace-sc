@@ -14,7 +14,7 @@ interface IMarketplace {
      * @dev Emitted when asset owner changes
      * @param oldOwner, Address of the previous owner
      * @param newOwner, Address of the new owner
-     * @param mainId, mainId identifies whether its a property or an invoice
+     * @param mainId, unique identifiers of the assets
      * @param subId, id of the bought asset
      * @param salePrice, the sale price of whole asset
      * @param payPrice, the price buyer pays that is fraction of salePrice
@@ -35,7 +35,8 @@ interface IMarketplace {
     /**
      * @dev Emitted when an asset is listed
      * @param owner, address of the asset owner
-     * @param mainId, mainId identifies whether its a property or an invoice
+     * @param mainId, unique identifiers of the assets
+     * @param subId, unique identifiers of the asset
      * @param listedInfo, information of listed asset including salePrice, listedFraction, minFraction and token of sale
      */
     event AssetListed(
@@ -43,6 +44,18 @@ interface IMarketplace {
         uint256 indexed mainId,
         uint256 indexed subId,
         ListedInfo listedInfo
+    );
+
+    /**
+     * @dev Emitted when an asset is unlisted
+     * @param owner, address of the asset owner
+     * @param mainId, unique identifiers of the assets
+     * @param subId, unique identifiers of the asset
+     */
+    event AssetUnlisted(
+        address indexed owner,
+        uint256 indexed mainId,
+        uint256 indexed subId
     );
 
     /**
@@ -63,8 +76,8 @@ interface IMarketplace {
      * @dev Transfer the price to previous owner if it is not the first buy
      * @dev Owner should have approved marketplace to transfer its assets
      * @dev Buyer should have approved marketplace to transfer its ERC20 tokens to pay price and fees
-     * @param mainId, main identifier of the asset
-     * @param subId, property identifier of main asset
+     * @param mainId, unique identifiers of the assets
+     * @param subId, unique identifiers of the asset
      * @param fractionToBuy, amount of fraction for buying
      * @param owner, address of the owner of asset
      */
@@ -78,8 +91,8 @@ interface IMarketplace {
     /**
      * @dev Batch buy assets from owners
      * @dev Loop through arrays and calls the buy function
-     * @param mainIds, arrray of mainIds that identifies whether its a property or an invoice
-     * @param subIds, unique identifiers of the assets
+     * @param mainIds, arrray of unique identifiers of the assets
+     * @param subIds, array of unique identifiers of the assets
      * @param fractionsToBuy, amounts of fraction for buying
      * @param owners, addresses of the owner of asset
      */
@@ -92,7 +105,7 @@ interface IMarketplace {
 
     /**
      * @dev List an asset for the current owner
-     * @param mainId, mainId identifies whether its a property or an invoice
+     * @param mainId, unique identifiers of the assets
      * @param subId, unique identifier of the asset
      * @param listedInfo, information of listed asset including salePrice, listedFraction, minFraction and token of sale
      */
@@ -115,11 +128,28 @@ interface IMarketplace {
     ) external;
 
     /**
+     * @dev Unlist an asset for the current owner
+     * @param mainId, unique identifiers of the assets
+     * @param subId, unique identifier of the asset
+     */
+    function unlist(uint256 mainId, uint256 subId) external;
+
+    /**
+     * @dev Batch unlist assets for the specified owners
+     * @param mainIds, main unique identifier the asset
+     * @param subIds, sub unique identifier of the asset
+     */
+    function batchUnlist(
+        uint256[] calldata mainIds,
+        uint256[] calldata subIds
+    ) external;
+
+    /**
      * @dev Allows to buy asset with a signed message by owner with agreed sale price
      * @param owner, Address of the owner of asset
      * @param offeror, Address of the offeror
      * @param offerPrice, offered price for buying asset
-     * @param mainId, mainId identifies whether its a property or an invoice
+     * @param mainId, unique identifiers of the assets
      * @param subId, asset id to buy
      * @param fractionsToBuy, amount of fractions o buy from owner
      * @param deadline, The expiration date of this agreement

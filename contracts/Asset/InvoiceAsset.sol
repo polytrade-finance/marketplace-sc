@@ -381,7 +381,7 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
             invoiceMainId,
             0,
             ListedInfo(
-                (invoiceInfo.price * 100) / fractions,
+                invoiceInfo.price / fractions,
                 fractions,
                 1,
                 invoiceInfo.settlementToken
