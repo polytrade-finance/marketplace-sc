@@ -2,8 +2,9 @@
 pragma solidity 0.8.17;
 
 import { WrappedInfo, IToken } from "contracts/lib/structs.sol";
+import { GenericErrors } from "contracts/lib/errors.sol";
 
-interface IWrappedAsset {
+interface IWrappedAsset is GenericErrors {
     event ERC20Unwrapped(
         address indexed owner,
         address indexed contractAddress,
@@ -88,6 +89,12 @@ interface IWrappedAsset {
     error UnsupportedInterface();
 
     error UnableToReceive();
+    error NotWhitelisted();
+    error PartialOwnership();
+    error InvalidBalance();
+    error AssetAlreadyCreated();
+    error InvalidOwner();
+    error WrongAssetId();
 
     function whitelist(address contractAddress, bool status) external;
 

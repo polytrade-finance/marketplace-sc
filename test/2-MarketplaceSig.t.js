@@ -286,7 +286,7 @@ describe("Marketplace Signatures", function () {
             r,
             s
           )
-      ).to.be.revertedWith("You are not the offeror");
+      ).to.be.reverted;
     });
 
     it("Should revert reused signature by offeror", async function () {
@@ -307,7 +307,7 @@ describe("Marketplace Signatures", function () {
             r,
             s
           )
-      ).to.be.revertedWith("Invalid signature");
+      ).to.be.reverted;
     });
 
     it("Should revert expired offers", async function () {
@@ -330,7 +330,7 @@ describe("Marketplace Signatures", function () {
           r,
           s
         )
-      ).to.be.revertedWith("Offer expired");
+      ).to.be.reverted;
     });
   });
 });

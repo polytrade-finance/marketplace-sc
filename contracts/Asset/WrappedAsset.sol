@@ -44,7 +44,9 @@ contract WrappedAsset is
     bytes4 private constant _ERC1155_INTERFACE_ID = type(IERC1155).interfaceId;
 
     modifier isWhitelisted(address contractAddress) {
-        require(_isWhitelisted[contractAddress], "contract not whitelisted");
+        if (!_isWhitelisted[contractAddress]) {
+            revert NotWhitelisted();
+        }
         _;
     }
 
@@ -95,10 +97,9 @@ contract WrappedAsset is
         uint256[] calldata fractions
     ) external returns (uint256[] memory) {
         uint256 length = contractAddresses.length;
-        require(
-            balances.length == length && length == fractions.length,
-            "No array parity"
-        );
+        if (balances.length != length || length != fractions.length) {
+            revert NoArrayParity();
+        }
         uint256[] memory ids = new uint256[](length);
         for (uint256 i = 0; i < length; ) {
             ids[i] = _wrapERC20(
@@ -133,10 +134,9 @@ contract WrappedAsset is
         uint256[] calldata fractions
     ) external returns (uint256[] memory) {
         uint256 length = contractAddresses.length;
-        require(
-            tokenIds.length == length && length == fractions.length,
-            "No array parity"
-        );
+        if (tokenIds.length != length || length != fractions.length) {
+            revert NoArrayParity();
+        }
         uint256[] memory ids = new uint256[](length);
         for (uint256 i = 0; i < length; ) {
             ids[i] = _wrapERC721(
@@ -173,12 +173,13 @@ contract WrappedAsset is
         uint256[] calldata fractions
     ) external returns (uint256[] memory) {
         uint256 length = contractAddresses.length;
-        require(
-            tokenIds.length == length &&
-                length == fractions.length &&
-                balances.length == length,
-            "No array parity"
-        );
+        if (
+            tokenIds.length != length ||
+            length != fractions.length ||
+            balances.length != length
+        ) {
+            revert NoArrayParity();
+        }
         uint256[] memory ids = new uint256[](length);
         for (uint256 i = 0; i < length; ) {
             ids[i] = _wrapERC1155(
@@ -229,11 +230,12 @@ contract WrappedAsset is
      * @dev See {IWrappedAsset-unwrapERC20}.
      */
     function unwrapERC20(uint256 mainId) external {
-        require(
-            _wrappedInfo[mainId].fractions ==
-                _assetCollection.subBalanceOf(_msgSender(), mainId, 1),
-            "Partial ownership"
-        );
+        if (
+            _wrappedInfo[mainId].fractions !=
+            _assetCollection.subBalanceOf(_msgSender(), mainId, 1)
+        ) {
+            revert PartialOwnership();
+        }
         _unwrapERC20(_msgSender(), mainId);
     }
 
@@ -241,11 +243,12 @@ contract WrappedAsset is
      * @dev See {IWrappedAsset-unwrapERC721}.
      */
     function unwrapERC721(uint256 mainId) external {
-        require(
-            _wrappedInfo[mainId].fractions ==
-                _assetCollection.subBalanceOf(_msgSender(), mainId, 1),
-            "Partial ownership"
-        );
+        if (
+            _wrappedInfo[mainId].fractions !=
+            _assetCollection.subBalanceOf(_msgSender(), mainId, 1)
+        ) {
+            revert PartialOwnership();
+        }
         _unwrapERC721(_msgSender(), mainId);
     }
 
@@ -253,11 +256,12 @@ contract WrappedAsset is
      * @dev See {IWrappedAsset-unwrapERC1155}.
      */
     function unwrapERC1155(uint256 mainId) external {
-        require(
-            _wrappedInfo[mainId].fractions ==
-                _assetCollection.subBalanceOf(_msgSender(), mainId, 1),
-            "Partial ownership"
-        );
+        if (
+            _wrappedInfo[mainId].fractions !=
+            _assetCollection.subBalanceOf(_msgSender(), mainId, 1)
+        ) {
+            revert PartialOwnership();
+        }
         _unwrapERC1155(_msgSender(), mainId);
     }
 
@@ -312,11 +316,14 @@ contract WrappedAsset is
         uint256 balance,
         uint256 fractions
     ) private isWhitelisted(contractAddress) returns (uint256 mainId) {
-        require(balance != 0, "Balance can not be zero");
+        if (balance == 0) {
+            revert InvalidBalance();
+        }
         IToken token = IToken(contractAddress);
         uint256 actualBalance = token.balanceOf(_msgSender());
-        require(actualBalance >= balance, "Not enough balance");
-
+        if (actualBalance < balance) {
+            revert NotEnoughBalance();
+        }
         mainId = uint256(
             keccak256(
                 abi.encodePacked(
@@ -328,11 +335,9 @@ contract WrappedAsset is
             )
         );
 
-        require(
-            _assetCollection.totalSubSupply(mainId, 1) == 0,
-            "Asset already created"
-        );
-
+        if (_assetCollection.totalSubSupply(mainId, 1) != 0) {
+            revert AssetAlreadyCreated();
+        }
         _wrappedInfo[mainId] = WrappedInfo(
             0,
             fractions,
@@ -361,11 +366,9 @@ contract WrappedAsset is
             revert UnsupportedInterface();
         }
         IERC721 token = IERC721(contractAddress);
-        require(
-            _msgSender() == token.ownerOf(tokenId),
-            "You are not the owner"
-        );
-
+        if (_msgSender() != token.ownerOf(tokenId)) {
+            revert InvalidOwner();
+        }
         mainId = uint256(
             keccak256(
                 abi.encodePacked(
@@ -376,11 +379,9 @@ contract WrappedAsset is
                 )
             )
         );
-
-        require(
-            _assetCollection.totalMainSupply(mainId) == 0,
-            "Asset already created"
-        );
+        if (_assetCollection.totalMainSupply(mainId) != 0) {
+            revert AssetAlreadyCreated();
+        }
 
         _wrappedInfo[mainId] = WrappedInfo(
             tokenId,
@@ -407,14 +408,17 @@ contract WrappedAsset is
         uint256 balance,
         uint256 fractions
     ) private isWhitelisted(contractAddress) returns (uint256 mainId) {
-        require(balance != 0, "Balance can not be zero");
+        if (balance == 0) {
+            revert InvalidBalance();
+        }
         if (!contractAddress.supportsInterface(_ERC1155_INTERFACE_ID)) {
             revert UnsupportedInterface();
         }
         IERC1155 token = IERC1155(contractAddress);
         uint256 actualBalance = token.balanceOf(_msgSender(), tokenId);
-        require(actualBalance >= balance, "Not enough balance");
-
+        if (actualBalance < balance) {
+            revert NotEnoughBalance();
+        }
         mainId = uint256(
             keccak256(
                 abi.encodePacked(
@@ -426,11 +430,9 @@ contract WrappedAsset is
             )
         );
 
-        require(
-            _assetCollection.totalSubSupply(mainId, 1) == 0,
-            "Asset already created"
-        );
-
+        if (_assetCollection.totalSubSupply(mainId, 1) != 0) {
+            revert AssetAlreadyCreated();
+        }
         _wrappedInfo[mainId] = WrappedInfo(
             tokenId,
             fractions,
@@ -459,8 +461,9 @@ contract WrappedAsset is
 
     function _unwrapERC20(address receiver, uint256 mainId) private {
         WrappedInfo memory info = _wrappedInfo[mainId];
-        require(_wrappedInfo[mainId].fractions != 0, "Wrong asset id");
-
+        if (info.fractions == 0) {
+            revert WrongAssetId();
+        }
         IToken token = IToken(info.contractAddress);
 
         delete _wrappedInfo[mainId];
@@ -483,8 +486,9 @@ contract WrappedAsset is
 
     function _unwrapERC721(address receiver, uint256 mainId) private {
         WrappedInfo memory info = _wrappedInfo[mainId];
-        require(_wrappedInfo[mainId].fractions != 0, "Wrong asset id");
-
+        if (info.fractions == 0) {
+            revert WrongAssetId();
+        }
         IERC721 token = IERC721(info.contractAddress);
         delete _wrappedInfo[mainId];
 
@@ -506,8 +510,9 @@ contract WrappedAsset is
 
     function _unwrapERC1155(address receiver, uint256 mainId) private {
         WrappedInfo memory info = _wrappedInfo[mainId];
-        require(info.fractions != 0, "Wrong asset id");
-
+        if (info.fractions == 0) {
+            revert WrongAssetId();
+        }
         IERC1155 token = IERC1155(info.contractAddress);
         delete _wrappedInfo[mainId];
 

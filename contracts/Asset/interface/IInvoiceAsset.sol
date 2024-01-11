@@ -2,8 +2,9 @@
 pragma solidity 0.8.17;
 
 import { InvoiceInfo, IToken } from "contracts/lib/structs.sol";
+import { GenericErrors } from "contracts/lib/errors.sol";
 
-interface IInvoiceAsset {
+interface IInvoiceAsset is GenericErrors {
     /**
      * @dev Emitted when new `Treasury Wallet` has been set
      * @param oldTreasuryWallet, Address of the old treasury wallet
@@ -50,6 +51,10 @@ interface IInvoiceAsset {
      * @dev Reverted on unsupported interface detection
      */
     error UnsupportedInterface();
+
+    error InvalidRewardApr();
+    error InvoiceAlreadyCreated();
+    error InvalidInvoiceId();
 
     /**
      * @dev Allows to set a new treasury wallet address where funds will be allocated.

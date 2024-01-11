@@ -79,10 +79,9 @@ contract FeeManager is ERC165, AccessControl, IFeeManager {
         uint256[] calldata initialFees
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         uint256 length = mainIds.length;
-        require(
-            subIds.length == length && length == initialFees.length,
-            "No array parity"
-        );
+        if (subIds.length != length || length != initialFees.length) {
+            revert NoArrayParity();
+        }
         for (uint256 i = 0; i < length; ) {
             _setInitialFee(mainIds[i], subIds[i], initialFees[i]);
 
@@ -101,10 +100,9 @@ contract FeeManager is ERC165, AccessControl, IFeeManager {
         uint256[] calldata buyingFees
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         uint256 length = mainIds.length;
-        require(
-            subIds.length == length && length == buyingFees.length,
-            "No array parity"
-        );
+        if (subIds.length != length || length != buyingFees.length) {
+            revert NoArrayParity();
+        }
         for (uint256 i = 0; i < length; ) {
             _setBuyingFee(mainIds[i], subIds[i], buyingFees[i]);
 
@@ -187,8 +185,9 @@ contract FeeManager is ERC165, AccessControl, IFeeManager {
      * @param newFeeWallet, Address of the new fee wallet
      */
     function _setFeeWallet(address newFeeWallet) private {
-        require(newFeeWallet != address(0), "Invalid wallet address");
-
+        if (newFeeWallet == address(0)) {
+            revert InvalidAddress();
+        }
         emit FeeWalletSet(_feeWallet, newFeeWallet);
         _feeWallet = newFeeWallet;
     }

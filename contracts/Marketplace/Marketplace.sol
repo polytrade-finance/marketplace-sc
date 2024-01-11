@@ -104,10 +104,10 @@ contract Marketplace is
         ListedInfo[] calldata listedInfos
     ) external {
         uint256 length = subIds.length;
-        require(
-            mainIds.length == length && length == listedInfos.length,
-            "No array parity"
-        );
+
+        if (mainIds.length != length || length != listedInfos.length) {
+            revert NoArrayParity();
+        }
         for (uint256 i = 0; i < length; ) {
             _list(mainIds[i], subIds[i], listedInfos[i]);
 
@@ -132,7 +132,9 @@ contract Marketplace is
         uint256[] calldata subIds
     ) external {
         uint256 length = subIds.length;
-        require(mainIds.length == length, "No array parity");
+        if (mainIds.length != length) {
+            revert NoArrayParity();
+        }
         for (uint256 i = 0; i < length; ) {
             _unlist(mainIds[i], subIds[i]);
 
@@ -158,8 +160,12 @@ contract Marketplace is
         bytes32 s
     ) external {
         {
-            require(block.timestamp <= deadline, "Offer expired");
-            require(offeror == _msgSender(), "You are not the offeror");
+            if (block.timestamp > deadline) {
+                revert OfferExpired();
+            }
+            if (offeror != _msgSender()) {
+                revert InvalidOfferor();
+            }
             uint256 nonce = _nonce.useNonce(owner);
             bytes32 offerHash = keccak256(
                 abi.encode(
@@ -178,7 +184,9 @@ contract Marketplace is
             bytes32 hash = _hashTypedDataV4(offerHash);
             address signer = ECDSA.recover(hash, v, r, s);
 
-            require(signer == owner, "Invalid signature");
+            if (signer != owner) {
+                revert InvalidSignature();
+            }
         }
         {
             _buy(mainId, subId, offerPrice, fractionsToBuy, owner);
@@ -213,12 +221,13 @@ contract Marketplace is
         address[] calldata owners
     ) external {
         uint256 length = subIds.length;
-        require(
-            mainIds.length == length &&
-                length == fractionsToBuy.length &&
-                length == owners.length,
-            "No array parity"
-        );
+        if (
+            mainIds.length != length ||
+            length != fractionsToBuy.length ||
+            length != owners.length
+        ) {
+            revert NoArrayParity();
+        }
         for (uint256 i = 0; i < length; ) {
             _buy(
                 mainIds[i],
@@ -307,23 +316,27 @@ contract Marketplace is
         uint256 subId,
         ListedInfo calldata listedInfo
     ) private {
-        require(address(listedInfo.token) != address(0), "Invalid address");
-        require(listedInfo.minFraction != 0, "Min. fraction can not be zero");
-        require(
-            listedInfo.listedFractions >= listedInfo.minFraction,
-            "Min. fraction > Fraction to list"
-        );
-        require(listedInfo.salePrice != 0, "Sale price can not be zero");
+        if (address(listedInfo.token) == address(0)) {
+            revert InvalidAddress();
+        }
+        if (listedInfo.minFraction == 0) {
+            revert InvalidMinFraction();
+        }
+        if (listedInfo.listedFractions < listedInfo.minFraction) {
+            revert InvalidFractionToList();
+        }
+        if (listedInfo.salePrice == 0) {
+            revert InvalidPrice();
+        }
 
         uint256 subBalanceOf = _assetCollection.subBalanceOf(
             _msgSender(),
             mainId,
             subId
         );
-        require(
-            subBalanceOf >= listedInfo.listedFractions,
-            "Fraction to list > Balance"
-        );
+        if (subBalanceOf < listedInfo.listedFractions) {
+            revert NotEnoughBalance();
+        }
 
         _listedInfo[mainId][subId][_msgSender()] = listedInfo;
 
@@ -359,20 +372,17 @@ contract Marketplace is
         address owner
     ) private nonReentrant {
         ListedInfo memory listedInfo = _listedInfo[mainId][subId][owner];
-
-        require(
-            fractionToBuy >= listedInfo.minFraction,
-            "Fraction to buy < Min. fraction"
-        );
-        require(
-            listedInfo.listedFractions >= fractionToBuy,
-            "Listed fractions < Fraction to buy"
-        );
-        require(
-            fractionToBuy <=
-                _assetCollection.subBalanceOf(owner, mainId, subId),
-            "Not enough balance to buy"
-        );
+        if (fractionToBuy < listedInfo.minFraction) {
+            revert InvalidFractionToBuy();
+        }
+        if (listedInfo.listedFractions < fractionToBuy) {
+            revert NotEnoughListed();
+        }
+        if (
+            fractionToBuy > _assetCollection.subBalanceOf(owner, mainId, subId)
+        ) {
+            revert NotEnoughBalance();
+        }
 
         address receiver = owner;
         uint256 payPrice = salePrice * fractionToBuy;

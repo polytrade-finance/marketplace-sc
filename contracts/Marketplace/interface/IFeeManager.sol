@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import { GenericErrors } from "contracts/lib/errors.sol";
+
 /**
  * @title The main interface to define the fee manager
  * @author Polytrade.Finance
  * @dev Collection of all procedures related to the fee manager
  */
 
-interface IFeeManager {
+interface IFeeManager is GenericErrors {
     /**
      * @dev Emitted when a new initial fee set
      * @dev initial fee applies to the first buy

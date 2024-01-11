@@ -2,8 +2,9 @@
 pragma solidity 0.8.17;
 
 import { PropertyInfo, IToken } from "contracts/lib/structs.sol";
+import { GenericErrors } from "contracts/lib/errors.sol";
 
-interface IPropertyAsset {
+interface IPropertyAsset is GenericErrors {
     /**
      * @dev Emitted when new `Treasury Wallet` has been set
      * @param oldTreasuryWallet, Address of the old treasury wallet
@@ -32,6 +33,9 @@ interface IPropertyAsset {
      * @dev Reverted on unsupported interface detection
      */
     error UnsupportedInterface();
+
+    error InvalidPropertyId();
+    error PropertyAlreadyCreated();
 
     /**
      * @dev Allows to set a new treasury wallet address where funds will be allocated.
