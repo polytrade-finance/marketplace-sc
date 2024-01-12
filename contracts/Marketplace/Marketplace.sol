@@ -48,6 +48,7 @@ contract Marketplace is
                 "offer(",
                 "address owner,",
                 "address offeror,",
+                "address token,",
                 "uint256 offerPrice,",
                 "uint256 mainId,",
                 "uint256 subId,",
@@ -150,6 +151,7 @@ contract Marketplace is
     function offer(
         address owner,
         address offeror,
+        address token,
         uint256 offerPrice,
         uint256 mainId,
         uint256 subId,
@@ -163,15 +165,17 @@ contract Marketplace is
             if (block.timestamp > deadline) {
                 revert OfferExpired();
             }
-            if (offeror != _msgSender()) {
-                revert InvalidOfferor();
+            if (_msgSender() != owner) {
+                revert InvalidOwner();
             }
-            uint256 nonce = _nonce.useNonce(owner);
+
+            uint256 nonce = _nonce.useNonce(offeror);
             bytes32 offerHash = keccak256(
                 abi.encode(
                     _OFFER_TYPEHASH,
                     owner,
                     offeror,
+                    token,
                     offerPrice,
                     mainId,
                     subId,
@@ -183,13 +187,20 @@ contract Marketplace is
 
             bytes32 hash = _hashTypedDataV4(offerHash);
             address signer = ECDSA.recover(hash, v, r, s);
-
-            if (signer != owner) {
+            if (signer != offeror) {
                 revert InvalidSignature();
             }
         }
         {
-            _buy(mainId, subId, offerPrice, fractionsToBuy, owner);
+            _buyOffer(
+                mainId,
+                subId,
+                offerPrice,
+                fractionsToBuy,
+                owner,
+                offeror,
+                token
+            );
         }
     }
 
@@ -202,13 +213,7 @@ contract Marketplace is
         uint256 fractionToBuy,
         address owner
     ) external {
-        _buy(
-            mainId,
-            subId,
-            _listedInfo[mainId][subId][owner].salePrice,
-            fractionToBuy,
-            owner
-        );
+        _buy(mainId, subId, fractionToBuy, owner);
     }
 
     /**
@@ -229,13 +234,7 @@ contract Marketplace is
             revert NoArrayParity();
         }
         for (uint256 i = 0; i < length; ) {
-            _buy(
-                mainIds[i],
-                subIds[i],
-                _listedInfo[mainIds[i]][subIds[i]][owners[i]].salePrice,
-                fractionsToBuy[i],
-                owners[i]
-            );
+            _buy(mainIds[i], subIds[i], fractionsToBuy[i], owners[i]);
 
             unchecked {
                 ++i;
@@ -349,6 +348,10 @@ contract Marketplace is
      * @param subId, unique identifier of the asset
      */
     function _unlist(uint256 mainId, uint256 subId) private {
+        if (_listedInfo[mainId][subId][_msgSender()].listedFractions == 0) {
+            revert AlreadyUnlisted();
+        }
+
         delete _listedInfo[mainId][subId][_msgSender()];
 
         emit AssetUnlisted(_msgSender(), mainId, subId);
@@ -360,14 +363,12 @@ contract Marketplace is
      * @dev Transfer buying fee or initial fee to fee wallet based on asset status
      * @param mainId, unique identifier of the asset
      * @param subId, unique identifier of the asset
-     * @param salePrice, sale price for buying specific fraction of asset
      * @param fractionToBuy, number of fractions to buy from owner address
      * @param owner, address of owner of the fraction of asset
      */
     function _buy(
         uint256 mainId,
         uint256 subId,
-        uint256 salePrice,
         uint256 fractionToBuy,
         address owner
     ) private nonReentrant {
@@ -385,7 +386,7 @@ contract Marketplace is
         }
 
         address receiver = owner;
-        uint256 payPrice = salePrice * fractionToBuy;
+        uint256 payPrice = listedInfo.salePrice * fractionToBuy;
         uint256 fee = _assetCollection
             .getAssetInfo(mainId, subId)
             .initialOwner != owner
@@ -430,10 +431,56 @@ contract Marketplace is
             _msgSender(),
             mainId,
             subId,
-            salePrice,
+            listedInfo.salePrice,
             payPrice,
             fractionToBuy,
             address(listedInfo.token)
+        );
+    }
+
+    function _buyOffer(
+        uint256 mainId,
+        uint256 subId,
+        uint256 offerPrice,
+        uint256 fractionToBuy,
+        address owner,
+        address buyer,
+        address token
+    ) private {
+        if (
+            fractionToBuy > _assetCollection.subBalanceOf(owner, mainId, subId)
+        ) {
+            revert NotEnoughBalance();
+        }
+
+        uint256 payPrice = offerPrice * fractionToBuy;
+        uint256 fee = _assetCollection
+            .getAssetInfo(mainId, subId)
+            .initialOwner != owner
+            ? _feeManager.getBuyingFee(mainId, subId)
+            : _feeManager.getInitialFee(mainId, subId);
+        fee = (payPrice * fee) / 1e4;
+
+        _assetCollection.safeTransferFrom(
+            owner,
+            buyer,
+            mainId,
+            subId,
+            fractionToBuy,
+            ""
+        );
+
+        IToken(token).safeTransferFrom(buyer, owner, payPrice);
+        IToken(token).safeTransferFrom(buyer, _feeManager.getFeeWallet(), fee);
+        emit AssetBought(
+            owner,
+            buyer,
+            mainId,
+            subId,
+            offerPrice,
+            payPrice,
+            fractionToBuy,
+            token
         );
     }
 

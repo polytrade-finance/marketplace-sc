@@ -72,12 +72,13 @@ interface IMarketplace is GenericErrors {
     error UnsupportedInterface();
 
     error OfferExpired();
-    error InvalidOfferor();
+    error InvalidOwner();
     error InvalidSignature();
     error InvalidMinFraction();
     error InvalidFractionToList();
     error InvalidFractionToBuy();
     error NotEnoughListed();
+    error AlreadyUnlisted();
 
     /**
      * @dev Changes owner to buyer
@@ -174,6 +175,7 @@ interface IMarketplace is GenericErrors {
     function offer(
         address owner,
         address offeror,
+        address token,
         uint256 offerPrice,
         uint256 mainId,
         uint256 subId,

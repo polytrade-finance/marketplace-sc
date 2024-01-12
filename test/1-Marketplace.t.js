@@ -827,6 +827,12 @@ describe("Marketplace", function () {
     await expect(marketplaceContract.batchUnlist([id], [1, 1])).to.reverted;
   });
 
+  it("Should revert to unlist not listed assets", async function () {
+    const id = await getId(invoiceContract, await invoiceContract.getAddress());
+
+    await expect(marketplaceContract.unlist(id, 1)).to.reverted;
+  });
+
   it("Should batch create properties and batch list", async function () {
     const ids = await getIds(propertyContract, 3, await user1.getAddress());
 
