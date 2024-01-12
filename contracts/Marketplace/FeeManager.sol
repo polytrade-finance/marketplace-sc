@@ -37,6 +37,9 @@ contract FeeManager is ERC165, AccessControl, IFeeManager {
         uint256 defaultInitialFee,
         uint256 defaultBuyingFee
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (defaultInitialFee > 10000 || defaultBuyingFee > 10000) {
+            revert InvalidFee();
+        }
         emit DefaultFeesChanged(
             _defaultInitialFee,
             _defaultBuyingFee,
@@ -203,6 +206,10 @@ contract FeeManager is ERC165, AccessControl, IFeeManager {
         uint256 subId,
         uint256 initialFee
     ) private {
+        if (initialFee > 10000) {
+            revert InvalidFee();
+        }
+
         emit InitialFeeChanged(
             mainId,
             subId,
@@ -224,6 +231,10 @@ contract FeeManager is ERC165, AccessControl, IFeeManager {
         uint256 subId,
         uint256 buyingFee
     ) private {
+        if (buyingFee > 10000) {
+            revert InvalidFee();
+        }
+
         emit BuyingFeeChanged(
             mainId,
             subId,

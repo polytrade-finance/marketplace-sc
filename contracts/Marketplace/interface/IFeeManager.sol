@@ -61,6 +61,8 @@ interface IFeeManager is GenericErrors {
         uint256 newBuyingFee
     );
 
+    error InvalidFee();
+
     function setDefaultFees(
         uint256 defaultInitialFee,
         uint256 defaultBuyingFee

@@ -118,6 +118,16 @@ describe("Fee Manager", function () {
     await expect(feeManager.setFeeWallet(ethers.ZeroAddress)).to.be.reverted;
   });
 
+  it("Should revert to set default fees more than 100%", async function () {
+    await expect(feeManager.setDefaultFees(10001, 2000)).to.be.reverted;
+    await expect(feeManager.setDefaultFees(10000, 20000)).to.be.reverted;
+  });
+
+  it("Should revert to set initial and buying fees more than 100%", async function () {
+    await expect(feeManager.setInitialFee(1, 1, 10001)).to.be.reverted;
+    await expect(feeManager.setBuyingFee(1, 1, 20000)).to.be.reverted;
+  });
+
   it("Should set default fees and get the values", async function () {
     await feeManager.setDefaultFees(1000, 2000);
 
