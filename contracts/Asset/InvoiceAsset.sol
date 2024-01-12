@@ -207,15 +207,21 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         uint256 invoiceMainId,
         uint256 invoiceSubId
     ) external view returns (uint256 reward) {
-        uint256 fractions = _invoiceInfo[invoiceMainId].fractions;
-        if (fractions != 0) {
+        InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId];
+        if (invoice.fractions != 0) {
             reward =
-                (_getAvailableReward(invoiceMainId, invoiceSubId) *
+                (_getAvailableReward(
+                    invoiceMainId,
+                    invoiceSubId,
+                    block.timestamp > invoice.dueDate
+                        ? invoice.dueDate
+                        : block.timestamp
+                ) *
                     _assetCollection.totalSubSupply(
                         invoiceMainId,
                         invoiceSubId
                     )) /
-                fractions;
+                invoice.fractions;
         }
     }
 
@@ -426,8 +432,11 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
             invoiceMainId,
             invoiceSubId
         );
-        uint256 reward = (_getAvailableReward(invoiceMainId, invoiceSubId) *
-            subBalanceOf) / invoice.fractions;
+        uint256 reward = (_getAvailableReward(
+            invoiceMainId,
+            invoiceSubId,
+            invoice.dueDate
+        ) * subBalanceOf) / invoice.fractions;
 
         invoice.settlementToken.safeTransferFrom(
             _treasuryWallet,
@@ -450,21 +459,16 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
      */
     function _getAvailableReward(
         uint256 invoiceMainId,
-        uint256 invoiceSubId
+        uint256 invoiceSubId,
+        uint256 endDate
     ) private view returns (uint256 reward) {
         InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId];
         uint256 purchaseDate = _purchaseDate[invoiceMainId][invoiceSubId];
 
         if (purchaseDate != 0) {
-            uint256 tenure = (
-                block.timestamp > invoice.dueDate
-                    ? invoice.dueDate
-                    : block.timestamp
-            ) - purchaseDate;
-
             reward = _calculateFormula(
                 invoice.price,
-                tenure,
+                endDate - purchaseDate,
                 invoice.rewardApr
             );
         }
