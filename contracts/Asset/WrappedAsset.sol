@@ -32,7 +32,7 @@ contract WrappedAsset is
     IBaseAsset private _assetCollection;
 
     // solhint-disable-next-line
-    uint256 private CHAIN_ID;
+    uint256 private immutable CHAIN_ID;
 
     mapping(uint256 => WrappedInfo) private _wrappedInfo;
 
