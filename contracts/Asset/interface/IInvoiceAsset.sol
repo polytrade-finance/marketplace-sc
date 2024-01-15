@@ -62,8 +62,14 @@ interface IInvoiceAsset is GenericErrors {
      */
     function setTreasuryWallet(address newTreasuryWallet) external;
 
+    /**
+     * @dev Mint a new subId by incrementing whenever a buy happens on marketplace from subId zero
+     * @param buyer, Address of buyer of subId
+     * @param mainId, The unique identifier of asset
+     * @param fractions, number of fraction to create
+     */
     function onSubIdCreation(
-        address owner,
+        address buyer,
         uint256 mainId,
         uint256 fractions
     ) external;

@@ -77,7 +77,7 @@ contract WrappedAsset is
     }
 
     /**
-     * @dev See {IWrappedAsset-wrapERC721}.
+     * @dev See {IWrappedAsset-wrapERC20}.
      */
     function wrapERC20(
         address contractAddress,
@@ -216,7 +216,7 @@ contract WrappedAsset is
     }
 
     /**
-     * @dev See {IWrappedAsset-emergencyUnwrapERC721}.
+     * @dev See {IWrappedAsset-emergencyUnwrapERC1155}.
      */
     function emergencyUnwrapERC1155(
         uint256 mainId,

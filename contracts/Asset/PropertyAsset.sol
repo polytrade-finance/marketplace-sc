@@ -146,13 +146,13 @@ contract PropertyAsset is
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _assetCollection.burnAsset(owner, propertyMainId, 1, amount);
 
-        uint256 totalSubSupply = _assetCollection.totalMainSupply(
+        uint256 totalMainSupply = _assetCollection.totalMainSupply(
             propertyMainId
         );
 
-        _propertyInfo[propertyMainId].fractions = totalSubSupply;
+        _propertyInfo[propertyMainId].fractions = totalMainSupply;
 
-        if (totalSubSupply == 0) {
+        if (totalMainSupply == 0) {
             delete _propertyInfo[propertyMainId];
         }
     }

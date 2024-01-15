@@ -62,7 +62,7 @@ module.exports = {
     },
   },
   gasReporter: {
-    enabled: false,
+    enabled: (process.env.REPORT_GAS) ? true : false,
     currency: "USD",
   },
   etherscan: {

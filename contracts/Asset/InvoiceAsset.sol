@@ -30,6 +30,7 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
     // solhint-disable-next-line
     uint256 private CHAIN_ID;
 
+    /// @notice The commercial year consists of a 360-day period, 12 months of 30 days each, as utilized by Polytrade
     uint256 private constant _YEAR = 360 days;
 
     mapping(uint256 => InvoiceInfo) private _invoiceInfo;
@@ -172,7 +173,7 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
      * @dev See {IInvoiceAsset-onSubIdCreation}.
      */
     function onSubIdCreation(
-        address owner,
+        address buyer,
         uint256 mainId,
         uint256 fractions
     ) external onlyRole(MARKETPLACE_ROLE) {
@@ -186,7 +187,7 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
             fractions
         );
         _assetCollection.createAsset(
-            owner,
+            buyer,
             mainId,
             _currentSubId[mainId],
             fractions
