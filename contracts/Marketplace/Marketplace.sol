@@ -105,6 +105,9 @@ contract Marketplace is
         ListedInfo[] calldata listedInfos
     ) external {
         uint256 length = subIds.length;
+        if (length > 30) {
+            revert BatchLimitExceeded();
+        }
 
         if (mainIds.length != length || length != listedInfos.length) {
             revert NoArrayParity();
@@ -133,6 +136,10 @@ contract Marketplace is
         uint256[] calldata subIds
     ) external {
         uint256 length = subIds.length;
+        if (length > 30) {
+            revert BatchLimitExceeded();
+        }
+
         if (mainIds.length != length) {
             revert NoArrayParity();
         }
@@ -226,6 +233,10 @@ contract Marketplace is
         address[] calldata owners
     ) external {
         uint256 length = subIds.length;
+        if (length > 30) {
+            revert BatchLimitExceeded();
+        }
+
         if (
             mainIds.length != length ||
             length != fractionsToBuy.length ||

@@ -820,11 +820,46 @@ describe("Marketplace", function () {
     ).to.reverted;
   });
 
+  it("Should revert to batch List more than 30 limit", async function () {
+    const id = await getId(invoiceContract, await invoiceContract.getAddress());
+    await invoiceContract.createInvoice(asset);
+
+    await expect(
+      marketplaceContract.batchList([id], Array(31).fill(1), [
+        await createList(
+          asset.price,
+          asset.fractions,
+          1000,
+          stableTokenContract.getAddress()
+        ),
+      ])
+    ).to.reverted;
+  });
+
   it("Should revert to batch Unlist without array parity", async function () {
     const id = await getId(invoiceContract, await invoiceContract.getAddress());
     await invoiceContract.createInvoice(asset);
 
     await expect(marketplaceContract.batchUnlist([id], [1, 1])).to.reverted;
+  });
+
+  it("Should revert to batch Buy and Unlist more than 30 limit", async function () {
+    const id = await getId(invoiceContract, await invoiceContract.getAddress());
+    await invoiceContract.createInvoice(asset);
+
+    await expect(marketplaceContract.batchUnlist([id], Array(31).fill(1))).to
+      .reverted;
+
+    await expect(
+      marketplaceContract
+        .connect(buyer)
+        .batchBuy(
+          [1],
+          Array(31).fill(1),
+          [1000, 1000],
+          [user1.getAddress(), user1.getAddress()]
+        )
+    ).to.be.reverted;
   });
 
   it("Should revert to unlist not listed assets", async function () {

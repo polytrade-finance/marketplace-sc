@@ -15,4 +15,6 @@ interface GenericErrors {
     error DueDateNotPassed();
 
     error InvalidDueDate();
+
+    error BatchLimitExceeded();
 }
