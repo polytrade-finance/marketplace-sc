@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import { IFeeManager } from "contracts/Marketplace/interface/IFeeManager.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import { IFeeManager } from "contracts/Marketplace/interface/IFeeManager.sol";
 
 /**
  * @title The fee manager for marketplace

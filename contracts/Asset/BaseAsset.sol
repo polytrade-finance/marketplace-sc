@@ -3,12 +3,12 @@ pragma solidity 0.8.17;
 
 import { DLTEnumerable } from "dual-layer-token/contracts/DLT/extensions/DLTEnumerable.sol";
 import { DLTPermit } from "dual-layer-token/contracts/DLT/extensions/DLTPermit.sol";
-import { ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import { AssetInfo, IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
+import { ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { DLT } from "dual-layer-token/contracts/DLT/DLT.sol";
-import { AssetInfo, IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
 
 /**
  * @title The asset contract based on EIP6960
