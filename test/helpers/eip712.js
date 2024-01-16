@@ -20,7 +20,7 @@ const toHex = (n, numBytes) => {
 
 const calculateOfferHash = (params) => {
   const OfferTypeString =
-    "offer(address owner,address offeror,uint256 offerPrice,uint256 mainId,uint256 subId,uint256 fractionsToBuy,uint256 nonce,uint256 deadline)";
+    "offer(address owner,address offeror,address token,uint256 offerPrice,uint256 mainId,uint256 subId,uint256 fractionsToBuy,uint256 nonce,uint256 deadline)";
 
   const offerTypeHash = ethers.keccak256(ethers.toUtf8Bytes(OfferTypeString));
 
@@ -30,6 +30,7 @@ const calculateOfferHash = (params) => {
         offerTypeHash.slice(2),
         params.owner.slice(2).padStart(64, "0"),
         params.offeror.slice(2).padStart(64, "0"),
+        params.token.slice(2).padStart(64, "0"),
         ethers.toBeHex(toBN(params.offerPrice)).slice(2).padStart(64, "0"),
         ethers.toBeHex(toBN(params.mainId)).slice(2).padStart(64, "0"),
         ethers.toBeHex(toBN(params.subId)).slice(2).padStart(64, "0"),

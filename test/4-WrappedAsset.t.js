@@ -168,15 +168,14 @@ describe("Wrapper Contract", function () {
   });
 
   it("Should revert to wrap erc20 if there is not enough balance", async function () {
-    await expect(
-      wrapperContract.wrapERC20(Erc20, ethers.MaxUint256, 10000)
-    ).to.be.revertedWith("Not enough balance");
+    await expect(wrapperContract.wrapERC20(Erc20, ethers.MaxUint256, 10000)).to
+      .be.reverted;
   });
 
   it("Should revert to wrap erc20 contract address is not whitelisted", async function () {
     await expect(
       wrapperContract.wrapERC20(ethers.ZeroAddress, ethers.MaxUint256, 10000)
-    ).to.be.revertedWith("contract not whitelisted");
+    ).to.be.reverted;
   });
 
   it("Should wrap erc20 token and get info", async function () {
@@ -223,7 +222,7 @@ describe("Wrapper Contract", function () {
 
     await expect(
       wrapperContract.connect(signer20).wrapERC20(Erc20, value, 10000)
-    ).to.be.revertedWith("Asset already created");
+    ).to.be.reverted;
 
     await resetFork();
   });
@@ -240,9 +239,8 @@ describe("Wrapper Contract", function () {
       .connect(signer20)
       .transferFrom(signer20.getAddress(), user1.getAddress(), id, 1, 1);
 
-    await expect(
-      wrapperContract.connect(signer20).unwrapERC20(id)
-    ).to.be.revertedWith("Partial ownership");
+    await expect(wrapperContract.connect(signer20).unwrapERC20(id)).to.be
+      .reverted;
 
     await resetFork();
   });
@@ -307,13 +305,18 @@ describe("Wrapper Contract", function () {
       wrapperContract
         .connect(signer20)
         .batchWrapERC20([Erc20], [value], [10000, 1])
-    ).to.be.revertedWith("No array parity");
+    ).to.be.reverted;
+
+    await expect(
+      wrapperContract
+        .connect(signer20)
+        .batchWrapERC20([Erc20], [value, value], [10000])
+    ).to.be.reverted;
   });
 
   it("Should revert wrap erc20 token with zero balance", async function () {
-    await expect(
-      wrapperContract.connect(signer20).wrapERC20(Erc20, 0, 10000)
-    ).to.be.revertedWith("Balance can not be zero");
+    await expect(wrapperContract.connect(signer20).wrapERC20(Erc20, 0, 10000))
+      .to.be.reverted;
   });
 
   it("Should batch wrap erc20 token", async function () {
@@ -338,15 +341,14 @@ describe("Wrapper Contract", function () {
   });
 
   it("Should revert to wrap erc721 if not owner", async function () {
-    await expect(
-      wrapperContract.wrapERC721(Ens721, EnsTokenId, 10000)
-    ).to.be.revertedWith("You are not the owner");
+    await expect(wrapperContract.wrapERC721(Ens721, EnsTokenId, 10000)).to.be
+      .reverted;
   });
 
   it("Should revert to wrap erc721 contract address is not whitelisted", async function () {
     await expect(
       wrapperContract.wrapERC721(ethers.ZeroAddress, EnsTokenId, 10000)
-    ).to.be.revertedWith("contract not whitelisted");
+    ).to.be.reverted;
   });
 
   it("Should revert to wrap erc721 contract address is wrong", async function () {
@@ -397,7 +399,7 @@ describe("Wrapper Contract", function () {
 
     await expect(
       wrapperContract.connect(signer721).wrapERC721(Ens721, EnsTokenId, 10000)
-    ).to.be.revertedWith("Asset already created");
+    ).to.be.reverted;
 
     await resetFork();
   });
@@ -415,9 +417,8 @@ describe("Wrapper Contract", function () {
       .connect(signer721)
       .transferFrom(signer721.getAddress(), user1.getAddress(), id, 1, 1);
 
-    await expect(
-      wrapperContract.connect(signer721).unwrapERC721(id)
-    ).to.be.revertedWith("Partial ownership");
+    await expect(wrapperContract.connect(signer721).unwrapERC721(id)).to.be
+      .reverted;
 
     await resetFork();
   });
@@ -477,7 +478,13 @@ describe("Wrapper Contract", function () {
       wrapperContract
         .connect(signer721)
         .batchWrapERC721([Ens721], [EnsTokenId], [10000, 1])
-    ).to.be.revertedWith("No array parity");
+    ).to.be.reverted;
+
+    await expect(
+      wrapperContract
+        .connect(signer721)
+        .batchWrapERC721([Ens721], [EnsTokenId, EnsTokenId], [10000])
+    ).to.be.reverted;
   });
 
   it("Should batch wrap erc721 token", async function () {
@@ -500,21 +507,19 @@ describe("Wrapper Contract", function () {
   });
 
   it("Should revert to wrap erc1155 if not owner", async function () {
-    await expect(
-      wrapperContract.wrapERC1155(Sand1155, SandTokenId, 1, 10000)
-    ).to.be.revertedWith("Not enough balance");
+    await expect(wrapperContract.wrapERC1155(Sand1155, SandTokenId, 1, 10000))
+      .to.be.reverted;
   });
 
   it("Should revert to wrap erc1155 with zero balance", async function () {
-    await expect(
-      wrapperContract.wrapERC1155(Sand1155, SandTokenId, 0, 10000)
-    ).to.be.revertedWith("Balance can not be zero");
+    await expect(wrapperContract.wrapERC1155(Sand1155, SandTokenId, 0, 10000))
+      .to.be.reverted;
   });
 
   it("Should revert to wrap erc1155 contract address is not whitelisted", async function () {
     await expect(
       wrapperContract.wrapERC1155(ethers.ZeroAddress, SandTokenId, 1, 10000)
-    ).to.be.revertedWith("contract not whitelisted");
+    ).to.be.reverted;
   });
 
   it("Should revert to wrap erc1155 contract address is wrong", async function () {
@@ -573,7 +578,7 @@ describe("Wrapper Contract", function () {
       wrapperContract
         .connect(signer1155)
         .wrapERC1155(Sand1155, SandTokenId, 1, 10000)
-    ).to.be.revertedWith("Asset already created");
+    ).to.be.reverted;
 
     await resetFork();
   });
@@ -591,9 +596,8 @@ describe("Wrapper Contract", function () {
       .connect(signer1155)
       .transferFrom(signer1155.getAddress(), user1.getAddress(), id, 1, 1);
 
-    await expect(
-      wrapperContract.connect(signer1155).unwrapERC1155(id)
-    ).to.be.revertedWith("Partial ownership");
+    await expect(wrapperContract.connect(signer1155).unwrapERC1155(id)).to.be
+      .reverted;
 
     await resetFork();
   });
@@ -663,7 +667,19 @@ describe("Wrapper Contract", function () {
       wrapperContract
         .connect(signer1155)
         .batchWrapERC1155([Sand1155], [SandTokenId], [1], [10000, 1])
-    ).to.be.revertedWith("No array parity");
+    ).to.be.reverted;
+
+    await expect(
+      wrapperContract
+        .connect(signer1155)
+        .batchWrapERC1155([Sand1155], [SandTokenId], [1, 1], [10000])
+    ).to.be.reverted;
+
+    await expect(
+      wrapperContract
+        .connect(signer1155)
+        .batchWrapERC1155([Sand1155], [SandTokenId, SandTokenId], [1], [10000])
+    ).to.be.reverted;
   });
 
   it("Should batch wrap erc1155 token", async function () {
@@ -734,20 +750,17 @@ describe("Wrapper Contract", function () {
   });
 
   it("Should revert unwrap20 with invalid id", async function () {
-    await expect(
-      wrapperContract.connect(signer20).unwrapERC20(1)
-    ).to.be.revertedWith("Wrong asset id");
+    await expect(wrapperContract.connect(signer20).unwrapERC20(1)).to.be
+      .reverted;
   });
 
   it("Should revert unwrap721 with invalid id", async function () {
-    await expect(
-      wrapperContract.connect(signer721).unwrapERC721(1)
-    ).to.be.revertedWith("Wrong asset id");
+    await expect(wrapperContract.connect(signer721).unwrapERC721(1)).to.be
+      .reverted;
   });
 
   it("Should revert unwrap1155 with invalid id", async function () {
-    await expect(
-      wrapperContract.connect(signer1155).unwrapERC1155(1)
-    ).to.be.revertedWith("Wrong asset id");
+    await expect(wrapperContract.connect(signer1155).unwrapERC1155(1)).to.be
+      .reverted;
   });
 });

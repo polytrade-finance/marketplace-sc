@@ -19,9 +19,9 @@ struct ListedInfo {
 
 /**
  * @title storing invoice information
- * @param price, is the initial owner of asset
+ * @param price, is the settlement price of invoice
  * @param dueDate, timestamp of which originator can not settle before it
- * @param rewardApr, reward apr of invoice usied in reward calculations
+ * @param rewardApr, apr of invoice used in reward calculations
  * @param fractions, number of fractions
  * @param settlementToken, the token which settlement set for by originator
  */

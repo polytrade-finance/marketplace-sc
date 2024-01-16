@@ -73,9 +73,11 @@ describe("Fee Manager", function () {
   });
 
   it("Should revert to batch set initial fee without array parity", async function () {
-    await expect(
-      feeManager.batchSetInitialFee([1, 1], [1], [1000])
-    ).to.be.revertedWith("No array parity");
+    await expect(feeManager.batchSetInitialFee([1, 1], [1], [1000])).to.be
+      .reverted;
+
+    await expect(feeManager.batchSetInitialFee([1, 1], [1, 1], [1000])).to.be
+      .reverted;
   });
 
   it("Should revert to batch set buying fee without admin access", async function () {
@@ -92,9 +94,11 @@ describe("Fee Manager", function () {
   });
 
   it("Should revert to batch set buying fee without array parity", async function () {
-    await expect(
-      feeManager.batchSetBuyingFee([1, 1], [1], [1000])
-    ).to.be.revertedWith("No array parity");
+    await expect(feeManager.batchSetBuyingFee([1, 1], [1], [1000])).to.be
+      .reverted;
+
+    await expect(feeManager.batchSetBuyingFee([1, 1], [1, 1], [1000])).to.be
+      .reverted;
   });
 
   it("Should revert to set new fee wallet without admin acces", async function () {
@@ -112,6 +116,16 @@ describe("Fee Manager", function () {
 
   it("Should revert to set new fee wallet with zero address", async function () {
     await expect(feeManager.setFeeWallet(ethers.ZeroAddress)).to.be.reverted;
+  });
+
+  it("Should revert to set default fees more than 100%", async function () {
+    await expect(feeManager.setDefaultFees(10001, 2000)).to.be.reverted;
+    await expect(feeManager.setDefaultFees(10000, 20000)).to.be.reverted;
+  });
+
+  it("Should revert to set initial and buying fees more than 100%", async function () {
+    await expect(feeManager.setInitialFee(1, 1, 10001)).to.be.reverted;
+    await expect(feeManager.setBuyingFee(1, 1, 20000)).to.be.reverted;
   });
 
   it("Should set default fees and get the values", async function () {

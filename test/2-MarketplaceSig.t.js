@@ -6,7 +6,6 @@ const {
   AssetManagerAccess,
   OriginatorAccess,
   createAsset,
-  createList,
 } = require("./data.spec");
 const { time } = require("@nomicfoundation/hardhat-network-helpers");
 const { now } = require("./helpers");
@@ -124,19 +123,6 @@ describe("Marketplace Signatures", function () {
       .connect(user1)
       .buy(id, 0, asset.fractions, invoiceContract.getAddress());
 
-    await marketplaceContract
-      .connect(user1)
-      .list(
-        id,
-        1,
-        await createList(
-          asset.price / 100n,
-          asset.fractions,
-          1000,
-          stableTokenContract.getAddress()
-        )
-      );
-
     await assetContract
       .connect(user1)
       .setApprovalForAll(marketplaceContract.getAddress(), true);
@@ -158,6 +144,7 @@ describe("Marketplace Signatures", function () {
       offer: [
         { name: "owner", type: "address" },
         { name: "offeror", type: "address" },
+        { name: "token", type: "address" },
         { name: "offerPrice", type: "uint256" },
         { name: "mainId", type: "uint256" },
         { name: "subId", type: "uint256" },
@@ -168,10 +155,10 @@ describe("Marketplace Signatures", function () {
     };
   });
 
-  describe("Counter Offer", function () {
+  describe("Offer", function () {
     it("Should return 0 for initial nonce", async function () {
       expect(
-        await marketplaceContract.getNonce(user1.getAddress())
+        await marketplaceContract.getNonce(offeror.getAddress())
       ).to.be.equal("0");
     });
 
@@ -190,6 +177,7 @@ describe("Marketplace Signatures", function () {
       params = {
         owner: await user1.getAddress(),
         offeror: await offeror.getAddress(),
+        token: await stableTokenContract.getAddress(),
         offerPrice: offer.offerPrice / 10000n,
         mainId: id,
         subId: 1,
@@ -198,13 +186,13 @@ describe("Marketplace Signatures", function () {
         deadline: offer.deadline + BigInt(await now()),
       };
 
-      signature = await user1.signTypedData(domainData, offerType, params);
+      signature = await offeror.signTypedData(domainData, offerType, params);
       // Validate Signature Offchain
 
       const hash = calculateOfferHash(params);
 
       validateRecoveredAddress(
-        await user1.getAddress(),
+        await offeror.getAddress(),
         domainSeparator,
         hash,
         signature
@@ -221,10 +209,11 @@ describe("Marketplace Signatures", function () {
       );
 
       await marketplaceContract
-        .connect(offeror)
+        .connect(user1)
         .offer(
           user1.getAddress(),
           offeror.getAddress(),
+          stableTokenContract.getAddress(),
           offer.offerPrice / 10000n,
           id,
           1,
@@ -248,18 +237,33 @@ describe("Marketplace Signatures", function () {
       );
 
       expect(
-        await marketplaceContract.getNonce(user1.getAddress())
+        await marketplaceContract.getNonce(offeror.getAddress())
       ).to.be.equal("1");
       expect(user1BalanceAfterBuy - user1BalanceBeforeBuy).to.be.equal(
         offer.offerPrice / 10n
       );
     });
 
-    it("Should revert if sender is not offeror", async function () {
+    it("Should buy invoice for second time to apply buying fee", async function () {
+      await assetContract
+        .connect(offeror)
+        .setApprovalForAll(marketplaceContract.getAddress(), true);
+
+      await assetContract
+        .connect(user1)
+        .safeTransferFrom(
+          user1.getAddress(),
+          offeror.getAddress(),
+          id,
+          1,
+          2000
+        );
+
       params = {
-        owner: await user1.getAddress(),
-        offeror: await offeror.getAddress(),
-        offerPrice: offer.offerPrice / 100n,
+        owner: await offeror.getAddress(),
+        offeror: await user1.getAddress(),
+        token: await stableTokenContract.getAddress(),
+        offerPrice: 1,
         mainId: id,
         subId: 1,
         fractionsToBuy: 1000,
@@ -268,8 +272,64 @@ describe("Marketplace Signatures", function () {
       };
 
       signature = await user1.signTypedData(domainData, offerType, params);
+      // Validate Signature Offchain
 
       const { r, s, v } = ethers.Signature.from(signature);
+
+      await marketplaceContract
+        .connect(offeror)
+        .offer(
+          offeror.getAddress(),
+          user1.getAddress(),
+          stableTokenContract.getAddress(),
+          1,
+          id,
+          1,
+          1000,
+          offer.deadline + BigInt(await now()),
+          v,
+          r,
+          s
+        );
+    });
+
+    it("Should revert if owner balance is not enough", async function () {
+      const nowTime = await now();
+      params = {
+        owner: await user1.getAddress(),
+        offeror: await offeror.getAddress(),
+        token: await stableTokenContract.getAddress(),
+        offerPrice: offer.offerPrice / 10000n,
+        mainId: id,
+        subId: 1,
+        fractionsToBuy: 1000,
+        nonce: 0,
+        deadline: offer.deadline + BigInt(nowTime),
+      };
+
+      signature = await offeror.signTypedData(domainData, offerType, params);
+      // Validate Signature Offchain
+
+      const hash = calculateOfferHash(params);
+
+      validateRecoveredAddress(
+        await offeror.getAddress(),
+        domainSeparator,
+        hash,
+        signature
+      );
+
+      const { r, s, v } = ethers.Signature.from(signature);
+
+      await assetContract
+        .connect(user1)
+        .safeTransferFrom(
+          user1.getAddress(),
+          offeror.getAddress(),
+          id,
+          1,
+          10000
+        );
 
       await expect(
         marketplaceContract
@@ -277,19 +337,34 @@ describe("Marketplace Signatures", function () {
           .offer(
             user1.getAddress(),
             offeror.getAddress(),
-            offer.offerPrice / 100n,
+            stableTokenContract.getAddress(),
+            offer.offerPrice / 10000n,
             id,
             1,
             1000,
-            offer.deadline + BigInt(await now()),
+            offer.deadline + BigInt(nowTime),
             v,
             r,
             s
           )
-      ).to.be.revertedWith("You are not the offeror");
+      ).to.be.reverted;
     });
 
-    it("Should revert reused signature by offeror", async function () {
+    it("Should revert if sender is not owner", async function () {
+      params = {
+        owner: await user1.getAddress(),
+        offeror: await offeror.getAddress(),
+        token: await stableTokenContract.getAddress(),
+        offerPrice: offer.offerPrice / 100n,
+        mainId: id,
+        subId: 1,
+        fractionsToBuy: 1000,
+        nonce: 0,
+        deadline: offer.deadline + BigInt(await now()),
+      };
+
+      signature = await offeror.signTypedData(domainData, offerType, params);
+
       const { r, s, v } = ethers.Signature.from(signature);
 
       await expect(
@@ -298,6 +373,7 @@ describe("Marketplace Signatures", function () {
           .offer(
             user1.getAddress(),
             offeror.getAddress(),
+            stableTokenContract.getAddress(),
             offer.offerPrice / 100n,
             id,
             1,
@@ -307,13 +383,35 @@ describe("Marketplace Signatures", function () {
             r,
             s
           )
-      ).to.be.revertedWith("Invalid signature");
+      ).to.be.reverted;
+    });
+
+    it("Should revert reused signature by owner", async function () {
+      const { r, s, v } = ethers.Signature.from(signature);
+
+      await expect(
+        marketplaceContract
+          .connect(user1)
+          .offer(
+            user1.getAddress(),
+            offeror.getAddress(),
+            stableTokenContract.getAddress(),
+            offer.offerPrice / 100n,
+            id,
+            1,
+            1000,
+            offer.deadline + BigInt(await now()),
+            v,
+            r,
+            s
+          )
+      ).to.be.reverted;
     });
 
     it("Should revert expired offers", async function () {
       const expiredDeadline = BigInt(await time.latest()) - 100n;
 
-      signature = await user1.signTypedData(domainData, offerType, params);
+      signature = await offeror.signTypedData(domainData, offerType, params);
 
       const { r, s, v } = ethers.Signature.from(signature);
 
@@ -321,6 +419,7 @@ describe("Marketplace Signatures", function () {
         marketplaceContract.offer(
           user1.getAddress(),
           offeror.getAddress(),
+          stableTokenContract.getAddress(),
           offer.offerPrice / 100n,
           id,
           1,
@@ -330,7 +429,7 @@ describe("Marketplace Signatures", function () {
           r,
           s
         )
-      ).to.be.revertedWith("Offer expired");
+      ).to.be.reverted;
     });
   });
 });

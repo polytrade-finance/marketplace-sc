@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import { PropertyInfo, IPropertyAsset, IToken } from "contracts/Asset/interface/IPropertyAsset.sol";
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
-import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { PropertyInfo, IPropertyAsset, IToken } from "contracts/Asset/interface/IPropertyAsset.sol";
+import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
+import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { Counters } from "contracts/lib/Counters.sol";
 
 /**
@@ -89,7 +89,9 @@ contract PropertyAsset is
         PropertyInfo[] calldata propertyInfos
     ) external onlyRole(ASSET_ORIGINATOR) returns (uint256[] memory) {
         uint256 length = owners.length;
-        require(length == propertyInfos.length, "No array parity");
+        if (length != propertyInfos.length) {
+            revert NoArrayParity();
+        }
 
         uint256[] memory ids = new uint256[](length);
         for (uint256 i = 0; i < length; ) {
@@ -122,10 +124,9 @@ contract PropertyAsset is
         address[] calldata owners
     ) external onlyRole(ASSET_ORIGINATOR) {
         uint256 length = propertyMainIds.length;
-        require(
-            owners.length == length && length == settlePrices.length,
-            "No array parity"
-        );
+        if (owners.length != length || length != settlePrices.length) {
+            revert NoArrayParity();
+        }
         for (uint256 i = 0; i < length; ) {
             _settleProperty(settlePrices[i], propertyMainIds[i], owners[i]);
 
@@ -145,13 +146,13 @@ contract PropertyAsset is
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _assetCollection.burnAsset(owner, propertyMainId, 1, amount);
 
-        uint256 totalSubSupply = _assetCollection.totalMainSupply(
+        uint256 totalMainSupply = _assetCollection.totalMainSupply(
             propertyMainId
         );
 
-        _propertyInfo[propertyMainId].fractions = totalSubSupply;
+        _propertyInfo[propertyMainId].fractions = totalMainSupply;
 
-        if (totalSubSupply == 0) {
+        if (totalMainSupply == 0) {
             delete _propertyInfo[propertyMainId];
         }
     }
@@ -179,7 +180,9 @@ contract PropertyAsset is
      * @param newTreasuryWallet, Address of the new treasury wallet
      */
     function _setTreasuryWallet(address newTreasuryWallet) private {
-        require(newTreasuryWallet != address(0), "Invalid wallet address");
+        if (newTreasuryWallet == address(0)) {
+            revert InvalidAddress();
+        }
 
         emit TreasuryWalletSet(_treasuryWallet, newTreasuryWallet);
         _treasuryWallet = newTreasuryWallet;
@@ -202,10 +205,18 @@ contract PropertyAsset is
             1
         );
 
-        require(settlePrice != 0, "Invalid settle amount");
-        require(property.dueDate != 0, "Invalid property id");
-        require(subBalanceOf != 0, "Not enough balance");
-        require(block.timestamp > property.dueDate, "Due date not passed");
+        if (settlePrice == 0) {
+            revert InvalidPrice();
+        }
+        if (property.dueDate == 0) {
+            revert InvalidPropertyId();
+        }
+        if (subBalanceOf == 0) {
+            revert NotEnoughBalance();
+        }
+        if (block.timestamp < property.dueDate) {
+            revert DueDateNotPassed();
+        }
 
         settlePrice = (settlePrice * subBalanceOf) / property.fractions;
         _assetCollection.burnAsset(owner, propertyMainId, 1, subBalanceOf);
@@ -235,10 +246,18 @@ contract PropertyAsset is
         address owner,
         PropertyInfo calldata propertyInfo
     ) private returns (uint256 propertyMainId) {
-        require(
-            address(propertyInfo.settlementToken) != address(0),
-            "Invalid address"
-        );
+        if (address(propertyInfo.settlementToken) == address(0)) {
+            revert InvalidAddress();
+        }
+        if (propertyInfo.price == 0) {
+            revert InvalidPrice();
+        }
+        if (propertyInfo.dueDate < block.timestamp) {
+            revert InvalidDueDate();
+        }
+        if (propertyInfo.fractions == 0) {
+            revert InvalidFraction();
+        }
         propertyMainId = uint256(
             keccak256(
                 abi.encodePacked(
@@ -249,10 +268,9 @@ contract PropertyAsset is
                 )
             )
         );
-        require(
-            _assetCollection.totalSubSupply(propertyMainId, 1) == 0,
-            "Property already created"
-        );
+        if (_assetCollection.totalSubSupply(propertyMainId, 1) != 0) {
+            revert PropertyAlreadyCreated();
+        }
 
         _propertyInfo[propertyMainId] = propertyInfo;
 

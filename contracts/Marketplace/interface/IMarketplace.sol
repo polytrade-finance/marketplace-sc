@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import { ListedInfo, IToken } from "contracts/lib/structs.sol";
+import { GenericErrors } from "contracts/lib/errors.sol";
 
 /**
  * @title The main interface to define the main marketplace
@@ -9,7 +10,7 @@ import { ListedInfo, IToken } from "contracts/lib/structs.sol";
  * @dev Collection of all procedures related to the marketplace
  */
 
-interface IMarketplace {
+interface IMarketplace is GenericErrors {
     /**
      * @dev Emitted when asset owner changes
      * @param oldOwner, Address of the previous owner
@@ -69,6 +70,15 @@ interface IMarketplace {
      * @dev Reverted on unsupported interface detection
      */
     error UnsupportedInterface();
+
+    error OfferExpired();
+    error InvalidOwner();
+    error InvalidSignature();
+    error InvalidMinFraction();
+    error InvalidFractionToList();
+    error InvalidFractionToBuy();
+    error NotEnoughListed();
+    error AlreadyUnlisted();
 
     /**
      * @dev Changes owner to buyer
@@ -165,6 +175,7 @@ interface IMarketplace {
     function offer(
         address owner,
         address offeror,
+        address token,
         uint256 offerPrice,
         uint256 mainId,
         uint256 subId,

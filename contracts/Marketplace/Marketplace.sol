@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import { EIP712Upgradeable } from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
+import { ListedInfo, IMarketplace, IToken } from "contracts/Marketplace/interface/IMarketplace.sol";
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import { ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import { ListedInfo, IMarketplace, IToken } from "contracts/Marketplace/interface/IMarketplace.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
-import { Context } from "@openzeppelin/contracts/utils/Context.sol";
-import { IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
-import { IInvoiceAsset } from "contracts/Asset/interface/IInvoiceAsset.sol";
+import { ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import { IFeeManager } from "contracts/Marketplace/interface/IFeeManager.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { IInvoiceAsset } from "contracts/Asset/interface/IInvoiceAsset.sol";
+import { IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
+import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { Counters } from "contracts/lib/Counters.sol";
 
 /**
@@ -48,6 +48,7 @@ contract Marketplace is
                 "offer(",
                 "address owner,",
                 "address offeror,",
+                "address token,",
                 "uint256 offerPrice,",
                 "uint256 mainId,",
                 "uint256 subId,",
@@ -104,10 +105,13 @@ contract Marketplace is
         ListedInfo[] calldata listedInfos
     ) external {
         uint256 length = subIds.length;
-        require(
-            mainIds.length == length && length == listedInfos.length,
-            "No array parity"
-        );
+        if (length > 30) {
+            revert BatchLimitExceeded();
+        }
+
+        if (mainIds.length != length || length != listedInfos.length) {
+            revert NoArrayParity();
+        }
         for (uint256 i = 0; i < length; ) {
             _list(mainIds[i], subIds[i], listedInfos[i]);
 
@@ -132,7 +136,13 @@ contract Marketplace is
         uint256[] calldata subIds
     ) external {
         uint256 length = subIds.length;
-        require(mainIds.length == length, "No array parity");
+        if (length > 30) {
+            revert BatchLimitExceeded();
+        }
+
+        if (mainIds.length != length) {
+            revert NoArrayParity();
+        }
         for (uint256 i = 0; i < length; ) {
             _unlist(mainIds[i], subIds[i]);
 
@@ -148,6 +158,7 @@ contract Marketplace is
     function offer(
         address owner,
         address offeror,
+        address token,
         uint256 offerPrice,
         uint256 mainId,
         uint256 subId,
@@ -158,14 +169,20 @@ contract Marketplace is
         bytes32 s
     ) external {
         {
-            require(block.timestamp <= deadline, "Offer expired");
-            require(offeror == _msgSender(), "You are not the offeror");
-            uint256 nonce = _nonce.useNonce(owner);
+            if (block.timestamp > deadline) {
+                revert OfferExpired();
+            }
+            if (_msgSender() != owner) {
+                revert InvalidOwner();
+            }
+
+            uint256 nonce = _nonce.useNonce(offeror);
             bytes32 offerHash = keccak256(
                 abi.encode(
                     _OFFER_TYPEHASH,
                     owner,
                     offeror,
+                    token,
                     offerPrice,
                     mainId,
                     subId,
@@ -177,11 +194,20 @@ contract Marketplace is
 
             bytes32 hash = _hashTypedDataV4(offerHash);
             address signer = ECDSA.recover(hash, v, r, s);
-
-            require(signer == owner, "Invalid signature");
+            if (signer != offeror) {
+                revert InvalidSignature();
+            }
         }
         {
-            _buy(mainId, subId, offerPrice, fractionsToBuy, owner);
+            _buyOffer(
+                mainId,
+                subId,
+                offerPrice,
+                fractionsToBuy,
+                owner,
+                offeror,
+                token
+            );
         }
     }
 
@@ -194,13 +220,7 @@ contract Marketplace is
         uint256 fractionToBuy,
         address owner
     ) external {
-        _buy(
-            mainId,
-            subId,
-            _listedInfo[mainId][subId][owner].salePrice,
-            fractionToBuy,
-            owner
-        );
+        _buy(mainId, subId, fractionToBuy, owner);
     }
 
     /**
@@ -213,20 +233,19 @@ contract Marketplace is
         address[] calldata owners
     ) external {
         uint256 length = subIds.length;
-        require(
-            mainIds.length == length &&
-                length == fractionsToBuy.length &&
-                length == owners.length,
-            "No array parity"
-        );
+        if (length > 30) {
+            revert BatchLimitExceeded();
+        }
+
+        if (
+            mainIds.length != length ||
+            length != fractionsToBuy.length ||
+            length != owners.length
+        ) {
+            revert NoArrayParity();
+        }
         for (uint256 i = 0; i < length; ) {
-            _buy(
-                mainIds[i],
-                subIds[i],
-                _listedInfo[mainIds[i]][subIds[i]][owners[i]].salePrice,
-                fractionsToBuy[i],
-                owners[i]
-            );
+            _buy(mainIds[i], subIds[i], fractionsToBuy[i], owners[i]);
 
             unchecked {
                 ++i;
@@ -307,23 +326,27 @@ contract Marketplace is
         uint256 subId,
         ListedInfo calldata listedInfo
     ) private {
-        require(address(listedInfo.token) != address(0), "Invalid address");
-        require(listedInfo.minFraction != 0, "Min. fraction can not be zero");
-        require(
-            listedInfo.listedFractions >= listedInfo.minFraction,
-            "Min. fraction > Fraction to list"
-        );
-        require(listedInfo.salePrice != 0, "Sale price can not be zero");
+        if (address(listedInfo.token) == address(0)) {
+            revert InvalidAddress();
+        }
+        if (listedInfo.minFraction == 0) {
+            revert InvalidMinFraction();
+        }
+        if (listedInfo.listedFractions < listedInfo.minFraction) {
+            revert InvalidFractionToList();
+        }
+        if (listedInfo.salePrice == 0) {
+            revert InvalidPrice();
+        }
 
         uint256 subBalanceOf = _assetCollection.subBalanceOf(
             _msgSender(),
             mainId,
             subId
         );
-        require(
-            subBalanceOf >= listedInfo.listedFractions,
-            "Fraction to list > Balance"
-        );
+        if (subBalanceOf < listedInfo.listedFractions) {
+            revert NotEnoughBalance();
+        }
 
         _listedInfo[mainId][subId][_msgSender()] = listedInfo;
 
@@ -336,6 +359,10 @@ contract Marketplace is
      * @param subId, unique identifier of the asset
      */
     function _unlist(uint256 mainId, uint256 subId) private {
+        if (_listedInfo[mainId][subId][_msgSender()].listedFractions == 0) {
+            revert AlreadyUnlisted();
+        }
+
         delete _listedInfo[mainId][subId][_msgSender()];
 
         emit AssetUnlisted(_msgSender(), mainId, subId);
@@ -347,35 +374,30 @@ contract Marketplace is
      * @dev Transfer buying fee or initial fee to fee wallet based on asset status
      * @param mainId, unique identifier of the asset
      * @param subId, unique identifier of the asset
-     * @param salePrice, sale price for buying specific fraction of asset
      * @param fractionToBuy, number of fractions to buy from owner address
      * @param owner, address of owner of the fraction of asset
      */
     function _buy(
         uint256 mainId,
         uint256 subId,
-        uint256 salePrice,
         uint256 fractionToBuy,
         address owner
     ) private nonReentrant {
         ListedInfo memory listedInfo = _listedInfo[mainId][subId][owner];
-
-        require(
-            fractionToBuy >= listedInfo.minFraction,
-            "Fraction to buy < Min. fraction"
-        );
-        require(
-            listedInfo.listedFractions >= fractionToBuy,
-            "Listed fractions < Fraction to buy"
-        );
-        require(
-            fractionToBuy <=
-                _assetCollection.subBalanceOf(owner, mainId, subId),
-            "Not enough balance to buy"
-        );
+        if (fractionToBuy < listedInfo.minFraction) {
+            revert InvalidFractionToBuy();
+        }
+        if (listedInfo.listedFractions < fractionToBuy) {
+            revert NotEnoughListed();
+        }
+        if (
+            fractionToBuy > _assetCollection.subBalanceOf(owner, mainId, subId)
+        ) {
+            revert NotEnoughBalance();
+        }
 
         address receiver = owner;
-        uint256 payPrice = salePrice * fractionToBuy;
+        uint256 payPrice = listedInfo.salePrice * fractionToBuy;
         uint256 fee = _assetCollection
             .getAssetInfo(mainId, subId)
             .initialOwner != owner
@@ -420,10 +442,56 @@ contract Marketplace is
             _msgSender(),
             mainId,
             subId,
-            salePrice,
+            listedInfo.salePrice,
             payPrice,
             fractionToBuy,
             address(listedInfo.token)
+        );
+    }
+
+    function _buyOffer(
+        uint256 mainId,
+        uint256 subId,
+        uint256 offerPrice,
+        uint256 fractionToBuy,
+        address owner,
+        address buyer,
+        address token
+    ) private {
+        if (
+            fractionToBuy > _assetCollection.subBalanceOf(owner, mainId, subId)
+        ) {
+            revert NotEnoughBalance();
+        }
+
+        uint256 payPrice = offerPrice * fractionToBuy;
+        uint256 fee = _assetCollection
+            .getAssetInfo(mainId, subId)
+            .initialOwner != owner
+            ? _feeManager.getBuyingFee(mainId, subId)
+            : _feeManager.getInitialFee(mainId, subId);
+        fee = (payPrice * fee) / 1e4;
+
+        _assetCollection.safeTransferFrom(
+            owner,
+            buyer,
+            mainId,
+            subId,
+            fractionToBuy,
+            ""
+        );
+
+        IToken(token).safeTransferFrom(buyer, owner, payPrice);
+        IToken(token).safeTransferFrom(buyer, _feeManager.getFeeWallet(), fee);
+        emit AssetBought(
+            owner,
+            buyer,
+            mainId,
+            subId,
+            offerPrice,
+            payPrice,
+            fractionToBuy,
+            token
         );
     }
 

@@ -2,13 +2,13 @@
 pragma solidity 0.8.17;
 
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
-import { Context } from "@openzeppelin/contracts/utils/Context.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { InvoiceInfo, IInvoiceAsset, IToken } from "contracts/Asset/interface/IInvoiceAsset.sol";
-import { IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
+import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { ListedInfo, IMarketplace } from "contracts/Marketplace/interface/IMarketplace.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
+import { IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
+import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { Counters } from "contracts/lib/Counters.sol";
 
 /**
@@ -30,6 +30,7 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
     // solhint-disable-next-line
     uint256 private CHAIN_ID;
 
+    /// @notice The commercial year consists of a 360-day period, 12 months of 30 days each, as utilized by Polytrade
     uint256 private constant _YEAR = 360 days;
 
     mapping(uint256 => InvoiceInfo) private _invoiceInfo;
@@ -132,10 +133,10 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         address[] calldata owners
     ) external onlyRole(ASSET_ORIGINATOR) {
         uint256 length = invoiceMainIds.length;
-        require(
-            owners.length == length && invoiceSubIds.length == length,
-            "No array parity"
-        );
+        if (owners.length != length || invoiceSubIds.length != length) {
+            revert NoArrayParity();
+        }
+
         for (uint256 i = 0; i < length; ) {
             _claimReward(invoiceMainIds[i], invoiceSubIds[i], owners[i]);
             _settleInvoice(invoiceMainIds[i], invoiceSubIds[i], owners[i]);
@@ -172,7 +173,7 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
      * @dev See {IInvoiceAsset-onSubIdCreation}.
      */
     function onSubIdCreation(
-        address owner,
+        address buyer,
         uint256 mainId,
         uint256 fractions
     ) external onlyRole(MARKETPLACE_ROLE) {
@@ -186,7 +187,7 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
             fractions
         );
         _assetCollection.createAsset(
-            owner,
+            buyer,
             mainId,
             _currentSubId[mainId],
             fractions
@@ -207,15 +208,21 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         uint256 invoiceMainId,
         uint256 invoiceSubId
     ) external view returns (uint256 reward) {
-        uint256 fractions = _invoiceInfo[invoiceMainId].fractions;
-        if (fractions != 0) {
+        InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId];
+        if (invoice.fractions != 0) {
             reward =
-                (_getAvailableReward(invoiceMainId, invoiceSubId) *
+                (_getAvailableReward(
+                    invoiceMainId,
+                    invoiceSubId,
+                    block.timestamp > invoice.dueDate
+                        ? invoice.dueDate
+                        : block.timestamp
+                ) *
                     _assetCollection.totalSubSupply(
                         invoiceMainId,
                         invoiceSubId
                     )) /
-                fractions;
+                invoice.fractions;
         }
     }
 
@@ -283,7 +290,9 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
      * @param newTreasuryWallet, Address of the new treasury wallet
      */
     function _setTreasuryWallet(address newTreasuryWallet) private {
-        require(newTreasuryWallet != address(0), "Invalid wallet address");
+        if (newTreasuryWallet == address(0)) {
+            revert InvalidAddress();
+        }
 
         emit TreasuryWalletSet(_treasuryWallet, newTreasuryWallet);
         _treasuryWallet = newTreasuryWallet;
@@ -306,9 +315,13 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
             invoiceSubId
         );
 
-        require(subBalanceOf != 0, "Not enough balance");
+        if (subBalanceOf == 0) {
+            revert NotEnoughBalance();
+        }
         InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId];
-        require(block.timestamp > invoice.dueDate, "Due date not passed");
+        if (block.timestamp < invoice.dueDate) {
+            revert DueDateNotPassed();
+        }
 
         uint256 settlePrice = (invoice.price * subBalanceOf) /
             invoice.fractions;
@@ -343,10 +356,22 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
     function _createInvoice(
         InvoiceInfo calldata invoiceInfo
     ) private returns (uint256 invoiceMainId) {
-        require(
-            address(invoiceInfo.settlementToken) != address(0),
-            "Invalid address"
-        );
+        if (address(invoiceInfo.settlementToken) == address(0)) {
+            revert InvalidAddress();
+        }
+        if (invoiceInfo.price == 0) {
+            revert InvalidPrice();
+        }
+        if (invoiceInfo.dueDate < block.timestamp) {
+            revert InvalidDueDate();
+        }
+        if (invoiceInfo.fractions == 0) {
+            revert InvalidFraction();
+        }
+        if (invoiceInfo.rewardApr == 0) {
+            revert InvalidRewardApr();
+        }
+
         invoiceMainId = uint256(
             keccak256(
                 abi.encodePacked(
@@ -357,10 +382,9 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
                 )
             )
         );
-        require(
-            _assetCollection.totalMainSupply(invoiceMainId) == 0,
-            "Invoice already created"
-        );
+        if (_assetCollection.totalMainSupply(invoiceMainId) != 0) {
+            revert InvoiceAlreadyCreated();
+        }
 
         uint256 fractions = invoiceInfo.fractions;
         _invoiceInfo[invoiceMainId] = invoiceInfo;
@@ -401,15 +425,19 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         address receiver
     ) private {
         InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId];
-        require(invoice.dueDate != 0, "Invalid invoice id");
-
+        if (invoice.dueDate == 0) {
+            revert InvalidInvoiceId();
+        }
         uint256 subBalanceOf = _assetCollection.subBalanceOf(
             receiver,
             invoiceMainId,
             invoiceSubId
         );
-        uint256 reward = (_getAvailableReward(invoiceMainId, invoiceSubId) *
-            subBalanceOf) / invoice.fractions;
+        uint256 reward = (_getAvailableReward(
+            invoiceMainId,
+            invoiceSubId,
+            invoice.dueDate
+        ) * subBalanceOf) / invoice.fractions;
 
         invoice.settlementToken.safeTransferFrom(
             _treasuryWallet,
@@ -432,21 +460,16 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
      */
     function _getAvailableReward(
         uint256 invoiceMainId,
-        uint256 invoiceSubId
+        uint256 invoiceSubId,
+        uint256 endDate
     ) private view returns (uint256 reward) {
         InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId];
         uint256 purchaseDate = _purchaseDate[invoiceMainId][invoiceSubId];
 
         if (purchaseDate != 0) {
-            uint256 tenure = (
-                block.timestamp > invoice.dueDate
-                    ? invoice.dueDate
-                    : block.timestamp
-            ) - purchaseDate;
-
             reward = _calculateFormula(
                 invoice.price,
-                tenure,
+                endDate - purchaseDate,
                 invoice.rewardApr
             );
         }
