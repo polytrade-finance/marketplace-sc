@@ -47,32 +47,36 @@ module.exports = {
     mumbai: {
       url: `${MUMBAI_ARCHIVAL_RPC}`,
       accounts: [
-        `${TESTNET_PRIVATE_KEY ||
-        "0x0000000000000000000000000000000000000000000000000000000000000000"
+        `${
+          TESTNET_PRIVATE_KEY ||
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
         }`,
       ],
     },
     polygon: {
       url: `${POLYGON_ARCHIVAL_RPC}`,
       accounts: [
-        `${MAINNET_DEPLOYER_PRIVATE_KEY ||
-        "0x0000000000000000000000000000000000000000000000000000000000000000"
+        `${
+          MAINNET_DEPLOYER_PRIVATE_KEY ||
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
         }`,
       ],
     },
     sepolia: {
       url: `${SEPOLIA_ARCHIVAL_RPC}`,
       accounts: [
-        `${TESTNET_PRIVATE_KEY ||
-        "0x0000000000000000000000000000000000000000000000000000000000000000"
+        `${
+          TESTNET_PRIVATE_KEY ||
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
         }`,
       ],
     },
     mainnet: {
       url: `${MAINNET_ARCHIVAL_RPC}`,
       accounts: [
-        `${MAINNET_DEPLOYER_PRIVATE_KEY ||
-        "0x0000000000000000000000000000000000000000000000000000000000000000"
+        `${
+          MAINNET_DEPLOYER_PRIVATE_KEY ||
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
         }`,
       ],
     },
@@ -83,7 +87,7 @@ module.exports = {
     outputFile: "gas-report-eth.txt",
     noColors: true,
     currency: "USD",
-    excludeContracts: ['Mock/', 'Token/']
+    excludeContracts: ["Mock/", "Token/"],
   },
   etherscan: {
     apiKey: {
@@ -91,6 +95,6 @@ module.exports = {
       sepolia: process.env.ETHERSCAN_API_KEY || "",
       polygon: process.env.POLYGONSCAN_API_KEY || "",
       mumbai: process.env.POLYGONSCAN_API_KEY || "",
-    }
+    },
   },
 };

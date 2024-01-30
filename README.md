@@ -22,7 +22,7 @@ Owners of whitelisted ERC20, ERC721, and ERC1155 contracts can wrap their assets
 
 ## 📈 Marketplace
 
-### ERC6960 Marketplace 
+### ERC6960 Marketplace
 
 The Marketplace serves as the primary contract for trading ERC6960 assets, be it invoices, properties, wrapped assets, or any future ERC6960 creations, in exchange for ERC20 tokens. It incorporates a specific on-chain listing mechanism for fractionalized assets. Moreover, the Marketplace enables private offers through EIP712 signatures for buyers, enhancing the feasibility of trading and providing a more seamless user experience in a secure manner.
 
@@ -32,7 +32,7 @@ The Fee Manager enables the admin to set fees for the initial purchase and tradi
 
 ## Audits
 
-Polytrade has enlisted the services of ImmuneBytes to perform a security audit on the Marketplace. Over the period from December 15th, 2023, to January 29th, 2024, a team of ImmuneBytes consultants conducted a thorough security review of Polytrade Marketplace. The audit did not reveal any significant flaws that could potentially compromise a smart contract, lead to the loss of funds, or cause unexpected behavior in the target system. You can access their [full report here](./audits/PolyTrade(NFT%20Marketplace)-Audit%20Report-ImmuneBytes.pdf).
+Polytrade has enlisted the services of ImmuneBytes to perform a security audit on the Marketplace. Over the period from December 15th, 2023, to January 29th, 2024, a team of ImmuneBytes consultants conducted a thorough security review of Polytrade Marketplace. The audit did not reveal any significant flaws that could potentially compromise a smart contract, lead to the loss of funds, or cause unexpected behavior in the target system. You can access their [full report here](<./audits/PolyTrade(NFT%20Marketplace)-Audit%20Report-ImmuneBytes.pdf>).
 
 ## Contributing
 
