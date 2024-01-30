@@ -6,8 +6,10 @@ require("dotenv").config();
 const {
   TESTNET_PRIVATE_KEY,
   MAINNET_DEPLOYER_PRIVATE_KEY,
-  TESTNET_ARCHIVAL_RPC,
   MAINNET_ARCHIVAL_RPC,
+  MUMBAI_ARCHIVAL_RPC,
+  POLYGON_ARCHIVAL_RPC,
+  SEPOLIA_ARCHIVAL_RPC,
 } = process.env;
 
 /** @type import('hardhat/config').HardhatUserConfig */
@@ -43,29 +45,52 @@ module.exports = {
       gas: 30000000,
     },
     mumbai: {
-      url: `${TESTNET_ARCHIVAL_RPC}`,
+      url: `${MUMBAI_ARCHIVAL_RPC}`,
       accounts: [
-        `${
-          TESTNET_PRIVATE_KEY ||
-          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        `${TESTNET_PRIVATE_KEY ||
+        "0x0000000000000000000000000000000000000000000000000000000000000000"
         }`,
       ],
     },
     polygon: {
+      url: `${POLYGON_ARCHIVAL_RPC}`,
+      accounts: [
+        `${MAINNET_DEPLOYER_PRIVATE_KEY ||
+        "0x0000000000000000000000000000000000000000000000000000000000000000"
+        }`,
+      ],
+    },
+    sepolia: {
+      url: `${SEPOLIA_ARCHIVAL_RPC}`,
+      accounts: [
+        `${TESTNET_PRIVATE_KEY ||
+        "0x0000000000000000000000000000000000000000000000000000000000000000"
+        }`,
+      ],
+    },
+    mainnet: {
       url: `${MAINNET_ARCHIVAL_RPC}`,
       accounts: [
-        `${
-          MAINNET_DEPLOYER_PRIVATE_KEY ||
-          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        `${MAINNET_DEPLOYER_PRIVATE_KEY ||
+        "0x0000000000000000000000000000000000000000000000000000000000000000"
         }`,
       ],
     },
   },
   gasReporter: {
-    enabled: !!process.env.REPORT_GAS,
+    enabled: false,
+    coinmarketcap: "1d8cfd2b-c9b6-4884-a5bb-1f0e033b146c",
+    outputFile: "gas-report-eth.txt",
+    noColors: true,
     currency: "USD",
+    excludeContracts: ['Mock/', 'Token/']
   },
   etherscan: {
-    apiKey: process.env.POLYGONSCAN_API_KEY,
+    apiKey: {
+      mainnet: process.env.ETHERSCAN_API_KEY || "",
+      sepolia: process.env.ETHERSCAN_API_KEY || "",
+      polygon: process.env.POLYGONSCAN_API_KEY || "",
+      mumbai: process.env.POLYGONSCAN_API_KEY || "",
+    }
   },
 };

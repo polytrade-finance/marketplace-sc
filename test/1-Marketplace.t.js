@@ -12,9 +12,9 @@ const {
   nearSettleAsset,
   zeroPriceAsset,
   nearSettleProperty,
-} = require("./data.spec");
+} = require("./helpers/data.spec");
 const { time } = require("@nomicfoundation/hardhat-network-helpers");
-const { now } = require("./helpers");
+const { now } = require("./helpers/time");
 const chainId = network.config.chainId;
 
 const getId = async (contract, owner) => {
@@ -81,7 +81,7 @@ describe("Marketplace", function () {
     await newFeeManager.waitForDeployment();
 
     stableTokenContract = await (
-      await ethers.getContractFactory("ERC20Token")
+      await ethers.getContractFactory("MockERC20")
     ).deploy("USD Dollar", "USDC", 18, buyer.getAddress(), 200000);
 
     await stableTokenContract.decimals();

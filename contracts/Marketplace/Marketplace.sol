@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import { EIP712Upgradeable } from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
-import { ListedInfo, IMarketplace, IToken } from "contracts/Marketplace/interface/IMarketplace.sol";
+import { ListedInfo, IMarketplace, IERC20 } from "contracts/Marketplace/interface/IMarketplace.sol";
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -17,9 +17,8 @@ import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { Counters } from "contracts/lib/Counters.sol";
 
 /**
- * @title The common marketplace for the assets
+ * @title The common marketplace for the all types of ERC-6960 assets
  * @author Polytrade.Finance
- * @dev Implementation of all assets trading operations
  */
 contract Marketplace is
     Initializable,
@@ -30,7 +29,7 @@ contract Marketplace is
     ReentrancyGuardUpgradeable,
     IMarketplace
 {
-    using SafeERC20 for IToken;
+    using SafeERC20 for IERC20;
     using ERC165Checker for address;
     using Counters for Counters.Counter;
 
@@ -481,8 +480,8 @@ contract Marketplace is
             ""
         );
 
-        IToken(token).safeTransferFrom(buyer, owner, payPrice);
-        IToken(token).safeTransferFrom(buyer, _feeManager.getFeeWallet(), fee);
+        IERC20(token).safeTransferFrom(buyer, owner, payPrice);
+        IERC20(token).safeTransferFrom(buyer, _feeManager.getFeeWallet(), fee);
         emit AssetBought(
             owner,
             buyer,

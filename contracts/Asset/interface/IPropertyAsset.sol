@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import { PropertyInfo, IToken } from "contracts/lib/structs.sol";
+import { PropertyInfo, IERC20 } from "contracts/lib/structs.sol";
 import { GenericErrors } from "contracts/lib/errors.sol";
 
 interface IPropertyAsset is GenericErrors {

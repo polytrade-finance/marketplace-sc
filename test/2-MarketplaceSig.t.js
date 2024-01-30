@@ -6,9 +6,9 @@ const {
   AssetManagerAccess,
   OriginatorAccess,
   createAsset,
-} = require("./data.spec");
+} = require("./helpers/data.spec");
 const { time } = require("@nomicfoundation/hardhat-network-helpers");
-const { now } = require("./helpers");
+const { now } = require("./helpers/time");
 const {
   domainSeparatorCal,
   calculateOfferHash,
@@ -72,7 +72,7 @@ describe("Marketplace Signatures", function () {
     await FeeManager.waitForDeployment();
 
     stableTokenContract = await (
-      await ethers.getContractFactory("ERC20Token")
+      await ethers.getContractFactory("MockERC20")
     ).deploy("USD Dollar", "USDC", 18, offeror.getAddress(), 20000000);
 
     marketplaceContract = await upgrades.deployProxy(

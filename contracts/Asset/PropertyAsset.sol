@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import { PropertyInfo, IPropertyAsset, IToken } from "contracts/Asset/interface/IPropertyAsset.sol";
+import { PropertyInfo, IPropertyAsset, IERC20 } from "contracts/Asset/interface/IPropertyAsset.sol";
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -11,7 +11,7 @@ import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { Counters } from "contracts/lib/Counters.sol";
 
 /**
- * @title The property asset contract based on EIP6960
+ * @title The property asset contract based on ERC6960
  * @author Polytrade.Finance
  */
 contract PropertyAsset is
@@ -20,7 +20,7 @@ contract PropertyAsset is
     AccessControl,
     IPropertyAsset
 {
-    using SafeERC20 for IToken;
+    using SafeERC20 for IERC20;
     using ERC165Checker for address;
     using Counters for Counters.Counter;
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import { ListedInfo, IToken, IMarketplace } from "contracts/Marketplace/interface/IMarketplace.sol";
+import { ListedInfo, IERC20, IMarketplace } from "contracts/Marketplace/interface/IMarketplace.sol";
 
 contract MockInvoiceOwner {
     IMarketplace private immutable _marketplace;
@@ -15,7 +15,7 @@ contract MockInvoiceOwner {
             1,
             1000,
             1,
-            IToken(msg.sender)
+            IERC20(msg.sender)
         );
 
         _marketplace.list(mainId, 0, _listedInfo);

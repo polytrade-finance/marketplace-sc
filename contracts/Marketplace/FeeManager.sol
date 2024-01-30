@@ -6,9 +6,8 @@ import { ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import { IFeeManager } from "contracts/Marketplace/interface/IFeeManager.sol";
 
 /**
- * @title The fee manager for marketplace
+ * @title The fee manager for the marketplace
  * @author Polytrade.Finance
- * @dev Implementation of all fees for all assets
  */
 contract FeeManager is ERC165, AccessControl, IFeeManager {
     uint256 private _defaultInitialFee;

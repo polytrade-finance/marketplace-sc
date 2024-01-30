@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { network, ethers } = require("hardhat");
-const { AssetManagerAccess } = require("./data.spec");
+const { AssetManagerAccess } = require("./helpers/data.spec");
 const {
   Sand1155,
   Ens721,
@@ -8,9 +8,9 @@ const {
   Ens721Signer,
   Erc20Signer,
   Sand1155Signer,
-} = require("./addresses.spec");
+} = require("./helpers/addresses.spec");
 
-const { EnsTokenId, SandTokenId } = require("./data.spec");
+const { EnsTokenId, SandTokenId } = require("./helpers/data.spec");
 const chainId = network.config.chainId;
 
 const getSigner = async (address) => {
@@ -62,7 +62,7 @@ describe("Wrapper Contract", function () {
     signer721 = await getSigner(Ens721Signer);
     signer1155 = await getSigner(Sand1155Signer);
 
-    erc20 = await ethers.getContractAt("IToken", Erc20);
+    erc20 = await ethers.getContractAt("IERC20", Erc20);
 
     erc721 = await ethers.getContractAt("IERC721", Ens721);
 

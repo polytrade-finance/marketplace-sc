@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import { WrappedInfo, IWrappedAsset, IToken } from "contracts/Asset/interface/IWrappedAsset.sol";
+import { WrappedInfo, IWrappedAsset, IERC20 } from "contracts/Asset/interface/IWrappedAsset.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { IERC1155Receiver } from "@openzeppelin/contracts/interfaces/IERC1155Receiver.sol";
 import { IERC721Receiver } from "@openzeppelin/contracts/interfaces/IERC721Receiver.sol";
@@ -14,7 +14,7 @@ import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { Counters } from "contracts/lib/Counters.sol";
 
 /**
- * @title The wrapped asset contract based on EIP6960
+ * @title The wrapped asset contract based on ERC6960
  * @author Polytrade.Finance
  */
 contract WrappedAsset is
@@ -25,7 +25,7 @@ contract WrappedAsset is
     IWrappedAsset
 {
     using ERC165Checker for address;
-    using SafeERC20 for IToken;
+    using SafeERC20 for IERC20;
     using Counters for Counters.Counter;
 
     Counters.Counter private _nonce;
@@ -318,7 +318,7 @@ contract WrappedAsset is
         if (balance == 0) {
             revert InvalidBalance();
         }
-        IToken token = IToken(contractAddress);
+        IERC20 token = IERC20(contractAddress);
         uint256 actualBalance = token.balanceOf(_msgSender());
         if (actualBalance < balance) {
             revert NotEnoughBalance();
@@ -463,7 +463,7 @@ contract WrappedAsset is
         if (info.fractions == 0) {
             revert WrongAssetId();
         }
-        IToken token = IToken(info.contractAddress);
+        IERC20 token = IERC20(info.contractAddress);
 
         delete _wrappedInfo[mainId];
 

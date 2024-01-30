@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers, network } = require("hardhat");
-const { AssetManagerAccess } = require("./data.spec");
+const { AssetManagerAccess } = require("./helpers/data.spec");
 
 describe("Asset", function () {
   let assetContract;
