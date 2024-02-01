@@ -1,5 +1,5 @@
 const { ethers } = require("hardhat");
-const { now } = require("./helpers");
+const { now } = require("./time");
 
 const DECIMALS = {
   TWO: 2,

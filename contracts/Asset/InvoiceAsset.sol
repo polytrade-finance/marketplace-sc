@@ -2,7 +2,7 @@
 pragma solidity 0.8.17;
 
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import { InvoiceInfo, IInvoiceAsset, IToken } from "contracts/Asset/interface/IInvoiceAsset.sol";
+import { InvoiceInfo, IInvoiceAsset, IERC20 } from "contracts/Asset/interface/IInvoiceAsset.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { ListedInfo, IMarketplace } from "contracts/Marketplace/interface/IMarketplace.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -12,12 +12,12 @@ import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { Counters } from "contracts/lib/Counters.sol";
 
 /**
- * @title The asset contract based on EIP6960
+ * @title The asset contract based on ERC6960
  * @author Polytrade.Finance
  * @dev Manages creation of asset and rewards distribution
  */
 contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
-    using SafeERC20 for IToken;
+    using SafeERC20 for IERC20;
     using ERC165Checker for address;
     using Counters for Counters.Counter;
 

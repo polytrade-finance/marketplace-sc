@@ -21,7 +21,7 @@ async function main() {
 
   console.log(await asset.getAddress());
 
-  const TokenFactory = await ethers.getContractFactory("ERC20Token");
+  const TokenFactory = await ethers.getContractFactory("MockERC20");
   const token = TokenFactory.attach(tokenAddress);
 
   console.log(await token.getAddress());
@@ -82,20 +82,3 @@ async function main() {
 main().catch((error) => {
   throw new Error(error);
 });
-// first dev deployment
-// Asset 0xef0bABAdd9DfF3E4C3A85E904fe669891Cb6Dd80
-// Token 0xdd7fded184a005ba01f9f963ff2242136cf4f3eb
-// Marketplace 0x34753E78415cD88176688449D7d7812f97108A88
-// Invoice 0x60059c6bBe88CaD480eB0465Ec9ED3CbA1a91C6e
-// Property 0x11C23AADD1E01D2eC7044Ff5259ad7aD18502c16
-// Wrapper 0x1C807B6378Ed18A01792749222a509F2Aee1DE08
-// NFT 0xCCa859b22f3FD6544CbE088dDf3b5154abAA8748
-
-// second dev deployment
-// Asset 0xC61d6213F014feA0693325D56Ca07241981D79F7
-// Token 0xdd7fded184a005ba01f9f963ff2242136cf4f3eb
-// Marketplace 0x8597d3BD8D8719529994Aa9661CAdfb2D742013E
-// Invoice 0xA4fD0cE10959132E2bAB4aaE0F1091f2eB0DD175
-// Property 0x21c0F2f02A6286C673cc30A3d8fDCAD52cf36651
-// Wrapper 0x0a83Ec01756bAe01c7cc88FD1aE56D5a798e3a37
-// NFT 0xCCa859b22f3FD6544CbE088dDf3b5154abAA8748

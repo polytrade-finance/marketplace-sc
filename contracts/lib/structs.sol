@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import { IToken } from "contracts/Token/interface/IToken.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title Listed information for each asset owner and asset id
@@ -14,7 +14,7 @@ struct ListedInfo {
     uint256 salePrice;
     uint256 listedFractions;
     uint256 minFraction;
-    IToken token;
+    IERC20 token;
 }
 
 /**
@@ -30,7 +30,7 @@ struct InvoiceInfo {
     uint256 dueDate;
     uint256 rewardApr;
     uint256 fractions;
-    IToken settlementToken;
+    IERC20 settlementToken;
 }
 
 /**
@@ -67,5 +67,5 @@ struct PropertyInfo {
     uint256 price;
     uint256 dueDate;
     uint256 fractions;
-    IToken settlementToken;
+    IERC20 settlementToken;
 }

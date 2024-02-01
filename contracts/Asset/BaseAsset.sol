@@ -11,7 +11,7 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { DLT } from "dual-layer-token/contracts/DLT/DLT.sol";
 
 /**
- * @title The asset contract based on EIP6960
+ * @title The asset contract based on ERC6960
  * @author Polytrade.Finance
  * @dev Manages creation of asset and rewards distribution
  */

@@ -4,11 +4,10 @@ pragma solidity 0.8.17;
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /**
- * @title The token used to pay for getting AssetNFTs
+ * @title The test ERC20
  * @author Polytrade.Finance
- * @dev IERC20 used for test purposes
  */
-contract ERC20Token is ERC20 {
+contract MockERC20 is ERC20 {
     uint8 private immutable _decimals;
 
     constructor(
