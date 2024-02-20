@@ -29,7 +29,7 @@ module.exports = {
   networks: {
     hardhat: {
       forking: {
-        url: process.env.RPC_URL || "https://rpc.ankr.com/eth",
+        url: process.env.RPC_URL || "https://eth.llamarpc.com",
         ignoreUnknownTxType: true,
         blockNumber: 18314577,
       },
@@ -83,7 +83,7 @@ module.exports = {
   },
   gasReporter: {
     enabled: false,
-    coinmarketcap: "1d8cfd2b-c9b6-4884-a5bb-1f0e033b146c",
+    coinmarketcap: process.env.COINMARKETCAP_API,
     outputFile: "gas-report-eth.txt",
     noColors: true,
     currency: "USD",
@@ -94,7 +94,7 @@ module.exports = {
       mainnet: process.env.ETHERSCAN_API_KEY || "",
       sepolia: process.env.ETHERSCAN_API_KEY || "",
       polygon: process.env.POLYGONSCAN_API_KEY || "",
-      mumbai: process.env.POLYGONSCAN_API_KEY || "",
+      polygonMumbai: process.env.POLYGONSCAN_API_KEY || "",
     },
   },
 };
