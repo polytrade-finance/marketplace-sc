@@ -1,5 +1,5 @@
 const { ethers, upgrades } = require("hardhat");
-const { tokenAddress, treasuryWallet, feeWallet } = require("./data");
+const { treasuryWallet, feeWallet } = require("./data");
 
 async function main() {
   const MarketplaceAccess = ethers.keccak256(
@@ -12,23 +12,25 @@ async function main() {
 
   const AssetFactory = await ethers.getContractFactory("BaseAsset");
   const asset = await AssetFactory.deploy(
-    "PolytradeRealWorldAssets",
+    "PolytradeAssets",
     "PRWA",
     "2.3",
-    "https://polytrade.finance/"
+    "https://polytrade.app/"
   );
   await asset.waitForDeployment();
 
   console.log(await asset.getAddress());
 
-  const TokenFactory = await ethers.getContractFactory("MockERC20");
-  const token = TokenFactory.attach(tokenAddress);
+  const TokenFactory = await ethers.getContractFactory("MockERC721");
+  const token = await TokenFactory.deploy("NFT", "NFT", "ipfs");
 
   console.log(await token.getAddress());
 
   const FeeManager = await ethers.getContractFactory("FeeManager");
-  const feeManager = await FeeManager.deploy(100, 200, feeWallet);
+  const feeManager = await FeeManager.deploy(0, 0, feeWallet);
   await feeManager.waitForDeployment();
+
+  console.log(await feeManager.getAddress());
 
   const Marketplace = await ethers.getContractFactory("Marketplace");
   const marketplace = await upgrades.deployProxy(Marketplace, [
