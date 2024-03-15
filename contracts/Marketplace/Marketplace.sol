@@ -442,7 +442,7 @@ contract Marketplace is
             mainId,
             subId,
             listedInfo.salePrice,
-            payPrice,
+            payPrice + fee,
             fractionToBuy,
             address(listedInfo.token)
         );
@@ -488,7 +488,7 @@ contract Marketplace is
             mainId,
             subId,
             offerPrice,
-            payPrice,
+            payPrice + fee,
             fractionToBuy,
             token
         );

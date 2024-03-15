@@ -29,9 +29,9 @@ module.exports = {
   networks: {
     hardhat: {
       forking: {
-        url: process.env.RPC_URL || "https://eth.llamarpc.com",
+        url: process.env.ARCHIVAL_RPC || "https://eth.llamarpc.com",
         ignoreUnknownTxType: true,
-        blockNumber: 18314577,
+        // blockNumber: 18314577,
       },
       chainId: Number(process.env.CHAIN_ID) || 1,
       accounts: {
