@@ -33,6 +33,8 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
     /// @notice The commercial year consists of a 360-day period, 12 months of 30 days each, as utilized by Polytrade
     uint256 private constant _YEAR = 360 days;
 
+    uint256 private constant _PRECISION = 1e8;
+
     mapping(uint256 => InvoiceInfo) private _invoiceInfo;
     mapping(uint256 => mapping(uint256 => uint256)) private _purchaseDate;
     mapping(uint256 => uint256) private _currentSubId;
@@ -89,21 +91,26 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
      * @dev See {IInvoiceAsset-createInvoice}.
      */
     function createInvoice(
+        bool priceIsLocked,
         InvoiceInfo calldata invoiceInfo
     ) external onlyRole(ASSET_ORIGINATOR) returns (uint256) {
-        return _createInvoice(invoiceInfo);
+        return _createInvoice(priceIsLocked, invoiceInfo);
     }
 
     /**
      * @dev See {IInvoiceAsset-batchCreateInvoice}.
      */
     function batchCreateInvoice(
+        bool[] calldata priceIsLocked,
         InvoiceInfo[] calldata invoiceInfos
     ) external onlyRole(ASSET_ORIGINATOR) returns (uint256[] memory) {
         uint256 length = invoiceInfos.length;
+        if (priceIsLocked.length != length) {
+            revert NoArrayParity();
+        }
         uint256[] memory ids = new uint256[](length);
         for (uint256 i = 0; i < length; ) {
-            ids[i] = _createInvoice(invoiceInfos[i]);
+            ids[i] = _createInvoice(priceIsLocked[i], invoiceInfos[i]);
 
             unchecked {
                 ++i;
@@ -120,7 +127,6 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         uint256 invoiceSubId,
         address owner
     ) external onlyRole(ASSET_ORIGINATOR) {
-        _claimReward(invoiceMainId, invoiceSubId, owner);
         _settleInvoice(invoiceMainId, invoiceSubId, owner);
     }
 
@@ -138,7 +144,6 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         }
 
         for (uint256 i = 0; i < length; ) {
-            _claimReward(invoiceMainIds[i], invoiceSubIds[i], owners[i]);
             _settleInvoice(invoiceMainIds[i], invoiceSubIds[i], owners[i]);
 
             unchecked {
@@ -174,22 +179,30 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
      */
     function onSubIdCreation(
         address buyer,
-        uint256 mainId,
-        uint256 fractions
+        uint256 invoiceMainId,
+        uint256 fractions,
+        uint256 price
     ) external onlyRole(MARKETPLACE_ROLE) {
-        _currentSubId[mainId] += 1;
-        _purchaseDate[mainId][_currentSubId[mainId]] = block.timestamp;
+        _currentSubId[invoiceMainId] += 1;
+        _purchaseDate[invoiceMainId][_currentSubId[invoiceMainId]] = block
+            .timestamp;
+        _assetCollection.setTradingRecord(
+            buyer,
+            invoiceMainId,
+            _currentSubId[invoiceMainId],
+            price
+        );
 
         _assetCollection.burnAsset(
-            _assetCollection.getAssetInfo(mainId, 0).initialOwner,
-            mainId,
+            _assetCollection.getAssetInfo(invoiceMainId, 0).initialOwner,
+            invoiceMainId,
             0,
             fractions
         );
         _assetCollection.createAsset(
             buyer,
-            mainId,
-            _currentSubId[mainId],
+            invoiceMainId,
+            _currentSubId[invoiceMainId],
             fractions
         );
     }
@@ -202,27 +215,187 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
     }
 
     /**
+     * @dev See {IInvoiceAsset-getRemainingTenure}.
+     */
+    function getRemainingTenure(
+        uint256 invoiceMainId
+    ) external view returns (uint256 apr) {
+        InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId];
+
+        return
+            _calculateRemainingTenure(
+                invoice.invoiceDate,
+                invoice.dueDate,
+                invoice.tenure
+            );
+    }
+
+    /**
+     * @dev See {IGenericAsset-getApr}.
+     */
+    function getApr(
+        address owner,
+        uint256 invoiceMainId,
+        uint256 invoiceSubId
+    ) external view returns (uint256 apr) {
+        InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId];
+        ListedInfo memory listedInfo = _marketplace.getListedInfo(
+            owner,
+            invoiceMainId,
+            invoiceSubId
+        );
+        uint256 _tradingRecord = _assetCollection.getTradingRecord(
+            owner,
+            invoiceMainId,
+            invoiceSubId
+        );
+        uint256 userFractions = _assetCollection.subBalanceOf(
+            owner,
+            invoiceMainId,
+            invoiceSubId
+        );
+        uint256 remainingTenure = _calculateRemainingTenure(
+            invoice.invoiceDate,
+            invoice.dueDate,
+            invoice.tenure
+        );
+
+        uint256 price = listedInfo.salePrice != 0 ? listedInfo.salePrice : _tradingRecord;
+
+        if (remainingTenure == 0 || _tradingRecord == 0) {
+            apr = 0;
+        } else {
+            apr = _calculateApr(
+                price,
+                invoice.fractions,
+                userFractions,
+                remainingTenure,
+                invoice.dueAmount
+            );
+        }
+    }
+
+    /**
+     * @dev See {IGenericAsset-getPrice}.
+     */
+    function getPrice(
+        address owner,
+        uint256 invoiceMainId,
+        uint256 invoiceSubId
+    ) external view returns (uint256) {
+        uint256 userFractions = _assetCollection.subBalanceOf(
+            owner,
+            invoiceMainId,
+            invoiceSubId
+        );
+
+        if (userFractions == 0) {
+            return 0;
+        }
+
+        InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId];
+        ListedInfo memory listedInfo = _marketplace.getListedInfo(
+            owner,
+            invoiceMainId,
+            invoiceSubId
+        );
+
+        uint256 remainingTenure = _calculateRemainingTenure(
+            invoice.invoiceDate,
+            invoice.dueDate,
+            invoice.tenure
+        );
+
+        if (listedInfo.priceIsLocked) {
+            return listedInfo.salePrice * userFractions;
+        }
+
+        return
+            _calculatePrice(
+                listedInfo.apr,
+                invoice.fractions,
+                userFractions,
+                remainingTenure,
+                invoice.dueAmount
+            );
+    }
+
+    /**
+     * @dev See {IGenericAsset-getPartialPrice}.
+     */
+    function getPartialPrice(
+        address owner,
+        uint256 invoiceMainId,
+        uint256 invoiceSubId,
+        uint256 fractions
+    ) external view returns (uint256) {
+        uint256 userFractions = _assetCollection.subBalanceOf(
+            owner,
+            invoiceMainId,
+            invoiceSubId
+        );
+
+        if (userFractions <= 0) {
+            revert InvalidFraction();
+        }
+
+        InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId];
+        ListedInfo memory listedInfo = _marketplace.getListedInfo(
+            owner,
+            invoiceMainId,
+            invoiceSubId
+        );
+        uint256 remainingTenure = _calculateRemainingTenure(
+            invoice.invoiceDate,
+            invoice.dueDate,
+            invoice.tenure
+        );
+
+        if (listedInfo.priceIsLocked) {
+            return listedInfo.salePrice * fractions;
+        }
+
+        if (fractions == 0) {
+            return 0;
+        } else {
+            return
+                _calculatePrice(
+                    listedInfo.apr,
+                    invoice.fractions,
+                    fractions,
+                    remainingTenure,
+                    invoice.dueAmount
+                );
+        }
+    }
+
+    /**
      * @dev See {IInvoiceAsset-getAvailableReward}.
      */
     function getAvailableReward(
+        address owner,
         uint256 invoiceMainId,
         uint256 invoiceSubId
     ) external view returns (uint256 reward) {
-        InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId];
-        if (invoice.fractions != 0) {
-            reward =
-                (_getAvailableReward(
-                    invoiceMainId,
-                    invoiceSubId,
-                    block.timestamp > invoice.dueDate
-                        ? invoice.dueDate
-                        : block.timestamp
-                ) *
-                    _assetCollection.totalSubSupply(
-                        invoiceMainId,
-                        invoiceSubId
-                    )) /
-                invoice.fractions;
+        uint256 _tradingRecord = _assetCollection.getTradingRecord(
+            owner,
+            invoiceMainId,
+            invoiceSubId
+        );
+        uint256 userFractions = _assetCollection.subBalanceOf(
+            owner,
+            invoiceMainId,
+            invoiceSubId
+        );
+        uint256 purchaseDate = _purchaseDate[invoiceMainId][invoiceSubId];
+
+        if (purchaseDate != 0) {
+            uint256 payout = _getAvailablePayout(invoiceMainId, userFractions);
+            if (payout == 0) {
+                reward = 0;
+            } else {
+                reward = payout - (_tradingRecord * userFractions);
+            }
         }
     }
 
@@ -230,32 +403,30 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
      * @dev See {IInvoiceAsset-getRemainingReward}.
      */
     function getRemainingReward(
+        address owner,
         uint256 invoiceMainId,
         uint256 invoiceSubId
     ) external view returns (uint256 reward) {
         InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId];
+        uint256 userFractions = _assetCollection.subBalanceOf(
+            owner,
+            invoiceMainId,
+            invoiceSubId
+        );
+        uint256 _tradingRecord = _assetCollection.getTradingRecord(
+            owner,
+            invoiceMainId,
+            invoiceSubId
+        );
 
-        if (invoice.fractions != 0) {
-            uint256 purchaseDate = _purchaseDate[invoiceMainId][invoiceSubId];
-            uint256 tenure;
-            if (purchaseDate != 0) {
-                tenure = invoice.dueDate - purchaseDate;
-            } else {
-                tenure =
-                    invoice.dueDate -
-                    (
-                        block.timestamp > invoice.dueDate
-                            ? invoice.dueDate
-                            : block.timestamp
-                    );
-            }
+        if (_tradingRecord != 0) {
             reward =
-                (_calculateFormula(invoice.price, tenure, invoice.rewardApr) *
-                    _assetCollection.totalSubSupply(
-                        invoiceMainId,
-                        invoiceSubId
-                    )) /
-                invoice.fractions;
+                _calculateFormula(
+                    invoice.dueAmount,
+                    userFractions,
+                    invoice.fractions
+                ) -
+                (_tradingRecord * userFractions);
         }
     }
 
@@ -309,22 +480,19 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         uint256 invoiceSubId,
         address owner
     ) private {
+        InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId];
+        if (block.timestamp < invoice.dueDate) {
+            revert DueDateNotPassed();
+        }
+
         uint256 subBalanceOf = _assetCollection.subBalanceOf(
             owner,
             invoiceMainId,
             invoiceSubId
         );
 
-        if (subBalanceOf == 0) {
-            revert NotEnoughBalance();
-        }
-        InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId];
-        if (block.timestamp < invoice.dueDate) {
-            revert DueDateNotPassed();
-        }
+        uint256 settlePrice = _getAvailablePayout(invoiceMainId, subBalanceOf);
 
-        uint256 settlePrice = (invoice.price * subBalanceOf) /
-            invoice.fractions;
         _assetCollection.burnAsset(
             owner,
             invoiceMainId,
@@ -351,9 +519,11 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
 
     /**
      * @dev Called in createInvoice and batchCreateInvoice functions
+     * @param priceIsLocked, define if the price/apr is locked
      * @param invoiceInfo, related information for the invoice
      */
     function _createInvoice(
+        bool priceIsLocked,
         InvoiceInfo calldata invoiceInfo
     ) private returns (uint256 invoiceMainId) {
         if (address(invoiceInfo.settlementToken) == address(0)) {
@@ -362,14 +532,20 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         if (invoiceInfo.price == 0) {
             revert InvalidPrice();
         }
-        if (invoiceInfo.dueDate < block.timestamp) {
-            revert InvalidDueDate();
+        // if (invoiceInfo.tenure == 0) {
+        //     revert InvalidTenure();
+        // }
+        if (invoiceInfo.dueAmount == 0) {
+            revert InvalidDueAmount();
         }
+        // if (
+        //     invoiceInfo.dueDate < block.timestamp ||
+        //     invoiceInfo.dueDate < invoiceInfo.invoiceDate
+        // ) {
+        //     revert InvalidDueDate();
+        // }
         if (invoiceInfo.fractions == 0) {
             revert InvalidFraction();
-        }
-        if (invoiceInfo.rewardApr == 0) {
-            revert InvalidRewardApr();
         }
 
         invoiceMainId = uint256(
@@ -385,9 +561,22 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
         if (_assetCollection.totalMainSupply(invoiceMainId) != 0) {
             revert InvoiceAlreadyCreated();
         }
-
         uint256 fractions = invoiceInfo.fractions;
         _invoiceInfo[invoiceMainId] = invoiceInfo;
+        _assetCollection.setTradingRecord(
+            address(this),
+            invoiceMainId,
+            0,
+            invoiceInfo.price / fractions
+        );
+
+        uint256 apr = _calculateApr(
+            invoiceInfo.price / fractions,
+            fractions,
+            fractions,
+            invoiceInfo.tenure,
+            invoiceInfo.dueAmount
+        );
 
         _assetCollection.createAsset(
             address(this),
@@ -406,86 +595,178 @@ contract InvoiceAsset is Initializable, Context, AccessControl, IInvoiceAsset {
             0,
             ListedInfo(
                 invoiceInfo.price / fractions,
+                apr,
                 fractions,
                 1,
-                invoiceInfo.settlementToken
+                priceIsLocked,
+                invoiceInfo.settlementToken,
+                address(this)
             )
-        );
-    }
-
-    /**
-     * @dev Transfers rewards to owner and updates purchaseDate
-     * @param invoiceMainId, invoice unique identifier
-     * @param invoiceSubId, invoice unique identifier
-     * @param receiver, address of receiver reward
-     */
-    function _claimReward(
-        uint256 invoiceMainId,
-        uint256 invoiceSubId,
-        address receiver
-    ) private {
-        InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId];
-        if (invoice.dueDate == 0) {
-            revert InvalidInvoiceId();
-        }
-        uint256 subBalanceOf = _assetCollection.subBalanceOf(
-            receiver,
-            invoiceMainId,
-            invoiceSubId
-        );
-        uint256 reward = (_getAvailableReward(
-            invoiceMainId,
-            invoiceSubId,
-            invoice.dueDate
-        ) * subBalanceOf) / invoice.fractions;
-
-        invoice.settlementToken.safeTransferFrom(
-            _treasuryWallet,
-            receiver,
-            reward
-        );
-
-        emit RewardsClaimed(
-            receiver,
-            invoiceMainId,
-            invoiceSubId,
-            reward,
-            address(invoice.settlementToken)
         );
     }
 
     /**
      * @dev Calculates accumulated rewards based on rewardApr if the asset has an owner
      * @param invoiceMainId, unique identifier of invoice
+     * @param userFractions, the number of owned fractions
      */
-    function _getAvailableReward(
+    function _getAvailablePayout(
         uint256 invoiceMainId,
-        uint256 invoiceSubId,
-        uint256 endDate
+        uint256 userFractions
     ) private view returns (uint256 reward) {
         InvoiceInfo memory invoice = _invoiceInfo[invoiceMainId];
-        uint256 purchaseDate = _purchaseDate[invoiceMainId][invoiceSubId];
+        uint256 totalFractions = invoice.fractions;
 
-        if (purchaseDate != 0) {
-            reward = _calculateFormula(
-                invoice.price,
-                endDate - purchaseDate,
-                invoice.rewardApr
-            );
+        if (invoice.invoiceDate == 0) {
+            revert InvalidInvoiceDate();
         }
+        if (totalFractions == 0) {
+            revert InvalidFraction();
+        }
+        if (userFractions == 0) {
+            return 0;
+        }
+
+        uint256 daysPassed = (
+            block.timestamp > invoice.dueDate
+                ? invoice.dueDate
+                : block.timestamp
+        ) - invoice.invoiceDate;
+
+        daysPassed = daysPassed / 1 days;
+
+        if (daysPassed > invoice.tenure) {
+            daysPassed = invoice.tenure;
+        }
+        // if (daysPassed == 0) {
+        //     return 0;
+        // }
+
+        // uint256 proratedDueAmount = (invoice.dueAmount * daysPassed) /
+        //     invoice.tenure;
+
+        uint256 proratedDueAmount = invoice.dueAmount;
+
+        if (daysPassed != 0) {
+            proratedDueAmount =
+                (invoice.dueAmount * daysPassed) /
+                invoice.tenure;
+        }
+
+        reward = _calculateFormula(
+            proratedDueAmount,
+            userFractions,
+            totalFractions
+        );
+    }
+
+    /**
+     * @dev Calculates the apr for a given asset
+     * @param invoiceDate the date invoice has been created at
+     * @param dueDate the due date of the invoice
+     * @param tenure the tenure of the invoice
+     */
+    function _calculateRemainingTenure(
+        uint256 invoiceDate,
+        uint256 dueDate,
+        uint256 tenure
+    ) private view returns (uint256) {
+        uint256 remainingTenure = (
+            block.timestamp > dueDate ? dueDate : block.timestamp
+        ) - invoiceDate;
+
+        remainingTenure = remainingTenure / 1 days;
+
+        if (remainingTenure >= tenure) {
+            remainingTenure = 0;
+        } else {
+            remainingTenure = tenure - remainingTenure;
+        }
+
+        return remainingTenure;
     }
 
     /**
      * @dev Calculates the rewards for a given asset
-     * @param price is the price of asset
-     * @param tenure is the duration from last updated rewards
-     * @param apr is the annual percentage rate of rewards for assets
+     * @param dueAmount is the due amount to pay of asset
+     * @param userFractions is the user-owned fractions of the asset
+     * @param totalFractions is the total fractions of the asset
      */
     function _calculateFormula(
-        uint256 price,
-        uint256 tenure,
-        uint256 apr
+        uint256 dueAmount,
+        uint256 userFractions,
+        uint256 totalFractions
     ) private pure returns (uint256) {
-        return ((price * tenure * apr) / 1e4) / _YEAR;
+        return (dueAmount * userFractions) / totalFractions;
+    }
+
+    /**
+     * @dev Calculates the apr for a given asset
+     * @param price is the due amount to pay of asset
+     * @param totalFractions the number of total fractions for this asset
+     * @param userFractions the number of fractions owned for this asset
+     * @param remainingTenure is the user-owned fractions of the asset
+     * @param dueAmount is the total fractions of the asset
+     */
+    function _calculateApr(
+        uint256 price,
+        uint256 totalFractions,
+        uint256 userFractions,
+        uint256 remainingTenure,
+        uint256 dueAmount
+    ) private pure returns (uint256) {
+        if (price <= 0) {
+            revert InvalidPrice();
+        }
+        if (remainingTenure <= 0) {
+            revert InvalidTenure();
+        }
+        if (dueAmount <= 0) {
+            revert InvalidDueAmount();
+        }
+        if (userFractions <= 0) {
+            revert InvalidFraction();
+        }
+
+        uint256 userDue = (dueAmount * userFractions) / totalFractions;
+        uint256 userPaid = price * userFractions;
+
+        return
+            ((userDue - userPaid) * _PRECISION * 360) /
+            (userPaid * remainingTenure);
+    }
+
+    /**
+     * @dev Calculates the price for a given asset
+     * @param apr is the due amount to pay of asset
+     * @param totalFractions the number of total fractions for this asset
+     * @param userFractions the number of fractions owned for this asset
+     * @param remainingTenure is the user-owned fractions of the asset
+     * @param dueAmount is the total fractions of the asset
+     */
+    function _calculatePrice(
+        uint256 apr,
+        uint256 totalFractions,
+        uint256 userFractions,
+        uint256 remainingTenure,
+        uint256 dueAmount
+    ) private pure returns (uint256) {
+        if (apr <= 0) {
+            revert InvalidApr();
+        }
+        if (remainingTenure <= 0) {
+            revert InvalidTenure();
+        }
+        if (dueAmount <= 0) {
+            revert InvalidDueAmount();
+        }
+        if (userFractions <= 0) {
+            revert InvalidFraction();
+        }
+
+        return
+            ((dueAmount * _PRECISION * 360) /
+                (totalFractions * (apr * remainingTenure + _PRECISION * 360))) *
+            userFractions;
     }
 }

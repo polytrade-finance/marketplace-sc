@@ -5,8 +5,9 @@ import { IDLT } from "dual-layer-token/contracts/DLT/interfaces/IDLT.sol";
 import { IDLTEnumerable } from "dual-layer-token/contracts/DLT/interfaces/IDLTEnumerable.sol";
 import { IDLTPermit } from "dual-layer-token/contracts/DLT/interfaces/IDLTPermit.sol";
 import { AssetInfo } from "contracts/lib/structs.sol";
+import { GenericErrors } from "contracts/lib/errors.sol";
 
-interface IBaseAsset is IDLT, IDLTEnumerable, IDLTPermit {
+interface IBaseAsset is IDLT, IDLTEnumerable, IDLTPermit, GenericErrors {
     /**
      * @dev Emitted when `newURI` is set to the assets instead of `oldURI`
      * @param mainId, Asset main id for the URI
@@ -80,6 +81,20 @@ interface IBaseAsset is IDLT, IDLTEnumerable, IDLTPermit {
     function setBaseURI(uint256 mainId, string calldata newBaseURI) external;
 
     /**
+     * @dev Allows to set a new trading record for an asset
+     * @param owner, the owner of the asset
+     * @param mainId, unique identifier of asset
+     * @param subId, unique identifier of asset
+     * @param fractionPrice, The last fraction price for the asset
+     */
+    function setTradingRecord(
+        address owner,
+        uint256 mainId,
+        uint256 subId,
+        uint256 fractionPrice
+    ) external;
+
+    /**
      * @dev concatenate asset id (mainId) to baseURI
      * @param mainId, unique identifier of asset type
      * @param subId, unique identifier of asset
@@ -90,8 +105,26 @@ interface IBaseAsset is IDLT, IDLTEnumerable, IDLTPermit {
         uint256 subId
     ) external view returns (string memory);
 
+    /**
+     * @dev Gets the asset information
+     * @param mainId, unique identifier of asset type
+     * @param subId, unique identifier of asset
+     */
     function getAssetInfo(
         uint256 mainId,
         uint256 subId
     ) external view returns (AssetInfo memory);
+
+    /**
+     * @dev Gets the last trading record for an asset
+     * @param owner, the owner of the asset
+     * @param mainId, unique identifier of asset
+     * @param subId, unique identifier of asset
+     * @return uint256, The last fraction price
+     */
+    function getTradingRecord(
+        address owner,
+        uint256 mainId,
+        uint256 subId
+    ) external view returns (uint256);
 }

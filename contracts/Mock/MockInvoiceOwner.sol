@@ -13,9 +13,12 @@ contract MockInvoiceOwner {
     function list(uint256 mainId) external {
         ListedInfo memory _listedInfo = ListedInfo(
             1,
+            0,
             1000,
             1,
-            IERC20(msg.sender)
+            true,
+            IERC20(msg.sender),
+            address(this)
         );
 
         _marketplace.list(mainId, 0, _listedInfo);

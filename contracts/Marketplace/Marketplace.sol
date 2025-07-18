@@ -12,6 +12,7 @@ import { ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import { IFeeManager } from "contracts/Marketplace/interface/IFeeManager.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { IInvoiceAsset } from "contracts/Asset/interface/IInvoiceAsset.sol";
+import { IGenericAsset } from "contracts/Asset/interface/IGenericAsset.sol";
 import { IBaseAsset } from "contracts/Asset/interface/IBaseAsset.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { Counters } from "contracts/lib/Counters.sol";
@@ -216,10 +217,10 @@ contract Marketplace is
     function buy(
         uint256 mainId,
         uint256 subId,
-        uint256 fractionToBuy,
+        uint256 fractionsToBuy,
         address owner
     ) external {
-        _buy(mainId, subId, fractionToBuy, owner);
+        _buy(mainId, subId, fractionsToBuy, owner);
     }
 
     /**
@@ -373,30 +374,39 @@ contract Marketplace is
      * @dev Transfer buying fee or initial fee to fee wallet based on asset status
      * @param mainId, unique identifier of the asset
      * @param subId, unique identifier of the asset
-     * @param fractionToBuy, number of fractions to buy from owner address
+     * @param fractionsToBuy, number of fractions to buy from owner address
      * @param owner, address of owner of the fraction of asset
      */
     function _buy(
         uint256 mainId,
         uint256 subId,
-        uint256 fractionToBuy,
+        uint256 fractionsToBuy,
         address owner
     ) private nonReentrant {
         ListedInfo memory listedInfo = _listedInfo[mainId][subId][owner];
-        if (fractionToBuy < listedInfo.minFraction) {
+        if (fractionsToBuy < listedInfo.minFraction) {
             revert InvalidFractionToBuy();
         }
-        if (listedInfo.listedFractions < fractionToBuy) {
+        if (listedInfo.listedFractions < fractionsToBuy) {
             revert NotEnoughListed();
         }
         if (
-            fractionToBuy > _assetCollection.subBalanceOf(owner, mainId, subId)
+            fractionsToBuy > _assetCollection.subBalanceOf(owner, mainId, subId)
         ) {
             revert NotEnoughBalance();
         }
 
         address receiver = owner;
-        uint256 payPrice = listedInfo.salePrice * fractionToBuy;
+
+        IGenericAsset genericAsset = IGenericAsset(listedInfo.genericAsset);
+        uint256 payPrice = genericAsset.getPartialPrice(
+            owner,
+            mainId,
+            subId,
+            fractionsToBuy
+        );
+
+        // uint256 payPrice = listedInfo.salePrice * fractionsToBuy;
         uint256 fee = _assetCollection
             .getAssetInfo(mainId, subId)
             .initialOwner != owner
@@ -404,12 +414,12 @@ contract Marketplace is
             : _feeManager.getInitialFee(mainId, subId);
         fee = (payPrice * fee) / 1e4;
 
-        if (listedInfo.listedFractions == fractionToBuy) {
+        if (listedInfo.listedFractions == fractionsToBuy) {
             delete _listedInfo[mainId][subId][owner];
         } else {
             _listedInfo[mainId][subId][owner].listedFractions =
                 listedInfo.listedFractions -
-                fractionToBuy;
+                fractionsToBuy;
         }
 
         if (subId == 0) {
@@ -417,15 +427,22 @@ contract Marketplace is
             IInvoiceAsset(owner).onSubIdCreation(
                 _msgSender(),
                 mainId,
-                fractionToBuy
+                fractionsToBuy,
+                listedInfo.salePrice
             );
         } else {
+            _assetCollection.setTradingRecord(
+                _msgSender(),
+                mainId,
+                subId,
+                listedInfo.salePrice
+            );
             _assetCollection.safeTransferFrom(
                 owner,
                 _msgSender(),
                 mainId,
                 subId,
-                fractionToBuy,
+                fractionsToBuy,
                 ""
             );
         }
@@ -443,7 +460,7 @@ contract Marketplace is
             subId,
             listedInfo.salePrice,
             payPrice,
-            fractionToBuy,
+            fractionsToBuy,
             address(listedInfo.token)
         );
     }
@@ -452,18 +469,18 @@ contract Marketplace is
         uint256 mainId,
         uint256 subId,
         uint256 offerPrice,
-        uint256 fractionToBuy,
+        uint256 fractionsToBuy,
         address owner,
         address buyer,
         address token
     ) private {
         if (
-            fractionToBuy > _assetCollection.subBalanceOf(owner, mainId, subId)
+            fractionsToBuy > _assetCollection.subBalanceOf(owner, mainId, subId)
         ) {
             revert NotEnoughBalance();
         }
 
-        uint256 payPrice = offerPrice * fractionToBuy;
+        uint256 payPrice = offerPrice * fractionsToBuy;
         uint256 fee = _assetCollection
             .getAssetInfo(mainId, subId)
             .initialOwner != owner
@@ -476,7 +493,7 @@ contract Marketplace is
             buyer,
             mainId,
             subId,
-            fractionToBuy,
+            fractionsToBuy,
             ""
         );
 
@@ -489,7 +506,7 @@ contract Marketplace is
             subId,
             offerPrice,
             payPrice,
-            fractionToBuy,
+            fractionsToBuy,
             token
         );
     }

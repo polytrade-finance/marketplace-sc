@@ -92,3 +92,6 @@ npx hardhat test
 ## ⚖️ License
 
 All files in `/contracts` are licensed under MIT as indicated in their SPDX header.
+
+
+npx hardhat verify --network amoy 0x33269ec738747C591091b20AEF825738aBD60D78 "PolytradeRealWorldAssets" "PRWA" "2.3" "https://polytrade.finance/"

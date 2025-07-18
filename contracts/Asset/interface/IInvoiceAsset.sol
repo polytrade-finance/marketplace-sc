@@ -2,9 +2,9 @@
 pragma solidity 0.8.17;
 
 import { InvoiceInfo, IERC20 } from "contracts/lib/structs.sol";
-import { GenericErrors } from "contracts/lib/errors.sol";
+import { IGenericAsset } from "contracts/Asset/interface/IGenericAsset.sol";
 
-interface IInvoiceAsset is GenericErrors {
+interface IInvoiceAsset is IGenericAsset {
     /**
      * @dev Emitted when new `Treasury Wallet` has been set
      * @param oldTreasuryWallet, Address of the old treasury wallet
@@ -52,7 +52,6 @@ interface IInvoiceAsset is GenericErrors {
      */
     error UnsupportedInterface();
 
-    error InvalidRewardApr();
     error InvoiceAlreadyCreated();
     error InvalidInvoiceId();
 
@@ -65,30 +64,36 @@ interface IInvoiceAsset is GenericErrors {
     /**
      * @dev Mint a new subId by incrementing whenever a buy happens on marketplace from subId zero
      * @param buyer, Address of buyer of subId
-     * @param mainId, The unique identifier of asset
+     * @param invoiceMainId, The unique identifier of asset
      * @param fractions, number of fraction to create
+     * @param price, The price of each fraction
      */
     function onSubIdCreation(
         address buyer,
-        uint256 mainId,
-        uint256 fractions
+        uint256 invoiceMainId,
+        uint256 fractions,
+        uint256 price
     ) external;
 
     /**
      * @dev Creates an invoice with its parameters
+     * @param priceIsLocked, define if the price/apr is locked
      * @param invoiceInfo, all related invoice information
      * @dev Needs asset originator access to create an invoice
      */
     function createInvoice(
+        bool priceIsLocked,
         InvoiceInfo calldata invoiceInfo
     ) external returns (uint256);
 
     /**
      * @dev Batch creates invoices with their parameters
-     * @param invoiceInfos, all related invoice informations
+     * @param priceIsLocked, define if the price/apr is locked
+     * @param invoiceInfos, all related invoice information
      * @dev Needs asset originator access to create invoices
      */
     function batchCreateInvoice(
+        bool[] calldata priceIsLocked,
         InvoiceInfo[] calldata invoiceInfos
     ) external returns (uint256[] memory);
 
@@ -131,21 +136,33 @@ interface IInvoiceAsset is GenericErrors {
     ) external;
 
     /**
+     * @dev Gets the remaining tenure
+     * @param invoiceMainId, unique identifier of invoice
+     */
+    function getRemainingTenure(
+        uint256 invoiceMainId
+    ) external view returns (uint256);
+
+    /**
      * @dev Gets available rewards for claiming
+     * @param owner, the owner of the invoice
      * @param invoiceMainId, unique identifier of invoice
      * @param invoiceSubId, unique identifier of invoice
      */
     function getAvailableReward(
+        address owner,
         uint256 invoiceMainId,
         uint256 invoiceSubId
     ) external view returns (uint256);
 
     /**
-     * @dev Gets remaning rewards till due date
+     * @dev Gets remaining rewards till due date
+     * @param owner, the owner of the invoice
      * @param invoiceMainId, unique identifier of invoice
      * @param invoiceSubId, unique identifier of invoice
      */
     function getRemainingReward(
+        address owner,
         uint256 invoiceMainId,
         uint256 invoiceSubId
     ) external view returns (uint256 reward);
@@ -164,4 +181,13 @@ interface IInvoiceAsset is GenericErrors {
     function getInvoiceInfo(
         uint256 invoiceMainId
     ) external view returns (InvoiceInfo memory);
+
+    /**
+     * @dev Gets the invoice sub ID, a unique identifier of invoice
+     * @param invoiceMainId, unique identifier of invoice
+     * @return invoiceSubId uint256
+     */
+    function getCurrentSubId(
+        uint256 invoiceMainId
+    ) external view returns (uint256);
 }

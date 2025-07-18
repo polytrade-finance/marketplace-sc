@@ -10,11 +10,21 @@ interface GenericErrors {
 
     error InvalidPrice();
 
+    error InvalidApr();
+
+    error InvalidTenure();
+
+    error InvalidDueAmount();
+
     error NotEnoughBalance();
 
     error DueDateNotPassed();
 
+    error InvalidInvoiceDate();
+
     error InvalidDueDate();
 
     error BatchLimitExceeded();
+
+    error InvalidAccess();
 }

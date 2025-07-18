@@ -88,13 +88,13 @@ interface IMarketplace is GenericErrors {
      * @dev Buyer should have approved marketplace to transfer its ERC20 tokens to pay price and fees
      * @param mainId, unique identifiers of the assets
      * @param subId, unique identifiers of the asset
-     * @param fractionToBuy, amount of fraction for buying
+     * @param fractionsToBuy, amount of fraction for buying
      * @param owner, address of the owner of asset
      */
     function buy(
         uint256 mainId,
         uint256 subId,
-        uint256 fractionToBuy,
+        uint256 fractionsToBuy,
         address owner
     ) external;
 

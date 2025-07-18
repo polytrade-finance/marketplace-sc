@@ -7,6 +7,7 @@ const {
   TESTNET_PRIVATE_KEY,
   MAINNET_DEPLOYER_PRIVATE_KEY,
   MAINNET_ARCHIVAL_RPC,
+  AMOY_ARCHIVAL_RPC,
   MUMBAI_ARCHIVAL_RPC,
   POLYGON_ARCHIVAL_RPC,
   SEPOLIA_ARCHIVAL_RPC,
@@ -27,22 +28,43 @@ module.exports = {
     },
   },
   networks: {
+    // hardhat: {
+    //   forking: {
+    //     url: process.env.RPC_URL || "https://rpc.ankr.com/eth",
+    //     ignoreUnknownTxType: true,
+    //     blockNumber: 18314577,
+    //   },
+    //   chainId: Number(process.env.CHAIN_ID) || 1,
+    //   accounts: {
+    //     mnemonic:
+    //       "dice shove sheriff police boss indoor hospital vivid tenant method game matter",
+    //     path: "m/44'/60'/0'/0",
+    //     initialIndex: 0,
+    //   },
+    //   initialBaseFeePerGas: 0,
+    //   gasPrice: 0,
+    //   gas: 30000000,
+    // },
     hardhat: {
-      forking: {
-        url: process.env.RPC_URL || "https://rpc.ankr.com/eth",
-        ignoreUnknownTxType: true,
-        blockNumber: 18314577,
-      },
-      chainId: Number(process.env.CHAIN_ID) || 1,
+      chainId: 31337, // Use local Hardhat network
       accounts: {
         mnemonic:
           "dice shove sheriff police boss indoor hospital vivid tenant method game matter",
-        path: "m/44'/60'/0'/0",
-        initialIndex: 0,
       },
       initialBaseFeePerGas: 0,
       gasPrice: 0,
       gas: 30000000,
+    },
+    amoy: {
+      url: `${AMOY_ARCHIVAL_RPC}`,
+      accounts: [
+        `${
+          TESTNET_PRIVATE_KEY ||
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        }`,
+      ],
+      gasPrice: 30_000_000_000, // 30 Gwei
+      gas: 15_000_000, // Adjust if needed
     },
     mumbai: {
       url: `${MUMBAI_ARCHIVAL_RPC}`,
@@ -95,6 +117,17 @@ module.exports = {
       sepolia: process.env.ETHERSCAN_API_KEY || "",
       polygon: process.env.POLYGONSCAN_API_KEY || "",
       mumbai: process.env.POLYGONSCAN_API_KEY || "",
+      amoy: process.env.POLYGONSCAN_API_KEY || "",
     },
+    customChains: [
+      {
+        network: "amoy",
+        chainId: 80002,
+        urls: {
+          apiURL: "https://api-amoy.polygonscan.com/api",
+          browserURL: "https://amoy.polygonscan.com",
+        },
+      },
+    ],
   },
 };

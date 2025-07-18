@@ -24,11 +24,18 @@ contract BaseAsset is
     AccessControl,
     IBaseAsset
 {
-    // Create a new role identifier for the marketplace role
+    // Create a new role identifier for the asset manager role
     bytes32 public constant ASSET_MANAGER =
         0x9c6e3ae929b539a99db03120eac7d9f862d68479b44f1eec05ab6036fcf56830;
 
+    // Create a new role identifier for the marketplace role
+    bytes32 public constant MARKETPLACE_ROLE =
+        0x0ea61da3a8a09ad801432653699f8c1860b1ae9d2ea4a141fadfd63227717bc8;
+
     mapping(uint256 => mapping(uint256 => AssetInfo)) private _assetInfo;
+    // Owner -> MainId -> SubId -> FractionPrice
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256)))
+        private _tradingRecords;
     mapping(uint256 => string) private _assetBaseURI;
 
     constructor(
@@ -79,6 +86,25 @@ contract BaseAsset is
     }
 
     /**
+     * @dev See {IBaseAsset-setTradingRecord}.
+     */
+    function setTradingRecord(
+        address owner,
+        uint256 mainId,
+        uint256 subId,
+        uint256 fractionPrice
+    ) external {
+        if (
+            !hasRole(MARKETPLACE_ROLE, msg.sender) &&
+            !hasRole(ASSET_MANAGER, msg.sender)
+        ) {
+            revert InvalidAccess();
+        }
+
+        _tradingRecords[owner][mainId][subId] = fractionPrice;
+    }
+
+    /**
      * @dev See {IBaseAsset-tokenURI}.
      */
     function tokenURI(
@@ -89,11 +115,25 @@ contract BaseAsset is
         return string.concat(_assetBaseURI[mainId], stringAssetSubId);
     }
 
+    /**
+     * @dev See {IBaseAsset-getAssetInfo}.
+     */
     function getAssetInfo(
         uint256 mainId,
         uint256 subId
     ) external view returns (AssetInfo memory) {
         return _assetInfo[mainId][subId];
+    }
+
+    /**
+     * @dev See {IBaseAsset-getTradingRecord}.
+     */
+    function getTradingRecord(
+        address owner,
+        uint256 mainId,
+        uint256 subId
+    ) external view returns (uint256) {
+        return _tradingRecords[owner][mainId][subId];
     }
 
     /**

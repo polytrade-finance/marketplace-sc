@@ -31,31 +31,74 @@ const createList = async (salePrice, listedFractions, minFraction, token) => {
   };
 };
 
+// const createAsset = async (token) => {
+//   return {
+//     price: ethers.parseUnits("10", DECIMALS.SIX),
+//     dueDate: (await now()) + 7890000, // add 3 months
+//     rewardApr: ethers.parseUnits("10", DECIMALS.TWO), // with 2 decimals
+//     fractions: 10000n,
+//     settlementToken: token,
+//   };
+// };
+
 const createAsset = async (token) => {
+  const SECONDS_IN_A_DAY = 86400;
+  const TENURE = 90;
+
   return {
     price: ethers.parseUnits("10", DECIMALS.SIX),
-    dueDate: (await now()) + 7890000, // add 3 months
-    rewardApr: ethers.parseUnits("10", DECIMALS.TWO), // with 2 decimals
+    tenure: TENURE,
+    invoiceDate: await now(),
+    dueDate: (await now()) + TENURE * SECONDS_IN_A_DAY, // add 90 days
+    dueAmount: ethers.parseUnits("12", DECIMALS.SIX),
+    fractions: 10000n,
+    settlementToken: token,
+  };
+  /// ((((12000000-10000000)*10000)/10000000)*(360/90))
+};
+
+// const zeroPriceAsset = async (token) => {
+//   return {
+//     price: 0,
+//     dueDate: (await now()) + 7890000, // add 3 months
+//     rewardApr: ethers.parseUnits("10", DECIMALS.TWO), // with 2 decimals
+//     fractions: 10000n,
+//     settlementToken: token,
+//   };
+// };
+
+const zeroPriceAsset = async (token) => {
+  const SECONDS_IN_A_DAY = 86400;
+  const TENURE = 90;
+
+  return {
+    price: 0,
+    tenure: TENURE,
+    invoiceDate: await now(),
+    dueDate: (await now()) + TENURE * SECONDS_IN_A_DAY, // add 90 days
+    dueAmount: ethers.parseUnits("12", DECIMALS.SIX),
     fractions: 10000n,
     settlementToken: token,
   };
 };
 
-const zeroPriceAsset = async (token) => {
-  return {
-    price: 0,
-    dueDate: (await now()) + 7890000, // add 3 months
-    rewardApr: ethers.parseUnits("10", DECIMALS.TWO), // with 2 decimals
-    fractions: 10000n,
-    settlementToken: token,
-  };
-};
+// const nearSettleAsset = async (token) => {
+//   return {
+//     price: ethers.parseUnits("10", DECIMALS.SIX),
+//     dueDate: (await now()) + 100, // in seconds
+//     rewardApr: ethers.parseUnits("10", DECIMALS.TWO), // with 2 decimals
+//     fractions: 10000n,
+//     settlementToken: token,
+//   };
+// };
 
 const nearSettleAsset = async (token) => {
   return {
     price: ethers.parseUnits("10", DECIMALS.SIX),
+    tenure: 1,
+    invoiceDate: await now(), // in seconds
     dueDate: (await now()) + 100, // in seconds
-    rewardApr: ethers.parseUnits("10", DECIMALS.TWO), // with 2 decimals
+    dueAmount: ethers.parseUnits("12", DECIMALS.SIX),
     fractions: 10000n,
     settlementToken: token,
   };

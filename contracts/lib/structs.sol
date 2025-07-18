@@ -2,6 +2,7 @@
 pragma solidity ^0.8.17;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { GenericErrors } from "contracts/lib/errors.sol";
 
 /**
  * @title Listed information for each asset owner and asset id
@@ -12,23 +13,36 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  */
 struct ListedInfo {
     uint256 salePrice;
+    uint256 apr;
     uint256 listedFractions;
     uint256 minFraction;
+    bool priceIsLocked;
     IERC20 token;
+    address genericAsset;
 }
 
-/**
- * @title storing invoice information
- * @param price, is the settlement price of invoice
- * @param dueDate, timestamp of which originator can not settle before it
- * @param rewardApr, apr of invoice used in reward calculations
- * @param fractions, number of fractions
- * @param settlementToken, the token which settlement set for by originator
- */
+// /**
+//  * @title storing invoice information
+//  * @param price, is the settlement price of invoice
+//  * @param dueDate, timestamp of which originator can not settle before it
+//  * @param rewardApr, apr of invoice used in reward calculations
+//  * @param fractions, number of fractions
+//  * @param settlementToken, the token which settlement set for by originator
+//  */
+// struct InvoiceInfo {
+//     uint256 price;
+//     uint256 dueDate;
+//     uint256 rewardApr;
+//     uint256 fractions;
+//     IERC20 settlementToken;
+// }
+
 struct InvoiceInfo {
     uint256 price;
+    uint256 tenure;
+    uint256 invoiceDate;
     uint256 dueDate;
-    uint256 rewardApr;
+    uint256 dueAmount;
     uint256 fractions;
     IERC20 settlementToken;
 }
